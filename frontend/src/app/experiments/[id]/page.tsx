@@ -22,9 +22,19 @@ export default function ExperimentRunsPage({
         >
           ← Voltar ao dashboard
         </Link>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-cyan-400">
-          Entrada de dados
-        </h1>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-cyan-400">
+            Entrada de dados
+          </h1>
+          {Number.isFinite(experimentId) && experimentId > 0 ? (
+            <Link
+              href={`/experiments/${experimentId}/analysis`}
+              className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-cyan-400"
+            >
+              Analisar →
+            </Link>
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-slate-400">
           Experimento #{experimentId} — preencha as respostas medidas de cada
           ensaio.
