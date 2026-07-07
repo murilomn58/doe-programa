@@ -59,12 +59,15 @@ export interface RunCellRead {
 }
 
 export interface RunRead {
+  id: number | null;
   run_order: number;
   std_order: number;
   point_type: number;
   block: number;
   replicate: number;
   factors: Record<string, RunCellRead>;
+  /** Measured response values keyed by response name; empty until entered. */
+  response_values: Record<string, number | null>;
 }
 
 export interface GeneratedDesign {
@@ -74,4 +77,24 @@ export interface GeneratedDesign {
   factors: FactorRead[];
   responses: ResponseRead[];
   runs: RunRead[];
+}
+
+/** The persisted matrix + response values for the editable data-entry grid. */
+export interface RunsRead {
+  experiment_id: number;
+  n_runs: number;
+  factors: FactorRead[];
+  responses: ResponseRead[];
+  runs: RunRead[];
+}
+
+/** One response cell to persist (raw text — the backend parses/validates it). */
+export interface ResponseValueUpsert {
+  run_id: number;
+  response_name: string;
+  value: string | null;
+}
+
+export interface ResponsesUpsertRequest {
+  values: ResponseValueUpsert[];
 }

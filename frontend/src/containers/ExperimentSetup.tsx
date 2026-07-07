@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { DesignPicker } from "@/components/DesignPicker";
 import { FactorForm } from "@/components/FactorForm";
 import { ResponsesForm } from "@/components/ResponsesForm";
-import { RunsTable } from "@/components/RunsTable";
+import { DataEntry } from "@/containers/DataEntry";
 import type {
   DesignGenerateRequest,
   FactorInput,
@@ -197,7 +197,21 @@ export function ExperimentSetup() {
           ) : null}
 
           {generateDesign.data ? (
-            <RunsTable design={generateDesign.data} />
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-emerald-400">
+                  Matriz gerada — experimento #{generateDesign.data.experiment_id}.
+                  Preencha as respostas abaixo.
+                </p>
+                <Link
+                  href={`/experiments/${generateDesign.data.experiment_id}`}
+                  className="text-xs text-cyan-400 transition hover:text-cyan-300"
+                >
+                  Abrir em página dedicada →
+                </Link>
+              </div>
+              <DataEntry experimentId={generateDesign.data.experiment_id} />
+            </div>
           ) : null}
         </div>
       )}
