@@ -22,3 +22,11 @@ class ResponseValueError(ValueError):
 
 class ExperimentNotFoundError(LookupError):
     """The requested experiment does not exist."""
+
+
+class InsufficientDataError(ValueError):
+    """Not enough measured responses to fit the requested model.
+
+    Examples: the chosen response has fewer filled runs than model parameters,
+    or no runs carry a value for it yet.
+    """

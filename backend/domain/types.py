@@ -16,6 +16,22 @@ class DesignType(StrEnum):
     FULL_FACTORIAL_2K = "full_factorial_2k"
 
 
+class RSMModel(StrEnum):
+    """The four response-surface models from the class (aula).
+
+    Term sets built by ``analysis_service.terms_for_model``:
+    - ``LINEAR``: main effects only.
+    - ``LINEAR_QUADRATIC``: main effects + pure quadratic terms.
+    - ``LINEAR_INTERACTIONS``: main effects + all two-factor interactions.
+    - ``FULL``: main effects + two-factor interactions + quadratics.
+    """
+
+    LINEAR = "linear"
+    LINEAR_QUADRATIC = "linear_quadratic"
+    LINEAR_INTERACTIONS = "linear_interactions"
+    FULL = "full"
+
+
 class PointType:
     """OriginPro-style point classification for a run.
 
