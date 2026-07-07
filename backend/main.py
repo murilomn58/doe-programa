@@ -5,7 +5,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import designs, experiments, runs
+from routers import analysis, designs, experiments, runs
 
 app = FastAPI(title="DoE Programa API", version="0.1.0")
 
@@ -28,6 +28,7 @@ app.add_middleware(
 app.include_router(experiments.router)
 app.include_router(designs.router)
 app.include_router(runs.router)
+app.include_router(analysis.router)
 
 
 @app.get("/health", tags=["meta"])

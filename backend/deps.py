@@ -13,6 +13,7 @@ from db import get_session
 from repositories.design_repo import SqlAlchemyDesignRepo
 from repositories.experiment_repo import SqlAlchemyExperimentRepo
 from repositories.run_repo import SqlAlchemyRunRepo
+from services.analysis_service import AnalysisService
 from services.design_service import DesignService
 from services.experiment_service import ExperimentService
 from services.run_service import RunService
@@ -46,3 +47,14 @@ def get_run_service(
 
 
 RunServiceDep = Annotated[RunService, Depends(get_run_service)]
+
+
+def get_analysis_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> AnalysisService:
+    # Reuses the run repo: same read-only shape (experiment/factors/responses/runs).
+    repo = SqlAlchemyRunRepo(session)
+    return AnalysisService(repo)
+
+
+AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from domain.types import DesignType, FactorType
+from domain.types import DesignType, FactorType, RSMModel
 
 
 class ExperimentCreate(BaseModel):
@@ -160,3 +160,95 @@ class ResponsesUpsertRequest(BaseModel):
     """POST /experiments/{id}/runs/responses body — a bulk upsert."""
 
     values: list[ResponseValueUpsert] = Field(default_factory=list)
+
+
+# --- analysis (issue 04) -----------------------------------------------------
+
+
+class AnalysisRequest(BaseModel):
+    """POST /analysis body — one response, one RSM model."""
+
+    experiment_id: int
+    response_name: str = Field(min_length=1, max_length=255)
+    model: RSMModel = RSMModel.LINEAR
+
+
+class TermRead(BaseModel):
+    label: str
+    kind: str
+
+
+class AnovaRowRead(BaseModel):
+    source: str
+    ss: float
+    df: int
+    ms: float | None = None
+    f: float | None = None
+    p: float | None = None
+
+
+class EffectRowRead(BaseModel):
+    term: str
+    effect: float
+    coef_coded: float
+    std_err: float | None = None
+    t: float | None = None
+    p: float | None = None
+    ci_low: float | None = None
+    ci_high: float | None = None
+    pseudo_t: float | None = None
+    significant: bool | None = None
+
+
+class CoefRowRead(BaseModel):
+    term: str
+    coef_coded: float
+    coef_natural: float | None = None
+    std_err: float | None = None
+    t: float | None = None
+    p: float | None = None
+    ci_low: float | None = None
+    ci_high: float | None = None
+    vif: float | None = None
+
+
+class StatsPanelRead(BaseModel):
+    n_obs: int
+    df_resid: int
+    r_squared: float
+    adj_r_squared: float
+    rmse: float
+    sse: float
+    total_ss: float
+    press: float | None = None
+    predicted_r_squared: float | None = None
+
+
+class LenthRead(BaseModel):
+    pse: float
+    me: float
+    sme: float
+    alpha: float
+
+
+class AnalysisResultRead(BaseModel):
+    """The full analysis returned by POST /analysis."""
+
+    response_name: str
+    model: RSMModel
+    estimable: bool
+    saturated: bool
+    warnings: list[str]
+    sign_maps: dict[str, dict[str, str]]
+    terms: list[TermRead]
+    anova: list[AnovaRowRead]
+    pure_error: AnovaRowRead | None = None
+    lack_of_fit: AnovaRowRead | None = None
+    total: AnovaRowRead | None = None
+    effects: list[EffectRowRead]
+    coefficients: list[CoefRowRead]
+    stats: StatsPanelRead | None = None
+    lenth: LenthRead | None = None
+    r_squared: float | None = None
+    adj_r_squared: float | None = None
+    ms_pure_error: float | None = None
