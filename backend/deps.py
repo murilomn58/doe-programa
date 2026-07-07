@@ -10,7 +10,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_session
+from repositories.design_repo import SqlAlchemyDesignRepo
 from repositories.experiment_repo import SqlAlchemyExperimentRepo
+from services.design_service import DesignService
 from services.experiment_service import ExperimentService
 
 
@@ -22,3 +24,13 @@ def get_experiment_service(
 
 
 ExperimentServiceDep = Annotated[ExperimentService, Depends(get_experiment_service)]
+
+
+def get_design_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> DesignService:
+    repo = SqlAlchemyDesignRepo(session)
+    return DesignService(repo)
+
+
+DesignServiceDep = Annotated[DesignService, Depends(get_design_service)]
