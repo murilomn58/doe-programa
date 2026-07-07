@@ -108,12 +108,15 @@ class RunCellRead(BaseModel):
 
 
 class RunRead(BaseModel):
+    id: int | None = None
     run_order: int
     std_order: int
     point_type: int
     block: int
     replicate: int
     factors: dict[str, RunCellRead]
+    # Measured response values keyed by response name; empty until entered.
+    response_values: dict[str, float | None] = Field(default_factory=dict)
 
 
 class DesignRead(BaseModel):
@@ -125,3 +128,35 @@ class DesignRead(BaseModel):
     factors: list[FactorRead]
     responses: list[ResponseRead]
     runs: list[RunRead]
+
+
+# --- data entry (issue 03) ---------------------------------------------------
+
+
+class RunsRead(BaseModel):
+    """The persisted matrix + response values for the editable RunsGrid."""
+
+    experiment_id: int
+    n_runs: int
+    factors: list[FactorRead]
+    responses: list[ResponseRead]
+    runs: list[RunRead]
+
+
+class ResponseValueUpsert(BaseModel):
+    """One cell of the response grid to persist.
+
+    ``value`` is the raw cell text (spreadsheet-style): the service parses it,
+    accepting ``.``/``,`` decimals and treating empty/whitespace as "cleared"
+    (stored as null so partial entry survives).
+    """
+
+    run_id: int
+    response_name: str = Field(min_length=1, max_length=255)
+    value: str | None = None
+
+
+class ResponsesUpsertRequest(BaseModel):
+    """POST /experiments/{id}/runs/responses body — a bulk upsert."""
+
+    values: list[ResponseValueUpsert] = Field(default_factory=list)

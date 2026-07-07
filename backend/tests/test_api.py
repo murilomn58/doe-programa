@@ -115,3 +115,82 @@ async def test_generate_rejects_single_factor(client: AsyncClient) -> None:
         },
     )
     assert resp.status_code == 422
+
+
+# --- data entry (issue 03) ---------------------------------------------------
+
+
+async def _generate_2squared(client: AsyncClient) -> dict:
+    resp = await client.post(
+        "/designs/generate",
+        json={
+            "name": "entrada",
+            "replicates": 1,
+            "factors": [
+                {"name": "A", "factor_type": "quantitative", "low": 0, "high": 1.5},
+                {"name": "B", "factor_type": "quantitative", "low": 10, "high": 20},
+            ],
+            "responses": [{"name": "MR", "unit": "MPa"}, {"name": "DP", "unit": "mm"}],
+        },
+    )
+    assert resp.status_code == 201
+    return resp.json()
+
+
+async def test_get_runs_returns_matrix_with_ids_and_empty_responses(
+    client: AsyncClient,
+) -> None:
+    design = await _generate_2squared(client)
+    exp_id = design["experiment_id"]
+
+    resp = await client.get(f"/experiments/{exp_id}/runs")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["n_runs"] == 4
+    assert [r["name"] for r in body["responses"]] == ["MR", "DP"]
+    assert all(run["id"] is not None for run in body["runs"])
+    assert all(run["response_values"] == {} for run in body["runs"])
+
+
+async def test_save_partial_responses_persists_and_reloads(client: AsyncClient) -> None:
+    design = await _generate_2squared(client)
+    exp_id = design["experiment_id"]
+    runs = (await client.get(f"/experiments/{exp_id}/runs")).json()["runs"]
+    first_id = runs[0]["id"]
+    second_id = runs[1]["id"]
+
+    save = await client.post(
+        f"/experiments/{exp_id}/runs/responses",
+        json={
+            "values": [
+                {"run_id": first_id, "response_name": "MR", "value": "12.5"},
+                {"run_id": first_id, "response_name": "DP", "value": "3,25"},
+                {"run_id": second_id, "response_name": "MR", "value": ""},
+            ]
+        },
+    )
+    assert save.status_code == 200
+
+    # reload: values survive (partial MR/DP on run 1, empty on run 2)
+    reloaded = (await client.get(f"/experiments/{exp_id}/runs")).json()["runs"]
+    by_id = {r["id"]: r["response_values"] for r in reloaded}
+    assert by_id[first_id]["MR"] == 12.5
+    assert by_id[first_id]["DP"] == 3.25
+    assert by_id[second_id]["MR"] is None
+
+
+async def test_save_rejects_non_numeric(client: AsyncClient) -> None:
+    design = await _generate_2squared(client)
+    exp_id = design["experiment_id"]
+    run_id = (await client.get(f"/experiments/{exp_id}/runs")).json()["runs"][0]["id"]
+
+    resp = await client.post(
+        f"/experiments/{exp_id}/runs/responses",
+        json={"values": [{"run_id": run_id, "response_name": "MR", "value": "abc"}]},
+    )
+    assert resp.status_code == 422
+
+
+async def test_get_runs_unknown_experiment_is_404(client: AsyncClient) -> None:
+    resp = await client.get("/experiments/999/runs")
+    assert resp.status_code == 404

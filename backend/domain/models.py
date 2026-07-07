@@ -106,5 +106,10 @@ class Run(Base):
     block: Mapped[int] = mapped_column(Integer, nullable=False)
     replicate: Mapped[int] = mapped_column(Integer, nullable=False)
     cells: Mapped[dict] = mapped_column(JSON, nullable=False)
+    # Measured response values keyed by response name ({} until entered).
+    # Partial entry is expected: a missing key means "not yet measured".
+    response_values: Mapped[dict] = mapped_column(
+        JSON, nullable=False, default=dict, server_default="{}"
+    )
 
     experiment: Mapped["Experiment"] = relationship(back_populates="runs")
