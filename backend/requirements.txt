@@ -6,6 +6,10 @@ greenlet
 alembic
 pydantic
 
+# DoE generation
+pyDOE3==1.6.2
+numpy
+
 # dev / test
 pytest
 pytest-asyncio
