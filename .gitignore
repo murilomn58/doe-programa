@@ -35,3 +35,9 @@ next-env.d.ts
 Thumbs.db
 .idea/
 .vscode/
+
+# ---- Artefatos de preview / QA (não versionar) ----
+.playwright-mcp/
+*_preview.png
+issue*-*.png
+docs/adp/*-qa/
