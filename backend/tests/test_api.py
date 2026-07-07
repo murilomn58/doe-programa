@@ -66,3 +66,52 @@ async def test_create_and_list_experiments(client: AsyncClient) -> None:
     items = listing.json()
     assert len(items) == 1
     assert items[0]["name"] == "Fibra"
+
+
+async def test_generate_2k_design(client: AsyncClient) -> None:
+    resp = await client.post(
+        "/designs/generate",
+        json={
+            "name": "2^3 exemplo",
+            "replicates": 1,
+            "factors": [
+                {"name": "A", "factor_type": "quantitative", "unit": "%", "low": 0, "high": 1.5},
+                {"name": "B", "factor_type": "quantitative", "low": 10, "high": 20},
+                {
+                    "name": "C",
+                    "factor_type": "qualitative",
+                    "low_label": "Tucum",
+                    "high_label": "Piassava",
+                },
+            ],
+            "responses": [{"name": "MR", "unit": "MPa"}],
+        },
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["n_runs"] == 8
+    assert len(body["runs"]) == 8
+    assert body["experiment_id"] >= 1
+
+    # coding is ±1
+    codes = {
+        cell["coded"] for run in body["runs"] for cell in run["factors"].values()
+    }
+    assert codes == {-1, 1}
+    # qualitative labels resolved from the persisted map
+    labels = {run["factors"]["C"]["label"] for run in body["runs"]}
+    assert labels == {"Tucum", "Piassava"}
+    # OriginPro-style columns present per run
+    first = body["runs"][0]
+    assert {"run_order", "std_order", "point_type", "block", "replicate"} <= first.keys()
+
+
+async def test_generate_rejects_single_factor(client: AsyncClient) -> None:
+    resp = await client.post(
+        "/designs/generate",
+        json={
+            "name": "invalido",
+            "factors": [{"name": "A", "factor_type": "quantitative", "low": 0, "high": 1}],
+        },
+    )
+    assert resp.status_code == 422
