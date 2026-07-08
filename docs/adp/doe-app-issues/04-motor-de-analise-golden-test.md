@@ -2,8 +2,10 @@
 slug: doe-app
 issue: 04
 title: Motor de análise + golden test (o trilho)
-status: aprovada
+status: done
 blocked_by: 03
+qa: VERDE (2026-07-07) — pytest 48/48. CA1 golden test 2² da aula reproduz OriginPro com rel=1e-6 (F, R², PRESS, Predicted R², efeitos, coef — todos batendo). CA2 Montgomery Ex6.1 rel=1e-4. CA4 guard estimabilidade, CA5 saturado (Lenth PSE), CA7 sinal + OLS==Yates, property test ΣSS==SST. Verificação ao vivo (números na tela) PASS. Commits 696ec1f, 9d29613, d8e268d.
+notas: statsmodels ols + anova_lm typ=2, colunas ±1 explícitas. PRESS via hat matrix. StatsService com Lenth PSE + Yates cross-check. Backlog: tabelas mobile 375px sem affordance de scroll horizontal (desktop-first).
 ---
 
 ## Pai

@@ -2,8 +2,10 @@
 slug: doe-app
 issue: 05
 title: Visualização interativa base (Plotly)
-status: aprovada
+status: done
 blocked_by: 04
+qa: VERDE (2026-07-08) — pytest 61/61, ruff limpo, typecheck 0 erros, build OK. QA visual Playwright: CA1 console.error=0; CA2 todos 8 gráficos renderizados (Superfície 3D, Contorno, Pareto, Efeitos Principais, Interação, Obs vs Pred, Resíduos, Q-Q); CA3 linha tracejada Pareto p=0.05 com valor t correto; CA4 linha 45° + anotação R²; CA5 seletor de par aparece com ≥3 fatores, oculto com 2 (correto); CA6 Q-Q reta de referência OK. Screenshots em docs/adp/issue05-qa/.
+notas: PlotParams importado de react-plotly.js (não de plotly.js-dist-min). contours.z 3D tipado com cast `as unknown as Data` (gap no @types/plotly.js). hint do PlotCard alterado para ReactNode. PlotService já estava completo no backend (61 testes).
 ---
 
 ## Pai

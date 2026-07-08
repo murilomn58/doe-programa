@@ -2,8 +2,10 @@
 slug: doe-app
 issue: 03
 title: Entrada de dados (respostas dos ensaios)
-status: aprovada
+status: done
 blocked_by: 02
+qa: VERDE (2026-07-07) — pytest 31/31 (15 novos: RunService seam + integração), build+lint+typecheck verdes, fluxo ao vivo (colar do Excel, salvamento parcial, decimal PT-BR, validação 422) + QA visual PASS. Commits ad89242, a8043f7 (merged em master).
+notas: Run.response_values (JSON) para entrada parcial. parse_response_value aceita vírgula PT-BR. Grade com inputs nativos (sem tanstack/react-table, não adotado).
 ---
 
 ## Pai
