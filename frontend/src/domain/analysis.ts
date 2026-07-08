@@ -1,5 +1,7 @@
 /** Domain types for the analysis engine (mirror the backend Pydantic schemas). */
 
+import type { PlotsData } from "@/domain/plots";
+
 export type RSMModel =
   | "linear"
   | "linear_quadratic"
@@ -10,6 +12,9 @@ export interface AnalysisRequest {
   experiment_id: number;
   response_name: string;
   model: RSMModel;
+  /** Which pair of quantitative factors drives surface/contour/interaction. */
+  factor_x?: string | null;
+  factor_y?: string | null;
 }
 
 export interface TermRead {
@@ -89,6 +94,7 @@ export interface AnalysisResult {
   r_squared: number | null;
   adj_r_squared: number | null;
   ms_pure_error: number | null;
+  plots: PlotsData | null;
 }
 
 /** The four class RSM models, ordered for the ModelBuilder. */
