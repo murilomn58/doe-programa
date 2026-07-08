@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from domain.types import DesignType, FactorType, RSMModel
+from domain.types import CCDVariant, DesignType, FactorType, RSMModel
 
 
 class ExperimentCreate(BaseModel):
@@ -67,6 +67,34 @@ class ResponseSpec(BaseModel):
     unit: str | None = Field(default=None, max_length=50)
 
 
+class FractionalConfig(BaseModel):
+    """Configuration for a fractional factorial 2^(k-p) design.
+
+    Exactly ONE of ``generators`` (pyDOE3 ``fracfact`` string, e.g. "a b ab")
+    or ``resolution`` (pyDOE3 ``fracfact_by_res``) must be provided.
+    """
+
+    generators: str | None = None
+    resolution: int | None = Field(default=None, ge=3, le=6)
+
+    @model_validator(mode="after")
+    def _exactly_one(self) -> "FractionalConfig":
+        if (self.generators is None) == (self.resolution is None):
+            raise ValueError(
+                "Planejamento fracionado: informe exatamente um entre "
+                "'generators' e 'resolution'."
+            )
+        return self
+
+
+class CCDConfig(BaseModel):
+    """Configuration for a Central Composite Design."""
+
+    variant: CCDVariant = CCDVariant.ROTATABLE
+    center_factorial: int = Field(default=4, ge=0, le=20)  # centers in cube block
+    center_axial: int = Field(default=4, ge=0, le=20)  # centers in star block
+
+
 class DesignGenerateRequest(BaseModel):
     """POST /designs/generate body."""
 
@@ -77,6 +105,11 @@ class DesignGenerateRequest(BaseModel):
     factors: list[FactorSpec] = Field(min_length=1)
     responses: list[ResponseSpec] = Field(default_factory=list)
     seed: int | None = None  # optional: deterministic run-order randomization
+    # family-specific knobs (ignored by families that don't use them)
+    fractional: FractionalConfig | None = None
+    ccd: CCDConfig | None = None
+    bbd_center: int = Field(default=3, ge=0, le=20)  # BBD center points
+    center_points: int = Field(default=0, ge=0, le=20)  # 2^k / fractional
 
 
 class LevelRead(BaseModel):
@@ -102,7 +135,9 @@ class ResponseRead(BaseModel):
 
 
 class RunCellRead(BaseModel):
-    coded: int
+    # int | float (smart union): 2^k/fractional corners stay JSON ints exactly
+    # as before (golden bytes intact); CCD axials/centers carry floats.
+    coded: int | float
     natural: float | None = None
     label: str | None = None
 
@@ -128,6 +163,9 @@ class DesignRead(BaseModel):
     factors: list[FactorRead]
     responses: list[ResponseRead]
     runs: list[RunRead]
+    # fractional 2^(k-p) only; None for every other family
+    resolution: int | None = None
+    aliasing: list[str] | None = None
 
 
 # --- data entry (issue 03) ---------------------------------------------------
@@ -246,6 +284,9 @@ class SurfaceRead(BaseModel):
     x: list[float]
     y: list[float]
     z: list[list[float | None]]
+    # observed experimental points (natural units) for the contour overlay
+    points_x: list[float] = Field(default_factory=list)
+    points_y: list[float] = Field(default_factory=list)
 
 
 class ParetoRead(BaseModel):

@@ -10,3 +10,8 @@ extend-exclude = ["alembic", ".venv"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# TDD source-of-truth file (issue 06) — kept byte-identical, lint waived:
+# I001 (import order) and B017 (pytest.raises(Exception) on Pydantic errors).
+"tests/test_design_families.py" = ["I001", "B017"]

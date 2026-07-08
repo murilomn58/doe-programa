@@ -40,9 +40,14 @@ class ResponseData:
 
 @dataclass(frozen=True)
 class CellData:
-    """The value of one factor within one run."""
+    """The value of one factor within one run.
 
-    coded: int
+    ``coded`` is ``float`` because RSM families (CCD) use non-integer axial
+    positions (±alpha) and centre points (0). The pure 2^k path still passes
+    Python ``int`` values, which serialize to JSON ints (golden test intact).
+    """
+
+    coded: float
     natural: float | None = None
     label: str | None = None
 
@@ -61,12 +66,18 @@ class RunData:
 
 @dataclass(frozen=True)
 class GeneratedDesign:
-    """The full generated matrix before persistence."""
+    """The full generated matrix before persistence.
+
+    ``resolution``/``aliasing`` are only filled by the fractional 2^(k-p)
+    builder; every other family leaves the defaults (golden 2^k intact).
+    """
 
     design_type: str
     factors: list[FactorData]
     responses: list[ResponseData]
     runs: list[RunData]
+    resolution: int | None = None
+    aliasing: list[str] | None = None
 
 
 @dataclass

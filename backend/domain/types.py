@@ -11,9 +11,28 @@ class FactorType(StrEnum):
 
 
 class DesignType(StrEnum):
-    """Supported design families. Only the full 2^k factorial in this slice."""
+    """Supported design families across the RSM + screening/optimal slices."""
 
     FULL_FACTORIAL_2K = "full_factorial_2k"
+    FRACTIONAL_FACTORIAL_2KP = "fractional_factorial_2kp"
+    CENTRAL_COMPOSITE = "central_composite"
+    BOX_BEHNKEN = "box_behnken"
+
+
+class CCDVariant(StrEnum):
+    """Central Composite Design axial-distance variants.
+
+    - ``ROTATABLE``: alpha = (2^k)^(1/4) — constant prediction variance on a
+      sphere (pyDOE3 ``alpha='rotatable', face='circumscribed'``).
+    - ``ORTHOGONAL``: alpha chosen so the quadratic model is orthogonal
+      (``alpha='orthogonal', face='circumscribed'``).
+    - ``FACE_CENTERED``: alpha = 1 — axial points on the cube faces
+      (``face='faced'``), useful when factor ranges cannot be exceeded.
+    """
+
+    ROTATABLE = "rotatable"
+    ORTHOGONAL = "orthogonal"
+    FACE_CENTERED = "face_centered"
 
 
 class RSMModel(StrEnum):

@@ -178,12 +178,7 @@ class DesignService:
         self._repo = repo
 
     async def generate(self, req: DesignGenerateRequest) -> DesignRead:
-        design = build_2k_design(
-            factors=req.factors,
-            responses=req.responses,
-            replicates=req.replicates,
-            seed=req.seed,
-        )
+        design = _build_design(req)
 
         if req.experiment_id is not None:
             experiment = await self._repo.get_experiment(req.experiment_id)
@@ -198,6 +193,37 @@ class DesignService:
 
         persisted = await self._repo.save_design(experiment_id, design)
         return _to_design_read(experiment_id, design, persisted)
+
+
+def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
+    """Dispatch generation by design family (pure, no DB).
+
+    Deferred import: ``design_builders`` reuses helpers from this module, so a
+    top-level import would create a cycle (same pattern as ``plot_service``).
+    """
+    from services import design_builders
+
+    if req.design_type is DesignType.CENTRAL_COMPOSITE:
+        return design_builders.build_ccd_design(req.factors, req.responses, req)
+    if req.design_type is DesignType.BOX_BEHNKEN:
+        return design_builders.build_bbd_design(req.factors, req.responses, req)
+
+    if req.design_type is DesignType.FRACTIONAL_FACTORIAL_2KP:
+        design = design_builders.build_fractional_design(
+            req.factors, req.responses, req
+        )
+    else:  # FULL_FACTORIAL_2K — golden path, unchanged when center_points == 0
+        design = build_2k_design(
+            factors=req.factors,
+            responses=req.responses,
+            replicates=req.replicates,
+            seed=req.seed,
+        )
+    if req.center_points > 0:
+        design = design_builders.add_center_points(
+            design, req.factors, req.center_points, req.seed
+        )
+    return design
 
 
 def _to_design_read(
@@ -248,4 +274,6 @@ def _to_design_read(
         factors=factors,
         responses=responses,
         runs=runs,
+        resolution=design.resolution,
+        aliasing=design.aliasing,
     )
