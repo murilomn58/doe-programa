@@ -33,7 +33,7 @@ def parse_response_value(raw: str | float | None) -> float | None:
     """
     if raw is None:
         return None
-    if isinstance(raw, (int, float)):
+    if isinstance(raw, int | float):
         return float(raw)
     text = raw.strip()
     if not text:
