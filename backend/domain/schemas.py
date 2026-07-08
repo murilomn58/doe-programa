@@ -166,11 +166,17 @@ class ResponsesUpsertRequest(BaseModel):
 
 
 class AnalysisRequest(BaseModel):
-    """POST /analysis body — one response, one RSM model."""
+    """POST /analysis body — one response, one RSM model.
+
+    ``factor_x``/``factor_y`` pick which pair of quantitative factors the
+    surface/contour/interaction charts plot (defaults to the first pair).
+    """
 
     experiment_id: int
     response_name: str = Field(min_length=1, max_length=255)
     model: RSMModel = RSMModel.LINEAR
+    factor_x: str | None = None
+    factor_y: str | None = None
 
 
 class TermRead(BaseModel):
@@ -231,6 +237,81 @@ class LenthRead(BaseModel):
     alpha: float
 
 
+# --- plots (issue 05) --------------------------------------------------------
+
+
+class SurfaceRead(BaseModel):
+    factor_x: str
+    factor_y: str
+    x: list[float]
+    y: list[float]
+    z: list[list[float | None]]
+
+
+class ParetoRead(BaseModel):
+    terms: list[str]
+    std_effects: list[float]
+    sig_line: float
+    alpha: float
+
+
+class MainEffectRead(BaseModel):
+    factor: str
+    level_labels: list[str]
+    levels: list[float]
+    means: list[float | None]
+
+
+class InteractionLineRead(BaseModel):
+    level_label: str
+    x: list[float]
+    y: list[float | None]
+    ci_low: list[float | None]
+    ci_high: list[float | None]
+
+
+class InteractionRead(BaseModel):
+    factor_x: str
+    factor_group: str
+    x_levels: list[float]
+    x_labels: list[str]
+    lines: list[InteractionLineRead]
+
+
+class ObsVsPredRead(BaseModel):
+    observed: list[float]
+    predicted: list[float]
+    line_min: float
+    line_max: float
+    r_squared: float | None = None
+
+
+class ScatterRead(BaseModel):
+    x: list[float]
+    y: list[float]
+
+
+class QQRead(BaseModel):
+    theoretical: list[float]
+    sample: list[float]
+    line_slope: float
+    line_intercept: float
+
+
+class PlotsRead(BaseModel):
+    factor_pairs: list[list[str]]
+    selected_pair: list[str] | None = None
+    grand_mean: float
+    surface: SurfaceRead | None = None
+    contour: SurfaceRead | None = None
+    pareto: ParetoRead | None = None
+    main_effects: list[MainEffectRead] = Field(default_factory=list)
+    interaction: InteractionRead | None = None
+    obs_vs_pred: ObsVsPredRead | None = None
+    residual_vs_fitted: ScatterRead | None = None
+    qq: QQRead | None = None
+
+
 class AnalysisResultRead(BaseModel):
     """The full analysis returned by POST /analysis."""
 
@@ -252,3 +333,4 @@ class AnalysisResultRead(BaseModel):
     r_squared: float | None = None
     adj_r_squared: float | None = None
     ms_pure_error: float | None = None
+    plots: PlotsRead | None = None

@@ -501,6 +501,8 @@ class AnalysisService:
         experiment_id: int,
         response_name: str,
         model: RSMModel,
+        factor_x: str | None = None,
+        factor_y: str | None = None,
     ) -> AnalysisResultData:
         experiment = await self._repo.get_experiment(experiment_id)
         if experiment is None:
@@ -548,7 +550,7 @@ class AnalysisService:
             )
 
         terms = terms_for_model(model, factors)
-        return analyze(
+        result = analyze(
             factors=factors,
             coded=coded,
             natural=natural,
@@ -557,6 +559,23 @@ class AnalysisService:
             model_label=model.value,
             response_name=response_name,
         )
+
+        # Attach ready-to-draw plot arrays for an estimable, non-saturated fit.
+        # Deferred import avoids a cycle (plot_service reuses helpers from here).
+        if result.estimable and not result.saturated and result.stats is not None:
+            from services import plot_service
+
+            result.plots = plot_service.build_plots(
+                factors=factors,
+                coded=coded,
+                natural=natural,
+                y=y,
+                terms=terms,
+                result=result,
+                factor_x=factor_x,
+                factor_y=factor_y,
+            )
+        return result
 
 
 def _label_at(factor: Factor, coded_value: int) -> str | None:

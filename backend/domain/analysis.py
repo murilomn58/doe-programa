@@ -8,6 +8,8 @@ directly, with no HTTP or database in the loop.
 
 from dataclasses import dataclass, field
 
+from domain.plots import PlotBundle
+
 
 @dataclass(frozen=True)
 class TermInfo:
@@ -115,3 +117,6 @@ class AnalysisResultData:
     r_squared: float | None = None
     adj_r_squared: float | None = None
     ms_pure_error: float | None = None
+    # Ready-to-draw Plotly arrays (issue 05). Populated by the service (not the
+    # pure ``analyze`` core) for estimable, non-saturated fits.
+    plots: PlotBundle | None = None

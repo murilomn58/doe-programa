@@ -12,14 +12,24 @@ from fastapi import APIRouter, HTTPException, status
 from deps import AnalysisServiceDep
 from domain.analysis import AnalysisResultData, AnovaRow
 from domain.errors import ExperimentNotFoundError, InsufficientDataError
+from domain.plots import PlotBundle
 from domain.schemas import (
     AnalysisRequest,
     AnalysisResultRead,
     AnovaRowRead,
     CoefRowRead,
     EffectRowRead,
+    InteractionLineRead,
+    InteractionRead,
     LenthRead,
+    MainEffectRead,
+    ObsVsPredRead,
+    ParetoRead,
+    PlotsRead,
+    QQRead,
+    ScatterRead,
     StatsPanelRead,
+    SurfaceRead,
     TermRead,
 )
 from domain.types import RSMModel
@@ -33,7 +43,11 @@ async def run_analysis(
 ) -> AnalysisResultRead:
     try:
         result = await service.analyze(
-            payload.experiment_id, payload.response_name, payload.model
+            payload.experiment_id,
+            payload.response_name,
+            payload.model,
+            factor_x=payload.factor_x,
+            factor_y=payload.factor_y,
         )
     except ExperimentNotFoundError as exc:
         raise HTTPException(
@@ -53,6 +67,102 @@ def _f(value: float | None) -> float | None:
     if not math.isfinite(value):
         return None
     return float(value)
+
+
+def _farr(values: list[float]) -> list[float | None]:
+    return [_f(v) for v in values]
+
+
+def _surface(surface) -> SurfaceRead | None:
+    if surface is None:
+        return None
+    return SurfaceRead(
+        factor_x=surface.factor_x,
+        factor_y=surface.factor_y,
+        x=surface.x,
+        y=surface.y,
+        z=[_farr(row) for row in surface.z],
+    )
+
+
+def _plots(bundle: PlotBundle | None) -> PlotsRead | None:
+    if bundle is None:
+        return None
+    return PlotsRead(
+        factor_pairs=bundle.factor_pairs,
+        selected_pair=bundle.selected_pair,
+        grand_mean=bundle.grand_mean,
+        surface=_surface(bundle.surface),
+        contour=_surface(bundle.contour),
+        pareto=(
+            ParetoRead(
+                terms=bundle.pareto.terms,
+                std_effects=bundle.pareto.std_effects,
+                sig_line=bundle.pareto.sig_line,
+                alpha=bundle.pareto.alpha,
+            )
+            if bundle.pareto is not None
+            else None
+        ),
+        main_effects=[
+            MainEffectRead(
+                factor=m.factor,
+                level_labels=m.level_labels,
+                levels=m.levels,
+                means=_farr(m.means),
+            )
+            for m in bundle.main_effects
+        ],
+        interaction=(
+            InteractionRead(
+                factor_x=bundle.interaction.factor_x,
+                factor_group=bundle.interaction.factor_group,
+                x_levels=bundle.interaction.x_levels,
+                x_labels=bundle.interaction.x_labels,
+                lines=[
+                    InteractionLineRead(
+                        level_label=line.level_label,
+                        x=line.x,
+                        y=_farr(line.y),
+                        ci_low=_farr(line.ci_low),
+                        ci_high=_farr(line.ci_high),
+                    )
+                    for line in bundle.interaction.lines
+                ],
+            )
+            if bundle.interaction is not None
+            else None
+        ),
+        obs_vs_pred=(
+            ObsVsPredRead(
+                observed=bundle.obs_vs_pred.observed,
+                predicted=bundle.obs_vs_pred.predicted,
+                line_min=bundle.obs_vs_pred.line_min,
+                line_max=bundle.obs_vs_pred.line_max,
+                r_squared=_f(bundle.obs_vs_pred.r_squared),
+            )
+            if bundle.obs_vs_pred is not None
+            else None
+        ),
+        residual_vs_fitted=(
+            ScatterRead(
+                x=bundle.residual_vs_fitted.x,
+                y=bundle.residual_vs_fitted.y,
+            )
+            if bundle.residual_vs_fitted is not None
+            else None
+        ),
+        qq=(
+            QQRead(
+                theoretical=bundle.qq.theoretical,
+                sample=bundle.qq.sample,
+                line_slope=bundle.qq.line_slope,
+                line_intercept=bundle.qq.line_intercept,
+            )
+            if bundle.qq is not None
+            else None
+        ),
+    )
 
 
 def _anova_row(row: AnovaRow | None) -> AnovaRowRead | None:
@@ -133,4 +243,5 @@ def _to_read(r: AnalysisResultData) -> AnalysisResultRead:
         r_squared=_f(r.r_squared),
         adj_r_squared=_f(r.adj_r_squared),
         ms_pure_error=_f(r.ms_pure_error),
+        plots=_plots(r.plots),
     )

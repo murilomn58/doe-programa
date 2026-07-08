@@ -118,6 +118,37 @@ async def test_analysis_endpoint_reproduces_golden(client: AsyncClient) -> None:
     assert body["pure_error"]["df"] == 4
     assert body["lack_of_fit"]["df"] == 1
 
+    # Plot arrays (issue 05) travel with the analysis, computed on the backend.
+    plots = body["plots"]
+    assert plots is not None
+    assert plots["factor_pairs"] == [["cond", "par"]]
+    assert plots["selected_pair"] == ["cond", "par"]
+    assert plots["surface"]["factor_x"] == "cond"
+    assert len(plots["surface"]["z"]) == len(plots["surface"]["x"])
+    assert plots["pareto"]["terms"] == ["par", "cond"]
+    assert plots["pareto"]["sig_line"] > 0
+    assert plots["obs_vs_pred"]["r_squared"] == pytest.approx(0.866924, rel=1e-6)
+    assert len(plots["qq"]["theoretical"]) == 8
+
+
+async def test_analysis_plots_respect_factor_pair_selector(client: AsyncClient) -> None:
+    exp_id = await _seed_golden(client)
+    resp = await client.post(
+        "/analysis",
+        json={
+            "experiment_id": exp_id,
+            "response_name": "DP_50000",
+            "model": "linear",
+            "factor_x": "par",
+            "factor_y": "cond",
+        },
+    )
+    assert resp.status_code == 200
+    plots = resp.json()["plots"]
+    assert plots["selected_pair"] == ["par", "cond"]
+    assert plots["surface"]["factor_x"] == "par"
+    assert plots["surface"]["factor_y"] == "cond"
+
 
 async def test_analysis_quadratic_guard_returns_warning(client: AsyncClient) -> None:
     exp_id = await _seed_golden(client)
