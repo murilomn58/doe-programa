@@ -12,15 +12,20 @@
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
     "next": "15.5.20",
+    "plotly.js-dist-min": "^3.7.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-plotly.js": "^4.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/plotly.js": "^3.0.10",
+    "@types/plotly.js-dist-min": "^2.3.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-plotly.js": "^2.6.4",
     "eslint": "^9",
     "eslint-config-next": "15.5.20",
     "tailwindcss": "^4",
