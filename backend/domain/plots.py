@@ -16,7 +16,8 @@ class SurfaceData:
 
     ``x``/``y`` are 1-D axis positions in *natural* units (length N); ``z`` is
     the N x N predicted response (``z[j][i]`` at ``x[i]``, ``y[j]``), with every
-    other factor held at the coded center.
+    other factor held at the coded center. ``points_x``/``points_y`` are the
+    observed runs' natural values on the plotted pair (contour overlay).
     """
 
     factor_x: str
@@ -24,6 +25,8 @@ class SurfaceData:
     x: list[float]
     y: list[float]
     z: list[list[float]]
+    points_x: list[float] = field(default_factory=list)
+    points_y: list[float] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

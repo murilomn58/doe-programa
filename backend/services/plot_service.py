@@ -80,7 +80,7 @@ def build_plots(
     contour: SurfaceData | None = None
     if selected is not None:
         surface = _surface(
-            selected, factors, safe, fit, natural_range, grid_n
+            selected, factors, safe, fit, natural_range, natural, grid_n
         )
         contour = surface  # same grid; the frontend renders it as a contour
 
@@ -137,6 +137,7 @@ def _surface(
     safe: dict[str, str],
     fit,
     natural_range: dict[str, tuple[float, float]],
+    natural: list[dict[str, float]],
     grid_n: int,
 ) -> SurfaceData:
     fx, fy = pair
@@ -159,6 +160,9 @@ def _surface(
         x=x_axis,
         y=y_axis,
         z=[[float(v) for v in row] for row in z],
+        # observed experimental points (natural units) for the contour overlay
+        points_x=[float(row[fx]) for row in natural],
+        points_y=[float(row[fy]) for row in natural],
     )
 
 

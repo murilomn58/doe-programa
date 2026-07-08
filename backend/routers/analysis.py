@@ -82,6 +82,8 @@ def _surface(surface) -> SurfaceRead | None:
         x=surface.x,
         y=surface.y,
         z=[_farr(row) for row in surface.z],
+        points_x=surface.points_x,
+        points_y=surface.points_y,
     )
 
 

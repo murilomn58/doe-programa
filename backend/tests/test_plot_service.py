@@ -101,6 +101,21 @@ def test_surface_axes_use_natural_units():
     assert surf.y[-1] == pytest.approx(210.0)
 
 
+def test_surface_points_match_observed_run_naturals():
+    """points_x/points_y overlay = natural values of the analyzed runs on the
+    plotted pair, one point per observed run (same length, same order)."""
+    _, _, natural, y, _, _ = _golden()
+    bundle = _bundle()
+    surf = bundle.surface
+    assert surf is not None
+    assert len(surf.points_x) == len(surf.points_y) == len(y)
+    assert surf.points_x == pytest.approx([row["cond"] for row in natural])
+    assert surf.points_y == pytest.approx([row["par"] for row in natural])
+    # contour shares the same overlay points
+    assert bundle.contour.points_x == surf.points_x
+    assert bundle.contour.points_y == surf.points_y
+
+
 def test_factor_pairs_offered_for_selector():
     bundle = _bundle()
     assert bundle.factor_pairs == [["cond", "par"]]
