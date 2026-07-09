@@ -22,7 +22,15 @@ matplotlib==3.10.6
 scienceplots==2.2.2
 Pillow
 
+# table + report export (issue 09 / ADR-009).
+# XlsxWriter: Excel multi-aba in memory. Playwright: Chromium headless renders
+# the Next.js /report route to a pixel-perfect PDF (run once:
+# `python -m playwright install chromium`). CSV PT-BR needs no extra dep.
+XlsxWriter==3.2.9
+playwright==1.61.0
+
 # dev / test
+openpyxl
 pytest
 pytest-asyncio
 httpx

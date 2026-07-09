@@ -10,6 +10,7 @@ from routers import (
     designs,
     experiments,
     export_plots,
+    export_tables,
     retrospective,
     runs,
 )
@@ -37,6 +38,7 @@ app.include_router(designs.router)
 app.include_router(runs.router)
 app.include_router(analysis.router)
 app.include_router(export_plots.router)
+app.include_router(export_tables.router)
 app.include_router(retrospective.router)
 
 

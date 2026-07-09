@@ -16,6 +16,7 @@ from repositories.run_repo import SqlAlchemyRunRepo
 from services.analysis_service import AnalysisService
 from services.design_service import DesignService
 from services.experiment_service import ExperimentService
+from services.export_service import ExportService
 from services.publication_service import PublicationService
 from services.retrospective_service_materialize import RetrospectiveService
 from services.run_service import RunService
@@ -74,6 +75,18 @@ def get_publication_service(
 PublicationServiceDep = Annotated[
     PublicationService, Depends(get_publication_service)
 ]
+
+
+def get_export_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ExportService:
+    # Reuses the run repo (read-only): ExportService drives AnalysisService for
+    # the numbers, then formats CSV/XLSX or renders the /report route to PDF.
+    repo = SqlAlchemyRunRepo(session)
+    return ExportService(repo)
+
+
+ExportServiceDep = Annotated[ExportService, Depends(get_export_service)]
 
 
 def get_retrospective_service(
