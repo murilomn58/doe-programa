@@ -17,6 +17,7 @@ class DesignType(StrEnum):
     FRACTIONAL_FACTORIAL_2KP = "fractional_factorial_2kp"
     CENTRAL_COMPOSITE = "central_composite"
     BOX_BEHNKEN = "box_behnken"
+    RETROSPECTIVE = "retrospective"  # materialized from a pasted (already-run) table
 
 
 class CCDVariant(StrEnum):

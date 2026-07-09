@@ -469,3 +469,69 @@ class ReplicateInfoRead(BaseModel):
     n_points_replicated: int
     runs_per_point_max: int
     df_pure_error: int
+
+
+# --- retrospective part 2: estimability, completions, diagnose, materialize ---
+
+
+class ModelAssessmentRead(BaseModel):
+    """Whether one RSM model can be fit to the pasted data (estimability guard)."""
+
+    model: str  # RSMModel value: linear | linear_interactions | linear_quadratic | full
+    status: Literal["estimable", "saturated", "not_estimable", "no_data"]
+    n_params: int | None = None  # columns of X (incl. intercept)
+    rank: int | None = None  # numeric rank of X
+    df_resid: int | None = None  # n_rows - n_params (only when estimable)
+    reason: str | None = None  # PT-BR explanation when not estimable / saturated
+
+
+class CompletionRead(BaseModel):
+    """A concrete, deterministic suggestion of runs to add to unlock a model."""
+
+    target: str  # design_type or RSM model the completion enables
+    variant: str | None = None  # e.g. face_centered / rotatable / fold_over
+    title: str
+    runs_to_add: list[dict[str, float | str]] = Field(default_factory=list)
+    n_runs_to_add: int
+    enables: list[str] = Field(default_factory=list)  # RSM models it makes estimable
+    rationale: str
+
+
+class RetroDiagnoseResponse(BaseModel):
+    """POST /retrospective/diagnose result — the full retrospective diagnosis."""
+
+    n_rows: int  # rows submitted
+    n_rows_valid: int  # rows that parsed cleanly
+    row_issues: list[RowIssue] = Field(default_factory=list)
+    factors: list[FactorScaleRead]
+    runs: list[RunClassRead]
+    replicates: ReplicateInfoRead
+    design_matches: list[DesignMatchRead]
+    best_design: str | None = None  # design_type of the top-ranked match
+    models: list[ModelAssessmentRead]
+    best_model: str | None = None
+    response_used: str | None = None  # which response drove the estimability check
+    completions: list[CompletionRead] = Field(default_factory=list)
+
+
+class RetroMaterializeRequest(BaseModel):
+    """POST /retrospective/materialize body — persist an already-run table."""
+
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    factors: list[RetroFactorSpec] = Field(min_length=1)
+    responses: list[RetroResponseSpec] = Field(default_factory=list)
+    rows: list[RetroRow] = Field(min_length=1, max_length=5000)
+    response_name: str | None = None
+    # Extra runs to execute (natural values/labels), appended without responses.
+    append_runs: list[dict[str, float | str]] | None = None
+
+
+class RetroMaterializeResult(BaseModel):
+    """POST /retrospective/materialize result — the created experiment summary."""
+
+    experiment_id: int
+    design_type: str
+    n_runs: int
+    excluded_constant_factors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)

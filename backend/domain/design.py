@@ -62,6 +62,9 @@ class RunData:
     block: int
     replicate: int
     cells: dict[str, CellData]  # factor name -> value
+    # Measured responses for an already-run table (retrospective materialize).
+    # ``None`` for a freshly generated design (values entered in a later slice).
+    response_values: dict[str, float] | None = None
 
 
 @dataclass(frozen=True)

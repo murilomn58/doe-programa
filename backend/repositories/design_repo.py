@@ -76,6 +76,9 @@ class SqlAlchemyDesignRepo:
                 block=run.block,
                 replicate=run.replicate,
                 cells={name: asdict(cell) for name, cell in run.cells.items()},
+                # Retrospective materialize carries measured Y; generated designs
+                # leave this empty ({}) so the golden 2^k path is unchanged.
+                response_values=dict(run.response_values or {}),
             )
             self._session.add(row)
             await self._session.flush()

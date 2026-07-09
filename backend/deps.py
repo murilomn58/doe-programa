@@ -16,6 +16,7 @@ from repositories.run_repo import SqlAlchemyRunRepo
 from services.analysis_service import AnalysisService
 from services.design_service import DesignService
 from services.experiment_service import ExperimentService
+from services.retrospective_service_materialize import RetrospectiveService
 from services.run_service import RunService
 
 
@@ -58,3 +59,16 @@ def get_analysis_service(
 
 
 AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
+
+
+def get_retrospective_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> RetrospectiveService:
+    # Reuses the design repo: create_experiment + save_design (same write shape).
+    repo = SqlAlchemyDesignRepo(session)
+    return RetrospectiveService(repo)
+
+
+RetrospectiveServiceDep = Annotated[
+    RetrospectiveService, Depends(get_retrospective_service)
+]
