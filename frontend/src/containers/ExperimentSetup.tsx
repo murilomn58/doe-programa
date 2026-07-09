@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { DesignPicker } from "@/components/DesignPicker";
+import { AliasingReport } from "@/components/AliasingReport";
+import {
+  DesignPicker,
+  defaultDesignConfig,
+  designBaseRuns,
+  type DesignConfig,
+} from "@/components/DesignPicker";
 import { FactorForm } from "@/components/FactorForm";
 import { ResponsesForm } from "@/components/ResponsesForm";
 import { DataEntry } from "@/containers/DataEntry";
@@ -44,16 +50,36 @@ export function ExperimentSetup() {
     emptyResponse(),
   ]);
   const [replicates, setReplicates] = useState(1);
+  // Estado de UI do picker (não é estado de servidor): família + knobs.
+  const [designConfig, setDesignConfig] =
+    useState<DesignConfig>(defaultDesignConfig);
 
   const generateDesign = useGenerateDesign();
 
-  const runCount = useMemo(
-    () => (factors.length >= 1 ? 2 ** factors.length * replicates : 0),
-    [factors.length, replicates],
+  const hasQualitativeFactor = factors.some(
+    (f) => f.factor_type === "qualitative",
   );
 
-  const canGenerate =
-    factors.length >= 2 && factors.every(factorIsValid) && replicates >= 1;
+  /** Ensaios totais (base × réplicas); null quando indeterminado. */
+  const runCount = useMemo(() => {
+    const base = designBaseRuns(designConfig, factors.length);
+    return base === null ? null : base * replicates;
+  }, [designConfig, factors.length, replicates]);
+
+  const factorsReady = factors.length >= 2 && factors.every(factorIsValid);
+
+  const requiresQuantitative =
+    designConfig.designType === "central_composite" ||
+    designConfig.designType === "box_behnken";
+
+  const familyBlocked =
+    (requiresQuantitative && hasQualitativeFactor) ||
+    (designConfig.designType === "box_behnken" && factors.length < 3) ||
+    (designConfig.designType === "fractional_factorial_2kp" &&
+      designConfig.fractionalMode === "generators" &&
+      designConfig.fractionalGenerators.trim().length === 0);
+
+  const canGenerate = factorsReady && replicates >= 1 && !familyBlocked;
 
   function updateFactor(index: number, factor: FactorInput) {
     setFactors((prev) => prev.map((f, i) => (i === index ? factor : f)));
@@ -66,11 +92,28 @@ export function ExperimentSetup() {
   function handleGenerate() {
     const payload: DesignGenerateRequest = {
       name: name.trim() || undefined,
-      design_type: "full_factorial_2k",
+      design_type: designConfig.designType,
       replicates,
       factors,
       responses: responses.filter((r) => r.name.trim()),
     };
+    if (designConfig.designType === "full_factorial_2k") {
+      payload.center_points = designConfig.centerPoints;
+    } else if (designConfig.designType === "fractional_factorial_2kp") {
+      payload.center_points = designConfig.centerPoints;
+      payload.fractional =
+        designConfig.fractionalMode === "resolution"
+          ? { resolution: designConfig.fractionalResolution }
+          : { generators: designConfig.fractionalGenerators.trim() };
+    } else if (designConfig.designType === "central_composite") {
+      payload.ccd = {
+        variant: designConfig.ccdVariant,
+        center_factorial: designConfig.ccdCenterFactorial,
+        center_axial: designConfig.ccdCenterAxial,
+      };
+    } else {
+      payload.bbd_center = designConfig.bbdCenter;
+    }
     generateDesign.mutate(payload);
   }
 
@@ -84,10 +127,11 @@ export function ExperimentSetup() {
           ← Voltar ao dashboard
         </Link>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-cyan-400">
-          Novo planejamento fatorial
+          Novo planejamento experimental
         </h1>
         <p className="mt-1 text-sm text-slate-400">
-          Defina fatores, níveis e respostas, depois gere a matriz 2^k.
+          Defina fatores, níveis e respostas, depois escolha a família de
+          planejamento e gere a matriz de ensaios.
         </p>
       </header>
 
@@ -153,7 +197,7 @@ export function ExperimentSetup() {
             <button
               type="button"
               onClick={() => setStep(2)}
-              disabled={!canGenerate}
+              disabled={!factorsReady}
               className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Continuar →
@@ -163,11 +207,12 @@ export function ExperimentSetup() {
       ) : (
         <div className="flex flex-col gap-6">
           <DesignPicker
-            designType="full_factorial_2k"
+            config={designConfig}
+            onConfigChange={setDesignConfig}
             replicates={replicates}
             onReplicatesChange={setReplicates}
             factorCount={factors.length}
-            runCount={runCount}
+            hasQualitativeFactor={hasQualitativeFactor}
           />
 
           <div className="flex items-center justify-between">
@@ -186,7 +231,9 @@ export function ExperimentSetup() {
             >
               {generateDesign.isPending
                 ? "Gerando…"
-                : `Gerar matriz (${runCount} ensaios)`}
+                : runCount !== null
+                  ? `Gerar matriz (${runCount} ensaios)`
+                  : "Gerar matriz"}
             </button>
           </div>
 
@@ -210,6 +257,13 @@ export function ExperimentSetup() {
                   Abrir em página dedicada →
                 </Link>
               </div>
+              {generateDesign.data.aliasing &&
+              generateDesign.data.aliasing.length > 0 ? (
+                <AliasingReport
+                  resolution={generateDesign.data.resolution ?? null}
+                  aliasing={generateDesign.data.aliasing}
+                />
+              ) : null}
               <DataEntry experimentId={generateDesign.data.experiment_id} />
             </div>
           ) : null}
