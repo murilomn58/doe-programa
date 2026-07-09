@@ -1,6 +1,7 @@
 """Pydantic request/response schemas (the HTTP contract)."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -375,3 +376,96 @@ class AnalysisResultRead(BaseModel):
     adj_r_squared: float | None = None
     ms_pure_error: float | None = None
     plots: PlotsRead | None = None
+
+
+# --- retrospective (detecção retrospectiva de planejamento) -------------------
+# Parte 1 (motor puro): request + read models do diagnóstico. A parte 2 desta
+# lane acrescenta aqui os modelos de estimabilidade/completions e o read model
+# agregado do endpoint.
+
+
+class RetroFactorSpec(BaseModel):
+    """A factor column of a pasted table ("auto" lets the backend infer the type)."""
+
+    name: str = Field(min_length=1, max_length=255)
+    factor_type: Literal["auto", "quantitative", "qualitative"] = "auto"
+    unit: str | None = Field(default=None, max_length=50)
+
+
+class RetroResponseSpec(BaseModel):
+    """A response column of a pasted table."""
+
+    name: str = Field(min_length=1, max_length=255)
+    unit: str | None = Field(default=None, max_length=50)
+
+
+class RetroRow(BaseModel):
+    """One raw table row; cells are raw strings (backend parses ','/'.' decimals)."""
+
+    factors: dict[str, str] = Field(default_factory=dict)
+    responses: dict[str, str] = Field(default_factory=dict)
+
+
+class RetroDiagnoseRequest(BaseModel):
+    """POST /retrospective/diagnose body — the pasted table as typed."""
+
+    factors: list[RetroFactorSpec] = Field(min_length=1)
+    responses: list[RetroResponseSpec] = Field(default_factory=list)
+    rows: list[RetroRow] = Field(min_length=1, max_length=5000)
+    response_name: str | None = None
+
+
+class RowIssue(BaseModel):
+    """A row excluded (or degraded) during parsing, with a PT-BR message."""
+
+    row: int
+    message: str
+
+
+class FactorScaleRead(BaseModel):
+    """The inferred coding scale of one factor column."""
+
+    name: str
+    factor_type: str
+    low: float | None = None
+    high: float | None = None
+    center: float | None = None
+    n_levels: int
+    distinct_levels: list[float] | None = None
+    labels: list[str] | None = None
+    alpha: float | None = None
+    is_constant: bool = False
+    warnings: list[str] = Field(default_factory=list)
+
+
+class RunClassRead(BaseModel):
+    """One parsed run in coded space with its geometric classification."""
+
+    row: int
+    point_type: str  # "factorial" | "center" | "axial" | "edge" | "other"
+    coded: dict[str, float]
+    replicate_group: int
+
+
+class DesignMatchRead(BaseModel):
+    """One design-family hypothesis scored against the data."""
+
+    design_type: str
+    variant: str | None = None
+    status: Literal["complete", "partial", "irregular"]
+    detail: str
+    match_pct: float
+    resolution: int | None = None
+    defining_relation: str | None = None
+    aliasing: list[str] | None = None
+    missing_runs: list[dict[str, float | str | None]] = Field(default_factory=list)
+    n_matched: int
+    n_expected: int
+
+
+class ReplicateInfoRead(BaseModel):
+    """Pure-error structure of the table (groups of identical coded points)."""
+
+    n_points_replicated: int
+    runs_per_point_max: int
+    df_pure_error: int
