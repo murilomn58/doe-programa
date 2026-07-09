@@ -304,6 +304,44 @@ def _write_cell(sheet, row: int, col: int, value: object, num_fmt) -> None:
 # --- PDF report via Playwright (Chromium headless) ---------------------------
 
 
+def _render_report_pdf_sync(
+    url: str, ready_selector: str, timeout_ms: int
+) -> bytes:
+    """Blocking Chromium render — MUST run off the event loop (its own thread).
+
+    Uses Playwright's *sync* API on purpose: on Windows the async API spawns the
+    browser through asyncio subprocess, which needs a ``ProactorEventLoop``.
+    Uvicorn runs on a ``SelectorEventLoop`` where that raises a bare
+    ``NotImplementedError``. The sync driver manages its own loop, so running it
+    in a worker thread (see :func:`build_report_pdf`) sidesteps the whole issue.
+    """
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(args=["--no-sandbox"])
+        try:
+            page = browser.new_page()
+            page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+            # The sentinel is a zero-size <div>; wait for it to be attached to the
+            # DOM (readiness signal), not "visible" — an empty div has no bounding
+            # box and would never satisfy the default visible state.
+            page.wait_for_selector(
+                ready_selector, state="attached", timeout=timeout_ms
+            )
+            return page.pdf(
+                format="A4",
+                print_background=True,
+                margin={
+                    "top": "12mm",
+                    "bottom": "12mm",
+                    "left": "10mm",
+                    "right": "10mm",
+                },
+            )
+        finally:
+            browser.close()
+
+
 async def build_report_pdf(
     url: str,
     ready_selector: str = "#report-ready",
@@ -312,39 +350,24 @@ async def build_report_pdf(
     """Render ``url`` to an A4 PDF via headless Chromium.
 
     Navigates to the Next.js ``/report`` route, waits for ``ready_selector``
-    (the page sets ``#report-ready`` once every Plotly chart has drawn), then
-    captures ``page.pdf`` with backgrounds on. Playwright is used ONLY here so
-    the rest of the export lane stays sync/pure.
+    (the page sets ``#report-ready`` once every figure has painted), then
+    captures ``page.pdf`` with backgrounds on. The blocking Playwright work runs
+    in a worker thread so it neither blocks the event loop nor hits the Windows
+    ``SelectorEventLoop`` subprocess limitation. Playwright is used ONLY here.
 
     Raises :class:`ReportRenderError` if the browser cannot start or the page
     never becomes ready (the router maps it to HTTP 502/422).
     """
-    from playwright.async_api import async_playwright
+    import asyncio
 
     try:
-        async with async_playwright() as pw:
-            browser = await pw.chromium.launch(args=["--no-sandbox"])
-            try:
-                page = await browser.new_page()
-                await page.goto(url, wait_until="networkidle", timeout=timeout_ms)
-                await page.wait_for_selector(ready_selector, timeout=timeout_ms)
-                pdf = await page.pdf(
-                    format="A4",
-                    print_background=True,
-                    margin={
-                        "top": "12mm",
-                        "bottom": "12mm",
-                        "left": "10mm",
-                        "right": "10mm",
-                    },
-                )
-            finally:
-                await browser.close()
+        return await asyncio.to_thread(
+            _render_report_pdf_sync, url, ready_selector, timeout_ms
+        )
     except Exception as exc:  # noqa: BLE001 — wrap any Playwright failure
         raise ReportRenderError(
-            f"Falha ao gerar o relatorio PDF a partir de {url}: {exc}"
+            f"Falha ao gerar o relatorio PDF a partir de {url}: {exc!r}"
         ) from exc
-    return pdf
 
 
 class ReportRenderError(RuntimeError):
