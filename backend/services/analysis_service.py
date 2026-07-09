@@ -137,6 +137,23 @@ def _term_patsy(term: TermInfo, safe: dict[str, str]) -> str:
     return f"I({safe[term.factors[0]]} ** 2)"
 
 
+def _rhs(terms: list[TermInfo], safe: dict[str, str]) -> str:
+    return " + ".join(_term_patsy(t, safe) for t in terms)
+
+
+def build_design_matrix(
+    coded_df: pd.DataFrame, terms: list[TermInfo], safe: dict[str, str]
+) -> pd.DataFrame:
+    """Assemble the model matrix X (intercept + ``terms``) via patsy ``dmatrix``.
+
+    Single source of truth for X: both ``analyze`` and the retrospective
+    estimability check call this, so the rank guard sees the exact same matrix.
+    ``coded_df`` must carry the safe-named factor columns (``safe`` maps factor
+    name -> patsy-safe symbol). Explicit ±1 numeric columns, never Sum coding.
+    """
+    return dmatrix(_rhs(terms, safe), coded_df, return_type="dataframe")
+
+
 def _norm(expr: str) -> str:
     return expr.replace(" ", "")
 
@@ -185,8 +202,8 @@ def analyze(
     )
     coded_df["y"] = list(y)
 
-    rhs = " + ".join(_term_patsy(t, safe) for t in terms)
-    x_design = dmatrix(rhs, coded_df, return_type="dataframe")
+    rhs = _rhs(terms, safe)
+    x_design = build_design_matrix(coded_df, terms, safe)
     rank = int(np.linalg.matrix_rank(x_design.values))
     n_cols = x_design.shape[1]
 
@@ -452,8 +469,8 @@ def _natural_coefficients(
             columns[safe[f.name]] = [row[f.name] for row in coded]
     nat_df = pd.DataFrame(columns)
     nat_df["y"] = list(y)
-    rhs = " + ".join(_term_patsy(t, safe) for t in terms)
-    x_nat = dmatrix(rhs, nat_df, return_type="dataframe")
+    rhs = _rhs(terms, safe)
+    x_nat = build_design_matrix(nat_df, terms, safe)
     if np.linalg.matrix_rank(x_nat.values) < x_nat.shape[1]:
         return {}
     nat_fit = smf.ols(f"y ~ {rhs}", data=nat_df).fit()
