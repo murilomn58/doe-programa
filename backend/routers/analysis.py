@@ -18,7 +18,11 @@ from domain.schemas import (
     AnalysisResultRead,
     AnovaRowRead,
     CoefRowRead,
+    CubeRead,
+    DesirabilityRead,
     EffectRowRead,
+    HalfNormalRead,
+    InfluenceRead,
     InteractionLineRead,
     InteractionRead,
     LenthRead,
@@ -26,6 +30,10 @@ from domain.schemas import (
     ObsVsPredRead,
     ParetoRead,
     PlotsRead,
+    ProfilerOptimumRead,
+    ProfilerRequest,
+    ProfilerResultRead,
+    ProfilerSliceRead,
     QQRead,
     ScatterRead,
     StatsPanelRead,
@@ -58,6 +66,50 @@ async def run_analysis(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
     return _to_read(result)
+
+
+@router.post("/profiler", response_model=ProfilerResultRead)
+async def run_profiler(
+    payload: ProfilerRequest, service: AnalysisServiceDep
+) -> ProfilerResultRead:
+    try:
+        result = await service.profiler(
+            payload.experiment_id,
+            payload.response_name,
+            payload.model,
+            point=payload.point,
+            maximize=payload.maximize,
+        )
+    except ExperimentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except InsufficientDataError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+    return _profiler_to_read(result)
+
+
+def _profiler_to_read(r) -> ProfilerResultRead:
+    return ProfilerResultRead(
+        prediction=_f(r.prediction),
+        ci_low=_f(r.ci_low),
+        ci_high=_f(r.ci_high),
+        slices=[
+            ProfilerSliceRead(
+                factor=s.factor,
+                coded=s.coded,
+                predicted=_farr(s.predicted),
+                ci_low=_farr(s.ci_low),
+                ci_high=_farr(s.ci_high),
+            )
+            for s in r.slices
+        ],
+        optimum=ProfilerOptimumRead(
+            point=r.optimum.point, value=_f(r.optimum.value)
+        ),
+    )
 
 
 def _f(value: float | None) -> float | None:
@@ -162,6 +214,56 @@ def _plots(bundle: PlotBundle | None) -> PlotsRead | None:
                 line_intercept=bundle.qq.line_intercept,
             )
             if bundle.qq is not None
+            else None
+        ),
+        cube=(
+            CubeRead(
+                factors=bundle.cube.factors,
+                corner_coded=bundle.cube.corner_coded,
+                corner_values=_farr(bundle.cube.corner_values),
+            )
+            if bundle.cube is not None
+            else None
+        ),
+        half_normal=(
+            HalfNormalRead(
+                terms=bundle.half_normal.terms,
+                abs_effects=_farr(bundle.half_normal.abs_effects),
+                theoretical=_farr(bundle.half_normal.theoretical),
+                labels_significant=bundle.half_normal.labels_significant,
+            )
+            if bundle.half_normal is not None
+            else None
+        ),
+        influence=(
+            InfluenceRead(
+                run_order=bundle.influence.run_order,
+                leverage=_farr(bundle.influence.leverage),
+                cook=_farr(bundle.influence.cook),
+                std_resid=_farr(bundle.influence.std_resid),
+                threshold_leverage=_f(bundle.influence.threshold_leverage),
+                threshold_cook=_f(bundle.influence.threshold_cook),
+            )
+            if bundle.influence is not None
+            else None
+        ),
+        residual_vs_order=(
+            ScatterRead(
+                x=bundle.residual_vs_order.x,
+                y=bundle.residual_vs_order.y,
+            )
+            if bundle.residual_vs_order is not None
+            else None
+        ),
+        desirability=(
+            DesirabilityRead(
+                factor_x=bundle.desirability.factor_x,
+                factor_y=bundle.desirability.factor_y,
+                x=bundle.desirability.x,
+                y=bundle.desirability.y,
+                d=[_farr(row) for row in bundle.desirability.d],
+            )
+            if bundle.desirability is not None
             else None
         ),
     )

@@ -548,6 +548,7 @@ class AnalysisService:
         coded: list[dict[str, float]] = []
         natural: list[dict[str, float]] = []
         y: list[float] = []
+        run_order: list[int] = []
         for run in runs:
             value = (run.response_values or {}).get(response_name)
             if value is None:
@@ -560,6 +561,7 @@ class AnalysisService:
                 }
             )
             y.append(float(value))
+            run_order.append(int(run.run_order))
 
         if not y:
             raise InsufficientDataError(
@@ -591,8 +593,98 @@ class AnalysisService:
                 result=result,
                 factor_x=factor_x,
                 factor_y=factor_y,
+                run_order=run_order,
             )
         return result
+
+    async def profiler(
+        self,
+        experiment_id: int,
+        response_name: str,
+        model: RSMModel,
+        point: dict[str, float],
+        maximize: bool = True,
+    ):
+        """Interactive profiler for one response/model: prediction + slices + optimum.
+
+        Loads the same coded matrix/response as ``analyze`` and delegates to the
+        pure ``plot_service.build_profiler``. Raises the same domain errors and a
+        422-worthy ``InsufficientDataError`` when the model is not estimable."""
+        factors, coded, y, terms = await self._load_coded(
+            experiment_id, response_name, model
+        )
+        n_params = len(terms) + 1
+        if len(y) < n_params:
+            raise InsufficientDataError(
+                f"Dados insuficientes: {len(y)} ensaios medidos para {n_params} "
+                "parametros do modelo. Preencha mais respostas ou reduza os termos."
+            )
+        safe = _safe_names(factors)
+        coded_df = pd.DataFrame(
+            {safe[f.name]: [row[f.name] for row in coded] for f in factors}
+        )
+        x_design = build_design_matrix(coded_df, terms, safe)
+        if int(np.linalg.matrix_rank(x_design.values)) < x_design.shape[1]:
+            raise InsufficientDataError(
+                "Modelo nao estimavel: posto da matriz insuficiente. Adicione "
+                "pontos centrais ou use um CCD/Box-Behnken."
+            )
+        unknown = set(point) - {f.name for f in factors}
+        if unknown:
+            raise InsufficientDataError(
+                f"Fatores desconhecidos no ponto: {', '.join(sorted(unknown))}."
+            )
+
+        from services import plot_service
+
+        return plot_service.build_profiler(
+            factors=factors,
+            coded=coded,
+            y=y,
+            terms=terms,
+            point=point,
+            maximize=maximize,
+        )
+
+    async def _load_coded(
+        self, experiment_id: int, response_name: str, model: RSMModel
+    ) -> tuple[list[FactorInfo], list[dict[str, float]], list[float], list[TermInfo]]:
+        experiment = await self._repo.get_experiment(experiment_id)
+        if experiment is None:
+            raise ExperimentNotFoundError(
+                f"Experimento {experiment_id} nao encontrado."
+            )
+        factors_orm = await self._repo.get_factors(experiment_id)
+        responses = await self._repo.get_responses(experiment_id)
+        runs = await self._repo.get_runs(experiment_id)
+
+        if response_name not in {r.name for r in responses}:
+            raise InsufficientDataError(
+                f"Resposta '{response_name}' nao existe neste experimento."
+            )
+        factors = [
+            FactorInfo(
+                name=f.name,
+                factor_type=f.factor_type,
+                low_label=_label_at(f, -1),
+                high_label=_label_at(f, 1),
+            )
+            for f in factors_orm
+        ]
+        coded: list[dict[str, float]] = []
+        y: list[float] = []
+        for run in runs:
+            value = (run.response_values or {}).get(response_name)
+            if value is None:
+                continue
+            coded.append({f.name: float(run.cells[f.name]["coded"]) for f in factors})
+            y.append(float(value))
+        if not y:
+            raise InsufficientDataError(
+                f"Nenhum ensaio possui valor medido para '{response_name}'."
+            )
+        terms = terms_for_model(model, factors)
+        return factors, coded, y, terms
 
 
 def _label_at(factor: Factor, coded_value: int) -> str | None:

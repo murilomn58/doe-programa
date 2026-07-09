@@ -100,6 +100,102 @@ class QQData:
     line_intercept: float
 
 
+# --- advanced diagnostics (issue 10) -----------------------------------------
+
+
+@dataclass(frozen=True)
+class CubeData:
+    """A cube plot over three factors: the 8 coded corners and their responses.
+
+    ``factors`` is the ordered triple plotted on the cube's x/y/z axes.
+    ``corner_coded`` holds the 8 rows of ±1 in that factor order; ``corner_values``
+    is the observed mean response at each corner (or the model prediction when a
+    corner has no replicate). Rows align 1:1 with ``corner_coded``.
+    """
+
+    factors: list[str]
+    corner_coded: list[list[float]]
+    corner_values: list[float]
+
+
+@dataclass(frozen=True)
+class HalfNormalData:
+    """Half-normal plot of the |effects|: absolute effects vs half-normal quantiles.
+
+    ``terms``/``abs_effects`` are sorted ascending by |effect| (the plotting order);
+    ``theoretical`` are the matching half-normal plotting positions.
+    ``labels_significant`` lists the terms judged active (|effect| beyond the
+    reference: Lenth ME when saturated, else the t-significant effects).
+    """
+
+    terms: list[str]
+    abs_effects: list[float]
+    theoretical: list[float]
+    labels_significant: list[str]
+
+
+@dataclass(frozen=True)
+class InfluenceData:
+    """Influence diagnostics per run: leverage, Cook's distance, studentized resid.
+
+    Arrays align 1:1 with ``run_order`` (the execution order of the analyzed runs).
+    ``threshold_leverage`` is the classic 2p/n rule; ``threshold_cook`` is 4/n.
+    """
+
+    run_order: list[int]
+    leverage: list[float]
+    cook: list[float]
+    std_resid: list[float]
+    threshold_leverage: float
+    threshold_cook: float
+
+
+@dataclass(frozen=True)
+class ProfilerSlice:
+    """One 1-D profiler slice: response vs one factor swept -1..1, others fixed."""
+
+    factor: str
+    coded: list[float]
+    predicted: list[float]
+    ci_low: list[float]
+    ci_high: list[float]
+
+
+@dataclass(frozen=True)
+class ProfilerOptimum:
+    """The model optimum inside the coded [-1, 1]^k cube."""
+
+    point: dict[str, float]
+    value: float
+
+
+@dataclass(frozen=True)
+class ProfilerResult:
+    """Interactive profiler: prediction at a point + per-factor slices + optimum."""
+
+    prediction: float
+    ci_low: float
+    ci_high: float
+    slices: list[ProfilerSlice]
+    optimum: ProfilerOptimum
+
+
+@dataclass(frozen=True)
+class DesirabilityData:
+    """Overlaid multi-response desirability grid over a factor pair.
+
+    ``x``/``y`` are 1-D axis positions in *natural* units; ``d`` is the N x N
+    combined (geometric-mean) Derringer desirability, ``d[j][i]`` at ``x[i]``,
+    ``y[j]`` in [0, 1], with every other factor at the coded center.
+    """
+
+    factor_x: str
+    factor_y: str
+    x: list[float]
+    y: list[float]
+    d: list[list[float]]
+
+
 @dataclass(frozen=True)
 class PlotBundle:
     """Everything the analysis screen needs to render the base charts."""
@@ -115,3 +211,9 @@ class PlotBundle:
     obs_vs_pred: ObsVsPredData | None = None
     residual_vs_fitted: ScatterData | None = None
     qq: QQData | None = None
+    # advanced diagnostics (issue 10)
+    cube: CubeData | None = None
+    half_normal: HalfNormalData | None = None
+    influence: InfluenceData | None = None
+    residual_vs_order: ScatterData | None = None
+    desirability: DesirabilityData | None = None

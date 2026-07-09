@@ -404,6 +404,36 @@ class QQRead(BaseModel):
     line_intercept: float
 
 
+class CubeRead(BaseModel):
+    factors: list[str]
+    corner_coded: list[list[float]]
+    corner_values: list[float | None]
+
+
+class HalfNormalRead(BaseModel):
+    terms: list[str]
+    abs_effects: list[float | None]
+    theoretical: list[float | None]
+    labels_significant: list[str]
+
+
+class InfluenceRead(BaseModel):
+    run_order: list[int]
+    leverage: list[float | None]
+    cook: list[float | None]
+    std_resid: list[float | None]
+    threshold_leverage: float | None = None
+    threshold_cook: float | None = None
+
+
+class DesirabilityRead(BaseModel):
+    factor_x: str
+    factor_y: str
+    x: list[float]
+    y: list[float]
+    d: list[list[float | None]]
+
+
 class PlotsRead(BaseModel):
     factor_pairs: list[list[str]]
     selected_pair: list[str] | None = None
@@ -416,6 +446,52 @@ class PlotsRead(BaseModel):
     obs_vs_pred: ObsVsPredRead | None = None
     residual_vs_fitted: ScatterRead | None = None
     qq: QQRead | None = None
+    # advanced diagnostics (issue 10)
+    cube: CubeRead | None = None
+    half_normal: HalfNormalRead | None = None
+    influence: InfluenceRead | None = None
+    residual_vs_order: ScatterRead | None = None
+    desirability: DesirabilityRead | None = None
+
+
+# --- profiler (issue 10) -----------------------------------------------------
+
+
+class ProfilerRequest(BaseModel):
+    """POST /analysis/profiler body — one response/model at a coded point.
+
+    ``point`` maps factor name -> coded coordinate in [-1, 1]; omitted factors
+    default to the coded center (0). ``maximize`` picks the optimum direction.
+    """
+
+    experiment_id: int
+    response_name: str = Field(min_length=1, max_length=255)
+    model: RSMModel = RSMModel.LINEAR
+    point: dict[str, float] = Field(default_factory=dict)
+    maximize: bool = True
+
+
+class ProfilerSliceRead(BaseModel):
+    factor: str
+    coded: list[float]
+    predicted: list[float | None]
+    ci_low: list[float | None]
+    ci_high: list[float | None]
+
+
+class ProfilerOptimumRead(BaseModel):
+    point: dict[str, float]
+    value: float | None = None
+
+
+class ProfilerResultRead(BaseModel):
+    """POST /analysis/profiler result — prediction + per-factor slices + optimum."""
+
+    prediction: float | None = None
+    ci_low: float | None = None
+    ci_high: float | None = None
+    slices: list[ProfilerSliceRead] = Field(default_factory=list)
+    optimum: ProfilerOptimumRead
 
 
 class AnalysisResultRead(BaseModel):
