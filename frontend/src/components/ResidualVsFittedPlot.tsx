@@ -3,32 +3,34 @@
 import type { Data } from "plotly.js-dist-min";
 
 import type { ScatterData } from "@/domain/plots";
-import { Plot, PLOT_COLORS, PLOT_CONFIG, darkAxis, darkLayout } from "@/lib/plotly";
+import {
+  Plot,
+  PLOT_COLORS,
+  darkAxis,
+  darkLayout,
+  plotConfig,
+  refLine,
+  sciMarker,
+  withUnit,
+} from "@/lib/plotly";
 
 interface ResidualVsFittedPlotProps {
   data: ScatterData;
+  /** Unidade da resposta, aplicada aos dois eixos (opcional). */
+  unit?: string;
 }
 
-export function ResidualVsFittedPlot({ data: d }: ResidualVsFittedPlotProps) {
-  const xMin = Math.min(...d.x);
-  const xMax = Math.max(...d.x);
-
+export function ResidualVsFittedPlot({
+  data: d,
+  unit,
+}: ResidualVsFittedPlotProps) {
   const traces: Data[] = [
-    {
-      type: "scatter",
-      mode: "lines",
-      x: [xMin, xMax],
-      y: [0, 0],
-      line: { color: PLOT_COLORS.axis, width: 1.5, dash: "dash" },
-      showlegend: false,
-      hoverinfo: "skip",
-    },
     {
       type: "scatter",
       mode: "markers",
       x: d.x,
       y: d.y,
-      marker: { color: PLOT_COLORS.cyan, size: 8, opacity: 0.85 },
+      marker: sciMarker(),
       hovertemplate: "Ajustado: %{x:.4g}<br>Resíduo: %{y:.4g}<extra></extra>",
       showlegend: false,
     },
@@ -38,10 +40,14 @@ export function ResidualVsFittedPlot({ data: d }: ResidualVsFittedPlotProps) {
     <Plot
       data={traces}
       layout={darkLayout({
-        xaxis: darkAxis("Ajustado"),
-        yaxis: darkAxis("Resíduo"),
+        xaxis: darkAxis(withUnit("Ajustado", unit)),
+        yaxis: darkAxis(withUnit("Resíduo", unit)),
+        // Subtle solid zero line spanning the whole plot width.
+        shapes: [
+          refLine("y", 0, { color: PLOT_COLORS.axis, dash: "solid", width: 1 }),
+        ],
       })}
-      config={PLOT_CONFIG}
+      config={plotConfig("residuos-vs-ajustado")}
       style={{ width: "100%", height: "100%" }}
       useResizeHandler
     />

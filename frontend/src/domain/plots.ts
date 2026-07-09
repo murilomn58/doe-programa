@@ -6,6 +6,9 @@ export interface SurfaceData {
   x: number[];
   y: number[];
   z: (number | null)[][];
+  /** Coordenadas NATURAIS dos ensaios observados no par de fatores exibido. */
+  points_x: number[];
+  points_y: number[];
 }
 
 export interface ParetoData {

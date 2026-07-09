@@ -1,4 +1,4 @@
-/** Presentational: interaction plot (marginal means + 95% CI error bars). */
+/** Presentational: interaction plot (marginal means + translucent 95% CI bands). */
 
 import type { Data } from "plotly.js-dist-min";
 
@@ -6,57 +6,80 @@ import type { InteractionData } from "@/domain/plots";
 import {
   Plot,
   PLOT_COLORS,
-  PLOT_CONFIG,
   SERIES_COLORS,
   darkAxis,
   darkLayout,
+  plotConfig,
+  sciMarker,
+  withAlpha,
+  withUnit,
 } from "@/lib/plotly";
 
 interface InteractionPlotProps {
   interaction: InteractionData;
   responseName: string;
-}
-
-function up(hi: number | null, m: number | null): number {
-  return hi !== null && m !== null ? hi - m : 0;
-}
-function down(m: number | null, lo: number | null): number {
-  return m !== null && lo !== null ? m - lo : 0;
+  /** Unidades opcionais (o container passa quando disponíveis). */
+  xUnit?: string;
+  responseUnit?: string;
 }
 
 export function InteractionPlot({
   interaction,
   responseName,
+  xUnit,
+  responseUnit,
 }: InteractionPlotProps) {
-  const data: Data[] = interaction.lines.map((line, i) => ({
-    type: "scatter",
-    mode: "lines+markers",
-    name: `${interaction.factor_group}: ${line.level_label}`,
-    x: interaction.x_labels,
-    y: line.y,
-    line: { color: SERIES_COLORS[i % SERIES_COLORS.length], width: 2 },
-    marker: { size: 8 },
-    error_y: {
-      type: "data",
-      symmetric: false,
-      array: line.y.map((m, j) => up(line.ci_high[j], m)),
-      arrayminus: line.y.map((m, j) => down(m, line.ci_low[j])),
-      color: SERIES_COLORS[i % SERIES_COLORS.length],
-      thickness: 1.5,
-      width: 6,
-    },
-  }));
+  // Per series: CI band (lower bound + upper bound filled "tonexty") drawn
+  // first so the mean line + markers stay on top.
+  const data: Data[] = interaction.lines.flatMap((line, i) => {
+    const color = SERIES_COLORS[i % SERIES_COLORS.length];
+    const name = `${interaction.factor_group}: ${line.level_label}`;
+    return [
+      {
+        type: "scatter",
+        mode: "lines",
+        x: interaction.x_labels,
+        y: line.ci_low,
+        line: { color, width: 0 },
+        hoverinfo: "skip",
+        showlegend: false,
+      },
+      {
+        type: "scatter",
+        mode: "lines",
+        x: interaction.x_labels,
+        y: line.ci_high,
+        fill: "tonexty",
+        fillcolor: withAlpha(color, 0.15),
+        line: { color, width: 0 },
+        hoverinfo: "skip",
+        showlegend: false,
+      },
+      {
+        type: "scatter",
+        mode: "lines+markers",
+        name,
+        x: interaction.x_labels,
+        y: line.y,
+        line: { color, width: 2 },
+        marker: sciMarker(color),
+        hovertemplate: `%{x}<br>Média: %{y:.4g}<extra>${name}</extra>`,
+      },
+    ] satisfies Data[];
+  });
 
   return (
     <Plot
       data={data}
       layout={darkLayout({
-        xaxis: { ...darkAxis(interaction.factor_x), automargin: true },
-        yaxis: darkAxis(responseName),
+        xaxis: darkAxis(withUnit(interaction.factor_x, xUnit), {
+          automargin: true,
+        }),
+        yaxis: darkAxis(withUnit(responseName, responseUnit)),
         showlegend: true,
         legend: { orientation: "h", y: 1.12, font: { color: PLOT_COLORS.text } },
       })}
-      config={PLOT_CONFIG}
+      config={plotConfig("grafico-de-interacao")}
       style={{ width: "100%", height: "100%" }}
       useResizeHandler
     />

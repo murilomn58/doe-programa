@@ -3,13 +3,23 @@
 import type { Data, Layout } from "plotly.js-dist-min";
 
 import type { ObsVsPredData } from "@/domain/plots";
-import { Plot, PLOT_COLORS, PLOT_CONFIG, darkAxis, darkLayout } from "@/lib/plotly";
+import {
+  Plot,
+  PLOT_COLORS,
+  darkAxis,
+  darkLayout,
+  plotConfig,
+  sciMarker,
+  withUnit,
+} from "@/lib/plotly";
 
 interface ObsVsPredPlotProps {
   data: ObsVsPredData;
+  /** Unidade da resposta, aplicada aos dois eixos (opcional). */
+  unit?: string;
 }
 
-export function ObsVsPredPlot({ data: d }: ObsVsPredPlotProps) {
+export function ObsVsPredPlot({ data: d, unit }: ObsVsPredPlotProps) {
   const range: [number, number] = [d.line_min, d.line_max];
 
   const traces: Data[] = [
@@ -27,8 +37,8 @@ export function ObsVsPredPlot({ data: d }: ObsVsPredPlotProps) {
       mode: "markers",
       x: d.predicted,
       y: d.observed,
-      marker: { color: PLOT_COLORS.cyan, size: 8, opacity: 0.85 },
-      hovertemplate: "Pred: %{x:.4g}<br>Obs: %{y:.4g}<extra></extra>",
+      marker: sciMarker(),
+      hovertemplate: "Predito: %{x:.4g}<br>Observado: %{y:.4g}<extra></extra>",
       showlegend: false,
     },
   ];
@@ -43,7 +53,7 @@ export function ObsVsPredPlot({ data: d }: ObsVsPredPlotProps) {
             yref: "paper",
             xanchor: "right",
             yanchor: "bottom",
-            text: `R² = ${d.r_squared.toFixed(4)}`,
+            text: `R² = ${d.r_squared.toFixed(4).replace(".", ",")}`,
             showarrow: false,
             font: { color: PLOT_COLORS.text, size: 12 },
           },
@@ -54,11 +64,16 @@ export function ObsVsPredPlot({ data: d }: ObsVsPredPlotProps) {
     <Plot
       data={traces}
       layout={darkLayout({
-        xaxis: { ...darkAxis("Predito"), range },
-        yaxis: { ...darkAxis("Observado"), range },
+        xaxis: darkAxis(withUnit("Predito", unit), { range }),
+        yaxis: darkAxis(withUnit("Observado", unit), {
+          range,
+          // 1:1 aspect is mandatory: equal data scale on both axes.
+          scaleanchor: "x",
+          scaleratio: 1,
+        }),
         annotations,
       })}
-      config={PLOT_CONFIG}
+      config={plotConfig("observado-vs-predito")}
       style={{ width: "100%", height: "100%" }}
       useResizeHandler
     />

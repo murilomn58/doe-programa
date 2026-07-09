@@ -3,48 +3,65 @@
 import type { Data } from "plotly.js-dist-min";
 
 import type { SurfaceData } from "@/domain/plots";
-import { Plot, PLOT_COLORS, PLOT_CONFIG, darkLayout } from "@/lib/plotly";
+import { Plot, darkLayout, plotConfig, scene3d, sciColorbar, withUnit } from "@/lib/plotly";
 
 interface SurfacePlotProps {
   surface: SurfaceData;
   responseName: string;
+  /** Unidades opcionais dos eixos (o container passa quando disponíveis). */
+  xUnit?: string;
+  yUnit?: string;
+  zUnit?: string;
 }
 
-export function SurfacePlot({ surface, responseName }: SurfacePlotProps) {
-  // @types/plotly.js only types contours for 2D traces; contours.z (show/usecolormap/project)
-  // is the correct 3D-surface API and is valid at runtime — the cast bridges the type gap.
+export function SurfacePlot({
+  surface,
+  responseName,
+  xUnit,
+  yUnit,
+  zUnit,
+}: SurfacePlotProps) {
+  const zLabel = withUnit(responseName, zUnit);
+
+  // @types/plotly.js only types contours for 2D traces; contours.z
+  // (show/usecolormap/project/width) and lighting/lightposition are the correct
+  // 3D-surface API and are valid at runtime — the cast bridges the type gap.
   const trace = {
     type: "surface",
     x: surface.x,
     y: surface.y,
     z: surface.z,
     colorscale: "Viridis",
-    colorbar: { tickfont: { color: PLOT_COLORS.text }, thickness: 12 },
-    contours: {
-      z: { show: true, usecolormap: true, project: { z: true } },
+    colorbar: sciColorbar(zLabel),
+    lighting: {
+      ambient: 0.6,
+      diffuse: 0.55,
+      specular: 0.25,
+      roughness: 0.6,
+      fresnel: 0.1,
     },
+    lightposition: { x: 120, y: 200, z: 60 },
+    contours: {
+      z: { show: true, usecolormap: true, project: { z: true }, width: 2 },
+    },
+    hovertemplate:
+      `${surface.factor_x}: %{x:.4g}<br>` +
+      `${surface.factor_y}: %{y:.4g}<br>` +
+      "Ŷ: %{z:.4g}<extra></extra>",
   } as unknown as Data;
-
-  const axis = {
-    gridcolor: PLOT_COLORS.grid,
-    zerolinecolor: PLOT_COLORS.grid,
-    color: PLOT_COLORS.text,
-    backgroundcolor: "rgba(0,0,0,0)",
-  };
 
   return (
     <Plot
       data={[trace]}
       layout={darkLayout({
-        scene: {
-          xaxis: { ...axis, title: { text: surface.factor_x } },
-          yaxis: { ...axis, title: { text: surface.factor_y } },
-          zaxis: { ...axis, title: { text: responseName } },
-          camera: { eye: { x: 1.6, y: -1.6, z: 0.9 } },
-        },
+        scene: scene3d(
+          withUnit(surface.factor_x, xUnit),
+          withUnit(surface.factor_y, yUnit),
+          zLabel,
+        ),
         margin: { l: 0, r: 0, t: 0, b: 0 },
       })}
-      config={PLOT_CONFIG}
+      config={plotConfig("superficie-de-resposta")}
       style={{ width: "100%", height: "100%" }}
       useResizeHandler
     />
