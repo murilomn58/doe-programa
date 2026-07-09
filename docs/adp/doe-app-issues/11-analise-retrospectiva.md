@@ -2,7 +2,7 @@
 slug: doe-app
 issue: 11
 title: Análise retrospectiva — diagnóstico de dados prontos e sugestão de estudo
-status: aprovada
+status: concluida
 blocked_by: 06
 ---
 

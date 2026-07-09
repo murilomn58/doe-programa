@@ -2,7 +2,7 @@
 slug: doe-app
 issue: 09
 title: Export de tabelas + Relatório PDF (Playwright)
-status: aprovada
+status: concluida
 blocked_by: 04, 05
 ---
 

@@ -2,7 +2,7 @@
 slug: doe-app
 issue: 07
 title: Famílias screening/ótimo (Taguchi, Plackett-Burman, D/I-optimal, DSD)
-status: aprovada
+status: concluida
 blocked_by: 02
 ---
 

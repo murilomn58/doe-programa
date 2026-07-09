@@ -2,7 +2,7 @@
 slug: doe-app
 issue: 08
 title: Export de gráficos de publicação (matplotlib/SciencePlots)
-status: aprovada
+status: concluida
 blocked_by: 05
 ---
 

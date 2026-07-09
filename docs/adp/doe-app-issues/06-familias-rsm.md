@@ -2,7 +2,7 @@
 slug: doe-app
 issue: 06
 title: Famílias de design RSM (fracionado, center points, CCD, Box-Behnken)
-status: aprovada
+status: concluida
 blocked_by: 02
 ---
 

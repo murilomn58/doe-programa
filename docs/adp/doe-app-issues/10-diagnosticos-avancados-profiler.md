@@ -2,7 +2,7 @@
 slug: doe-app
 issue: 10
 title: Diagnósticos avançados + profiler interativo
-status: aprovada
+status: concluida
 blocked_by: 05
 ---
 
