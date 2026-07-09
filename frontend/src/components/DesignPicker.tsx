@@ -1,8 +1,19 @@
 "use client";
 
-import type { CCDVariant, DesignType } from "@/domain/design";
+import type {
+  CCDVariant,
+  DesignType,
+  OptimalCriterion,
+  RSMModel,
+  SNObjective,
+  TaguchiArray,
+} from "@/domain/design";
+import { useTaguchiCatalog } from "@/hooks/useTaguchiCatalog";
 
 export type FractionalMode = "resolution" | "generators";
+
+/** Sentinela do seletor de arranjo Taguchi: deixa o backend escolher. */
+export const TAGUCHI_AUTO = "" as const;
 
 /** UI state of the design picker (mapped to the request payload on generate). */
 export interface DesignConfig {
@@ -15,6 +26,16 @@ export interface DesignConfig {
   ccdCenterAxial: number;
   bbdCenter: number;
   centerPoints: number;
+  // Taguchi
+  taguchiArray: string; // "" → automático
+  taguchiSN: SNObjective;
+  taguchiLevels: number; // níveis por fator (2, 3, 4…) quando o arranjo comporta
+  // D/I-ótimo
+  optimalCriterion: OptimalCriterion;
+  optimalNRuns: number;
+  optimalModel: RSMModel;
+  // DSD
+  dsdExtraRuns: number;
 }
 
 export function defaultDesignConfig(): DesignConfig {
@@ -28,7 +49,46 @@ export function defaultDesignConfig(): DesignConfig {
     ccdCenterAxial: 4,
     bbdCenter: 3,
     centerPoints: 0,
+    taguchiArray: TAGUCHI_AUTO,
+    taguchiSN: "larger_is_better",
+    taguchiLevels: 2,
+    optimalCriterion: "D",
+    optimalNRuns: 0,
+    optimalModel: "linear_interactions",
+    dsdExtraRuns: 0,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Contagem de parâmetros do modelo RSM (para o default/guard de n_runs no ótimo).
+// Espelha `_model_matrix` do backend: intercepto + main effects + interações 2f
+// + quadráticos (só fatores quantitativos). Aqui aproximamos todos os fatores
+// como quantitativos (limite superior seguro para o guard).
+// ---------------------------------------------------------------------------
+
+export function optimalParamCount(k: number, model: RSMModel): number {
+  if (k < 1) return 1;
+  let params = 1 + k; // intercepto + efeitos principais
+  const interactions = (k * (k - 1)) / 2;
+  if (model === "linear_interactions" || model === "full") {
+    params += interactions;
+  }
+  if (model === "linear_quadratic" || model === "full") {
+    params += k; // quadráticos (assumindo quantitativos)
+  }
+  return params;
+}
+
+/** Próximo múltiplo de 4 estritamente maior que `k` (construção de Hadamard). */
+export function plackettBurmanRuns(k: number): number {
+  if (k < 1) return 0;
+  return Math.floor(k / 4) * 4 + 4;
+}
+
+/** Ensaios de um DSD: 2·(fatores) + 1 (+ 2 por corrida extra). */
+export function dsdRuns(k: number, extraRuns: number): number {
+  if (k < 1) return 0;
+  return 2 * k + 1 + 2 * extraRuns;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,10 +146,31 @@ export function generatorsBaseFactors(
   return allComposedOfBase ? baseSet.size : null;
 }
 
+/**
+ * Menor arranjo Taguchi (do catálogo) que comporta `k` fatores no nº de
+ * `levels` níveis pedido; `null` quando nenhum arranjo do catálogo cabe (ou o
+ * catálogo ainda não carregou). Espelha `_auto_select_oa` do backend para o par
+ * (níveis→demanda) uniforme usado na UI.
+ */
+export function resolveTaguchiArray(
+  arrays: readonly TaguchiArray[] | undefined,
+  k: number,
+  levels: number,
+): TaguchiArray | null {
+  if (!arrays || k < 1) return null;
+  const fitting = arrays.filter(
+    (a) => (a.level_capacity[levels] ?? 0) >= k,
+  );
+  if (fitting.length === 0) return null;
+  // catálogo já vem ordenado por runs; garante menor por segurança
+  return fitting.reduce((best, a) => (a.runs < best.runs ? a : best));
+}
+
 /** Ensaios de UMA réplica (inclui pontos centrais); `null` = indeterminado. */
 export function designBaseRuns(
   config: DesignConfig,
   factorCount: number,
+  taguchiArrays?: readonly TaguchiArray[],
 ): number | null {
   const k = factorCount;
   if (k < 1) return null;
@@ -107,6 +188,20 @@ export function designBaseRuns(
       return 2 ** k + 2 * k + config.ccdCenterFactorial + config.ccdCenterAxial;
     case "box_behnken":
       return k >= 3 ? 2 * k * (k - 1) + config.bbdCenter : null;
+    case "taguchi": {
+      const array =
+        config.taguchiArray === TAGUCHI_AUTO
+          ? resolveTaguchiArray(taguchiArrays, k, config.taguchiLevels)
+          : (taguchiArrays?.find((a) => a.name === config.taguchiArray) ??
+            null);
+      return array === null ? null : array.runs;
+    }
+    case "plackett_burman":
+      return k >= 2 ? plackettBurmanRuns(k) : null;
+    case "optimal":
+      return config.optimalNRuns >= 1 ? config.optimalNRuns : null;
+    case "dsd":
+      return k >= 2 ? dsdRuns(k, config.dsdExtraRuns) : null;
   }
 }
 
@@ -155,6 +250,38 @@ const CCD_VARIANTS: ReadonlyArray<{
   },
 ];
 
+const SN_OBJECTIVES: ReadonlyArray<{ value: SNObjective; label: string }> = [
+  { value: "larger_is_better", label: "Maior é melhor" },
+  { value: "smaller_is_better", label: "Menor é melhor" },
+  { value: "nominal_is_best", label: "Nominal é melhor" },
+];
+
+const TAGUCHI_LEVEL_OPTIONS: ReadonlyArray<number> = [2, 3, 4, 5];
+
+const OPTIMAL_CRITERIA: ReadonlyArray<{
+  value: OptimalCriterion;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "D",
+    label: "D-ótimo",
+    description: "Maximiza det(X'X) — coeficientes precisos (triagem).",
+  },
+  {
+    value: "I",
+    label: "I-ótimo",
+    description: "Minimiza a variância média de predição — ideal para RSM.",
+  },
+];
+
+const OPTIMAL_MODELS: ReadonlyArray<{ value: RSMModel; label: string }> = [
+  { value: "linear", label: "Linear (efeitos principais)" },
+  { value: "linear_interactions", label: "Linear + interações 2f" },
+  { value: "linear_quadratic", label: "Linear + quadráticos" },
+  { value: "full", label: "Completo (interações + quadráticos)" },
+];
+
 interface DesignPickerProps {
   config: DesignConfig;
   onConfigChange: (config: DesignConfig) => void;
@@ -182,7 +309,10 @@ export function DesignPicker({
   const set = (patch: Partial<DesignConfig>) =>
     onConfigChange({ ...config, ...patch });
 
-  const baseRuns = designBaseRuns(config, k);
+  const catalogQuery = useTaguchiCatalog();
+  const taguchiArrays = catalogQuery.data?.arrays;
+
+  const baseRuns = designBaseRuns(config, k, taguchiArrays);
   const totalRuns = baseRuns === null ? null : baseRuns * replicates;
   const requiresQuantitative =
     config.designType === "central_composite" ||
@@ -203,6 +333,33 @@ export function DesignPicker({
         ? 1
         : null;
 
+  // --- Taguchi derived state ---
+  const taguchiSelected =
+    config.designType === "taguchi" && config.taguchiArray !== TAGUCHI_AUTO
+      ? (taguchiArrays?.find((a) => a.name === config.taguchiArray) ?? null)
+      : null;
+  const taguchiResolved =
+    config.designType === "taguchi"
+      ? config.taguchiArray === TAGUCHI_AUTO
+        ? resolveTaguchiArray(taguchiArrays, k, config.taguchiLevels)
+        : taguchiSelected
+      : null;
+  // O arranjo escolhido comporta os k fatores no nº de níveis pedido?
+  const taguchiFits =
+    config.designType !== "taguchi" ||
+    taguchiResolved === null ||
+    (taguchiResolved.level_capacity[config.taguchiLevels] ?? 0) >= k;
+  const taguchiNoAutoFit =
+    config.designType === "taguchi" &&
+    config.taguchiArray === TAGUCHI_AUTO &&
+    taguchiArrays !== undefined &&
+    taguchiResolved === null;
+
+  // --- Optimal derived state ---
+  const optimalParams = optimalParamCount(k, config.optimalModel);
+  const optimalTooFew =
+    config.designType === "optimal" && config.optimalNRuns < optimalParams;
+
   return (
     <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
       <h2 className="mb-4 text-lg font-medium text-slate-200">Planejamento</h2>
@@ -221,6 +378,10 @@ export function DesignPicker({
             </option>
             <option value="central_composite">Composto central (CCD)</option>
             <option value="box_behnken">Box-Behnken</option>
+            <option value="taguchi">Taguchi (arranjo ortogonal)</option>
+            <option value="plackett_burman">Plackett-Burman</option>
+            <option value="optimal">D/I-ótimo</option>
+            <option value="dsd">Definitive Screening (DSD)</option>
           </select>
         </label>
 
@@ -396,6 +557,260 @@ export function DesignPicker({
           </fieldset>
         ) : null}
 
+        {config.designType === "taguchi" ? (
+          <fieldset className={panelClass}>
+            <legend className="px-1 text-sm font-medium text-slate-300">
+              Taguchi (arranjo ortogonal)
+            </legend>
+            <p className="text-xs text-slate-500">
+              Arranjos ortogonais estimam efeitos principais com poucos ensaios;
+              o objetivo S/N define como o backend classifica a robustez.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex w-56 flex-col gap-1 text-sm">
+                <span className="text-slate-300">Arranjo</span>
+                <select
+                  value={config.taguchiArray}
+                  onChange={(e) => set({ taguchiArray: e.target.value })}
+                  className={inputClass}
+                  disabled={catalogQuery.isLoading}
+                >
+                  <option value={TAGUCHI_AUTO}>Automático (backend escolhe)</option>
+                  {(taguchiArrays ?? []).map((array) => (
+                    <option key={array.name} value={array.name}>
+                      {array.name} — {array.runs} ensaios
+                    </option>
+                  ))}
+                </select>
+                {catalogQuery.isLoading ? (
+                  <span className="text-xs text-slate-500">
+                    Carregando catálogo…
+                  </span>
+                ) : catalogQuery.isError ? (
+                  <span className="text-xs text-amber-400">
+                    Catálogo indisponível — use &quot;Automático&quot;.
+                  </span>
+                ) : null}
+              </label>
+
+              <label className="flex w-40 flex-col gap-1 text-sm">
+                <span className="text-slate-300">Níveis por fator</span>
+                <select
+                  value={config.taguchiLevels}
+                  onChange={(e) =>
+                    set({ taguchiLevels: Number(e.target.value) })
+                  }
+                  className={inputClass}
+                >
+                  {TAGUCHI_LEVEL_OPTIONS.map((lv) => (
+                    <option key={lv} value={lv}>
+                      {lv} níveis
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-slate-500">
+                  Fatores com 3+ níveis exigem colunas do arranjo que os
+                  comportem.
+                </span>
+              </label>
+
+              <label className="flex w-56 flex-col gap-1 text-sm">
+                <span className="text-slate-300">Objetivo S/N</span>
+                <select
+                  value={config.taguchiSN}
+                  onChange={(e) =>
+                    set({ taguchiSN: e.target.value as SNObjective })
+                  }
+                  className={inputClass}
+                >
+                  {SN_OBJECTIVES.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {taguchiResolved !== null ? (
+              <p className="text-xs text-slate-400">
+                Arranjo:{" "}
+                <span className="font-mono text-cyan-400">
+                  {taguchiResolved.name}
+                </span>{" "}
+                — {taguchiResolved.runs} ensaios, {taguchiResolved.n_columns}{" "}
+                coluna(s).
+              </p>
+            ) : null}
+
+            {config.taguchiArray !== TAGUCHI_AUTO && !taguchiFits ? (
+              <p className="text-xs text-amber-400">
+                O arranjo {config.taguchiArray} não tem {k} coluna(s) de{" "}
+                {config.taguchiLevels} níveis — escolha um arranjo maior ou use
+                &quot;Automático&quot;.
+              </p>
+            ) : null}
+
+            {taguchiNoAutoFit ? (
+              <p className="text-xs text-amber-400">
+                Nenhum arranjo do catálogo comporta {k} fator(es) de{" "}
+                {config.taguchiLevels} níveis — reduza os fatores ou os níveis.
+              </p>
+            ) : null}
+          </fieldset>
+        ) : null}
+
+        {config.designType === "plackett_burman" ? (
+          <fieldset className={panelClass}>
+            <legend className="px-1 text-sm font-medium text-slate-300">
+              Plackett-Burman
+            </legend>
+            <p className="text-xs text-slate-500">
+              Triagem de muitos fatores em poucos ensaios (2 níveis). O nº de
+              ensaios é o próximo múltiplo de 4 ≥ k+1.
+            </p>
+            {k < 2 ? (
+              <p className="text-sm text-red-400">
+                Plackett-Burman exige pelo menos 2 fatores (há {k}).
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400">
+                {k} fator(es) →{" "}
+                <span className="font-mono text-cyan-400">
+                  {plackettBurmanRuns(k)}
+                </span>{" "}
+                ensaios.
+              </p>
+            )}
+          </fieldset>
+        ) : null}
+
+        {config.designType === "optimal" ? (
+          <fieldset className={panelClass}>
+            <legend className="px-1 text-sm font-medium text-slate-300">
+              D/I-ótimo
+            </legend>
+            <p className="text-xs text-slate-500">
+              Aceita fator qualitativo; ideal para restrições ou orçamento fixo
+              de ensaios.
+            </p>
+            <div className="flex flex-col gap-2 text-sm">
+              {OPTIMAL_CRITERIA.map((c) => (
+                <label
+                  key={c.value}
+                  className="flex cursor-pointer items-start gap-2"
+                >
+                  <input
+                    type="radio"
+                    name="optimal-criterion"
+                    checked={config.optimalCriterion === c.value}
+                    onChange={() => set({ optimalCriterion: c.value })}
+                    className="mt-1 accent-cyan-400"
+                  />
+                  <span>
+                    <span className="text-slate-200">{c.label}</span>
+                    <span className="block text-xs text-slate-500">
+                      {c.description}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex w-64 flex-col gap-1 text-sm">
+                <span className="text-slate-300">Modelo alvo</span>
+                <select
+                  value={config.optimalModel}
+                  onChange={(e) =>
+                    set({ optimalModel: e.target.value as RSMModel })
+                  }
+                  className={inputClass}
+                >
+                  {OPTIMAL_MODELS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-slate-500">
+                  Parâmetros do modelo: {optimalParams}.
+                </span>
+              </label>
+              <label className="flex w-40 flex-col gap-1 text-sm">
+                <span className="text-slate-300">Nº de ensaios</span>
+                <input
+                  type="number"
+                  min={optimalParams}
+                  max={200}
+                  value={config.optimalNRuns || ""}
+                  placeholder={String(optimalParams)}
+                  onChange={(e) =>
+                    set({ optimalNRuns: clampInt(e.target.value, 0, 200) })
+                  }
+                  className={inputClass}
+                />
+                <span className="text-xs text-slate-500">
+                  Recomendado ≥ {optimalParams} (nº de parâmetros).
+                </span>
+              </label>
+            </div>
+            {optimalTooFew ? (
+              <p className="text-xs text-amber-400">
+                {config.optimalNRuns} ensaio(s) é menos que os {optimalParams}{" "}
+                parâmetros do modelo — o design ficaria singular. Aumente para ≥{" "}
+                {optimalParams}.
+              </p>
+            ) : null}
+            {k < 2 ? (
+              <p className="text-sm text-red-400">
+                O planejamento ótimo exige pelo menos 2 fatores (há {k}).
+              </p>
+            ) : null}
+          </fieldset>
+        ) : null}
+
+        {config.designType === "dsd" ? (
+          <fieldset className={panelClass}>
+            <legend className="px-1 text-sm font-medium text-slate-300">
+              Definitive Screening (DSD)
+            </legend>
+            <p className="text-xs text-slate-500">
+              Estima curvatura com poucos ensaios; fatores quantitativos (+
+              categóricos de 2 níveis).
+            </p>
+            {k < 2 ? (
+              <p className="text-sm text-red-400">
+                O DSD exige pelo menos 2 fatores (há {k}).
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400">
+                {k} fator(es) → 2·{k} + 1 ={" "}
+                <span className="font-mono text-cyan-400">
+                  {dsdRuns(k, config.dsdExtraRuns)}
+                </span>{" "}
+                ensaios{config.dsdExtraRuns > 0 ? " (com extras)" : ""}.
+              </p>
+            )}
+            <label className="flex w-56 flex-col gap-1 text-sm">
+              <span className="text-slate-300">Corridas extras (fake factors)</span>
+              <input
+                type="number"
+                min={0}
+                max={12}
+                value={config.dsdExtraRuns}
+                onChange={(e) =>
+                  set({ dsdExtraRuns: clampInt(e.target.value, 0, 12) })
+                }
+                className={inputClass}
+              />
+              <span className="text-xs text-slate-500">
+                Cada corrida extra adiciona 2 ensaios (melhora a estimativa do
+                erro).
+              </span>
+            </label>
+          </fieldset>
+        ) : null}
+
         {showCenterPoints ? (
           <label className="flex w-56 flex-col gap-1 text-sm">
             <span className="text-slate-300">Pontos centrais</span>
@@ -507,6 +922,48 @@ function RunFormula({
         </>
       ) : (
         <>Box-Behnken requer pelo menos 3 fatores</>
+      );
+    case "taguchi":
+      return baseRuns === null ? (
+        <>Arranjo Taguchi a definir para {k} fator(es)</>
+      ) : (
+        <>
+          Arranjo ortogonal ={" "}
+          <span className="font-mono text-cyan-400">{baseRuns}</span> ensaios
+        </>
+      );
+    case "plackett_burman":
+      return k >= 2 ? (
+        <>
+          próximo múltiplo de 4 ≥ {k}+1 ={" "}
+          <span className="font-mono text-cyan-400">
+            {plackettBurmanRuns(k)}
+          </span>{" "}
+          ensaios
+        </>
+      ) : (
+        <>Plackett-Burman requer pelo menos 2 fatores</>
+      );
+    case "optimal":
+      return baseRuns === null ? (
+        <>Defina o nº de ensaios do design ótimo</>
+      ) : (
+        <>
+          {config.optimalCriterion}-ótimo ={" "}
+          <span className="font-mono text-cyan-400">{baseRuns}</span> ensaios
+        </>
+      );
+    case "dsd":
+      return k >= 2 ? (
+        <>
+          2·{k} + 1 ={" "}
+          <span className="font-mono text-cyan-400">
+            {dsdRuns(k, config.dsdExtraRuns)}
+          </span>{" "}
+          ensaios
+        </>
+      ) : (
+        <>DSD requer pelo menos 2 fatores</>
       );
   }
 }

@@ -5,9 +5,29 @@ export type DesignType =
   | "full_factorial_2k"
   | "fractional_factorial_2kp"
   | "central_composite"
-  | "box_behnken";
+  | "box_behnken"
+  | "taguchi"
+  | "plackett_burman"
+  | "optimal"
+  | "dsd";
 
 export type CCDVariant = "rotatable" | "orthogonal" | "face_centered";
+
+/** Objetivo da razão sinal/ruído (S/N) do Taguchi. */
+export type SNObjective =
+  | "larger_is_better"
+  | "smaller_is_better"
+  | "nominal_is_best";
+
+/** Critério de otimalidade do planejamento D/I-ótimo. */
+export type OptimalCriterion = "D" | "I";
+
+/** Conjunto de termos do modelo RSM (usado pelo alvo do D/I-ótimo). */
+export type RSMModel =
+  | "linear"
+  | "linear_quadratic"
+  | "linear_interactions"
+  | "full";
 
 /** Fração 2^(k-p): exatamente UM entre `generators` e `resolution`. */
 export interface FractionalConfig {
@@ -25,6 +45,30 @@ export interface CCDConfig {
   center_axial: number;
 }
 
+/** Taguchi: arranjo ortogonal + objetivo S/N. */
+export interface TaguchiConfig {
+  /** Nome do arranjo do catálogo (ex.: "L8(2^7)" ou "L8"); null → auto. */
+  array_name?: string;
+  sn_objective: SNObjective;
+}
+
+/** D/I-ótimo: critério + tamanho do design + modelo alvo. */
+export interface OptimalConfig {
+  criterion: OptimalCriterion;
+  /** Nº de ensaios pedido (>= nº de parâmetros do modelo). */
+  n_runs: number;
+  /** Conjunto de termos que o design otimiza (default backend: interações). */
+  model?: RSMModel;
+  /** Resolução da grade de candidatos (2..5); default backend: 3. */
+  n_levels?: number;
+}
+
+/** DSD (Definitive Screening Design). */
+export interface DSDConfig {
+  /** Corridas extras (n_fake_factors → +2 cada); default 0. */
+  add_extra_runs?: number;
+}
+
 /** A factor as described in the setup wizard (request side). */
 export interface FactorInput {
   name: string;
@@ -34,6 +78,8 @@ export interface FactorInput {
   high?: number;
   low_label?: string;
   high_label?: string;
+  /** Fatores Taguchi de 3+ níveis: lista ordenada de valores; null → par baixo/alto. */
+  levels?: number[];
 }
 
 export interface ResponseInput {
@@ -53,6 +99,12 @@ export interface DesignGenerateRequest {
   fractional?: FractionalConfig;
   /** Somente composto central. */
   ccd?: CCDConfig;
+  /** Somente Taguchi. */
+  taguchi?: TaguchiConfig;
+  /** Somente D/I-ótimo. */
+  optimal?: OptimalConfig;
+  /** Somente DSD. */
+  dsd?: DSDConfig;
   /** Pontos centrais do Box-Behnken (default 3 no backend). */
   bbd_center?: number;
   /** Pontos centrais para 2^k e fracionado (default 0 no backend). */
@@ -111,6 +163,26 @@ export interface GeneratedDesign {
   resolution?: number | null;
   /** Relação de definição + aliases ("I = ABC", "A = BC", …); null fora do fracionado. */
   aliasing?: string[] | null;
+  /** Somente Taguchi/ótimo: nome do arranjo escolhido; null nas demais. */
+  array_name?: string | null;
+  /** Somente D/I-ótimo: D-eficiência do design gerado; null nas demais. */
+  optimal_efficiency?: number | null;
+}
+
+/** One orthogonal array of the Taguchi catalog (GET /designs/taguchi-catalog). */
+export interface TaguchiArray {
+  /** Nome do catálogo pyDOE3, ex.: "L8(2^7)". */
+  name: string;
+  /** Nº de ensaios (linhas). */
+  runs: number;
+  /** Total de colunas disponíveis para alocar fatores. */
+  n_columns: number;
+  /** {níveis: nº de colunas que suportam esse nº de níveis}. */
+  level_capacity: Record<number, number>;
+}
+
+export interface TaguchiCatalog {
+  arrays: TaguchiArray[];
 }
 
 /** The persisted matrix + response values for the editable data-entry grid. */

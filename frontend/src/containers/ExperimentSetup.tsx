@@ -8,6 +8,8 @@ import {
   DesignPicker,
   defaultDesignConfig,
   designBaseRuns,
+  optimalParamCount,
+  TAGUCHI_AUTO,
   type DesignConfig,
 } from "@/components/DesignPicker";
 import { FactorForm } from "@/components/FactorForm";
@@ -19,6 +21,7 @@ import type {
   ResponseInput,
 } from "@/domain/design";
 import { useGenerateDesign } from "@/hooks/useDesign";
+import { useTaguchiCatalog } from "@/hooks/useTaguchiCatalog";
 
 const emptyQuantFactor = (): FactorInput => ({
   name: "",
@@ -26,6 +29,22 @@ const emptyQuantFactor = (): FactorInput => ({
 });
 
 const emptyResponse = (): ResponseInput => ({ name: "" });
+
+/**
+ * Sintetiza a lista de níveis de um fator para arranjos Taguchi de 3+ níveis.
+ * Fatores quantitativos recebem `nLevels` valores igualmente espaçados entre
+ * baixo/alto; fatores qualitativos (só 2 rótulos na UI) ficam com 2 níveis.
+ */
+function withTaguchiLevels(factor: FactorInput, nLevels: number): FactorInput {
+  if (nLevels <= 2 || factor.factor_type !== "quantitative") return factor;
+  if (factor.low === undefined || factor.high === undefined) return factor;
+  const step = (factor.high - factor.low) / (nLevels - 1);
+  const levels = Array.from(
+    { length: nLevels },
+    (_, i) => factor.low! + step * i,
+  );
+  return { ...factor, levels };
+}
 
 function factorIsValid(factor: FactorInput): boolean {
   if (!factor.name.trim()) return false;
@@ -55,6 +74,7 @@ export function ExperimentSetup() {
     useState<DesignConfig>(defaultDesignConfig);
 
   const generateDesign = useGenerateDesign();
+  const taguchiCatalog = useTaguchiCatalog();
 
   const hasQualitativeFactor = factors.some(
     (f) => f.factor_type === "qualitative",
@@ -62,9 +82,13 @@ export function ExperimentSetup() {
 
   /** Ensaios totais (base × réplicas); null quando indeterminado. */
   const runCount = useMemo(() => {
-    const base = designBaseRuns(designConfig, factors.length);
+    const base = designBaseRuns(
+      designConfig,
+      factors.length,
+      taguchiCatalog.data?.arrays,
+    );
     return base === null ? null : base * replicates;
-  }, [designConfig, factors.length, replicates]);
+  }, [designConfig, factors.length, replicates, taguchiCatalog.data]);
 
   const factorsReady = factors.length >= 2 && factors.every(factorIsValid);
 
@@ -72,12 +96,21 @@ export function ExperimentSetup() {
     designConfig.designType === "central_composite" ||
     designConfig.designType === "box_behnken";
 
+  const optimalParams = optimalParamCount(
+    factors.length,
+    designConfig.optimalModel,
+  );
+
   const familyBlocked =
     (requiresQuantitative && hasQualitativeFactor) ||
     (designConfig.designType === "box_behnken" && factors.length < 3) ||
     (designConfig.designType === "fractional_factorial_2kp" &&
       designConfig.fractionalMode === "generators" &&
-      designConfig.fractionalGenerators.trim().length === 0);
+      designConfig.fractionalGenerators.trim().length === 0) ||
+    (designConfig.designType === "plackett_burman" && factors.length < 2) ||
+    (designConfig.designType === "dsd" && factors.length < 2) ||
+    (designConfig.designType === "optimal" &&
+      (factors.length < 2 || designConfig.optimalNRuns < optimalParams));
 
   const canGenerate = factorsReady && replicates >= 1 && !familyBlocked;
 
@@ -90,11 +123,16 @@ export function ExperimentSetup() {
   }
 
   function handleGenerate() {
+    const factorsPayload =
+      designConfig.designType === "taguchi"
+        ? factors.map((f) => withTaguchiLevels(f, designConfig.taguchiLevels))
+        : factors;
+
     const payload: DesignGenerateRequest = {
       name: name.trim() || undefined,
       design_type: designConfig.designType,
       replicates,
-      factors,
+      factors: factorsPayload,
       responses: responses.filter((r) => r.name.trim()),
     };
     if (designConfig.designType === "full_factorial_2k") {
@@ -111,8 +149,23 @@ export function ExperimentSetup() {
         center_factorial: designConfig.ccdCenterFactorial,
         center_axial: designConfig.ccdCenterAxial,
       };
-    } else {
+    } else if (designConfig.designType === "box_behnken") {
       payload.bbd_center = designConfig.bbdCenter;
+    } else if (designConfig.designType === "taguchi") {
+      payload.taguchi = {
+        sn_objective: designConfig.taguchiSN,
+        ...(designConfig.taguchiArray !== TAGUCHI_AUTO
+          ? { array_name: designConfig.taguchiArray }
+          : {}),
+      };
+    } else if (designConfig.designType === "optimal") {
+      payload.optimal = {
+        criterion: designConfig.optimalCriterion,
+        n_runs: designConfig.optimalNRuns,
+        model: designConfig.optimalModel,
+      };
+    } else if (designConfig.designType === "dsd") {
+      payload.dsd = { add_extra_runs: designConfig.dsdExtraRuns };
     }
     generateDesign.mutate(payload);
   }
@@ -246,10 +299,25 @@ export function ExperimentSetup() {
           {generateDesign.data ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-emerald-400">
-                  Matriz gerada — experimento #{generateDesign.data.experiment_id}.
-                  Preencha as respostas abaixo.
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-emerald-400">
+                    Matriz gerada — experimento #
+                    {generateDesign.data.experiment_id}. Preencha as respostas
+                    abaixo.
+                  </p>
+                  {generateDesign.data.array_name ? (
+                    <span className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-mono text-xs text-cyan-300">
+                      {generateDesign.data.array_name}
+                    </span>
+                  ) : null}
+                  {generateDesign.data.optimal_efficiency != null ? (
+                    <span className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-mono text-xs text-cyan-300">
+                      D-eficiência{" "}
+                      {(generateDesign.data.optimal_efficiency * 100).toFixed(1)}
+                      %
+                    </span>
+                  ) : null}
+                </div>
                 <Link
                   href={`/experiments/${generateDesign.data.experiment_id}`}
                   className="text-xs text-cyan-400 transition hover:text-cyan-300"

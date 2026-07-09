@@ -1,6 +1,10 @@
 /** API layer: typed fetch calls for design generation. No React here. */
 
-import type { DesignGenerateRequest, GeneratedDesign } from "@/domain/design";
+import type {
+  DesignGenerateRequest,
+  GeneratedDesign,
+  TaguchiCatalog,
+} from "@/domain/design";
 import { API_BASE_URL } from "@/lib/config";
 
 export async function generateDesign(
@@ -15,6 +19,15 @@ export async function generateDesign(
     throw new Error(await describeError(res));
   }
   return res.json() as Promise<GeneratedDesign>;
+}
+
+/** GET /designs/taguchi-catalog — orthogonal arrays for the DesignPicker. */
+export async function fetchTaguchiCatalog(): Promise<TaguchiCatalog> {
+  const res = await fetch(`${API_BASE_URL}/designs/taguchi-catalog`);
+  if (!res.ok) {
+    throw new Error(`Falha ao carregar o catálogo Taguchi (HTTP ${res.status})`);
+  }
+  return res.json() as Promise<TaguchiCatalog>;
 }
 
 async function describeError(res: Response): Promise<string> {
