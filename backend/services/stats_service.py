@@ -18,6 +18,30 @@ import numpy as np
 from scipy import stats
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
+# --- Taguchi Signal-to-Noise ratios (per-run, dB) ----------------------------
+# ``responses`` are the replicated measurements of ONE trial (not a whole
+# column). Formulas match pyDOE3 ``compute_snr`` and Montgomery (2017).
+
+
+def snr_larger(responses: np.ndarray) -> float:
+    """S/N when larger is better: ``-10 * log10(mean(1/y^2))``."""
+    y = np.asarray(responses, dtype=float)
+    return float(-10.0 * np.log10(np.mean(1.0 / y**2)))
+
+
+def snr_smaller(responses: np.ndarray) -> float:
+    """S/N when smaller is better: ``-10 * log10(mean(y^2))``."""
+    y = np.asarray(responses, dtype=float)
+    return float(-10.0 * np.log10(np.mean(y**2)))
+
+
+def snr_nominal(responses: np.ndarray) -> float:
+    """S/N when nominal is best: ``10 * log10(mean^2 / var)`` (var = ddof 1)."""
+    y = np.asarray(responses, dtype=float)
+    mean_y = np.mean(y)
+    var_y = np.var(y, ddof=1)
+    return float(10.0 * np.log10(mean_y**2 / var_y))
+
 
 def press(resid: np.ndarray, hat_diag: np.ndarray) -> float:
     """PRESS = sum of squared leave-one-out prediction residuals.

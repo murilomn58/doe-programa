@@ -201,12 +201,28 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
     Deferred import: ``design_builders`` reuses helpers from this module, so a
     top-level import would create a cycle (same pattern as ``plot_service``).
     """
-    from services import design_builders
+    from services import design_builders, design_builders_screening
 
     if req.design_type is DesignType.CENTRAL_COMPOSITE:
         return design_builders.build_ccd_design(req.factors, req.responses, req)
     if req.design_type is DesignType.BOX_BEHNKEN:
         return design_builders.build_bbd_design(req.factors, req.responses, req)
+    if req.design_type is DesignType.TAGUCHI:
+        return design_builders_screening.build_taguchi_design(
+            req.factors, req.responses, req
+        )
+    if req.design_type is DesignType.PLACKETT_BURMAN:
+        return design_builders_screening.build_pb_design(
+            req.factors, req.responses, req
+        )
+    if req.design_type is DesignType.OPTIMAL:
+        return design_builders_screening.build_optimal_design(
+            req.factors, req.responses, req
+        )
+    if req.design_type is DesignType.DSD:
+        return design_builders_screening.build_dsd_design(
+            req.factors, req.responses, req
+        )
 
     if req.design_type is DesignType.FRACTIONAL_FACTORIAL_2KP:
         design = design_builders.build_fractional_design(
@@ -276,4 +292,6 @@ def _to_design_read(
         runs=runs,
         resolution=design.resolution,
         aliasing=design.aliasing,
+        array_name=design.array_name,
+        optimal_efficiency=design.optimal_efficiency,
     )

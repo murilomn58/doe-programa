@@ -17,7 +17,30 @@ class DesignType(StrEnum):
     FRACTIONAL_FACTORIAL_2KP = "fractional_factorial_2kp"
     CENTRAL_COMPOSITE = "central_composite"
     BOX_BEHNKEN = "box_behnken"
+    TAGUCHI = "taguchi"  # orthogonal array + S/N ratio
+    PLACKETT_BURMAN = "plackett_burman"  # 2-level screening (multiples of 4)
+    OPTIMAL = "optimal"  # D/I-optimal exchange design
+    DSD = "dsd"  # Definitive Screening Design (Jones-Nachtsheim)
     RETROSPECTIVE = "retrospective"  # materialized from a pasted (already-run) table
+
+
+class SNObjective(StrEnum):
+    """Taguchi Signal-to-Noise objective (larger/smaller/nominal is better)."""
+
+    LARGER = "larger_is_better"
+    SMALLER = "smaller_is_better"
+    NOMINAL = "nominal_is_best"
+
+
+class OptimalCriterion(StrEnum):
+    """Optimality criterion for the exchange builder.
+
+    - ``D``: maximizes det(X'X) — sharp coefficient estimates (screening).
+    - ``I``: minimizes the average prediction variance — preferred for RSM.
+    """
+
+    D = "D"
+    I = "I"  # noqa: E741 — "I" is the standard name of the I-optimality criterion
 
 
 class CCDVariant(StrEnum):

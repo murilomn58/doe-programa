@@ -81,6 +81,9 @@ class GeneratedDesign:
     runs: list[RunData]
     resolution: int | None = None
     aliasing: list[str] | None = None
+    # Taguchi (chosen OA) / optimal (D- or I-efficiency); None for other families.
+    array_name: str | None = None
+    optimal_efficiency: float | None = None
 
 
 @dataclass

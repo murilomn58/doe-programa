@@ -5,7 +5,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from domain.types import CCDVariant, DesignType, FactorType, RSMModel
+from domain.types import (
+    CCDVariant,
+    DesignType,
+    FactorType,
+    OptimalCriterion,
+    RSMModel,
+    SNObjective,
+)
 
 
 class ExperimentCreate(BaseModel):
@@ -41,15 +48,20 @@ class FactorSpec(BaseModel):
     # qualitative: category labels
     low_label: str | None = Field(default=None, max_length=255)
     high_label: str | None = Field(default=None, max_length=255)
+    # Taguchi 3+-level factors: explicit ordered level list (quantitative values
+    # or qualitative labels). None → the two-level low/high pair is used.
+    levels: list[float] | None = None
 
     @model_validator(mode="after")
     def _check_levels(self) -> "FactorSpec":
         if self.factor_type is FactorType.QUANTITATIVE:
-            if self.low is None or self.high is None:
+            has_pair = self.low is not None and self.high is not None
+            has_list = self.levels is not None and len(self.levels) >= 2
+            if not has_pair and not has_list:
                 raise ValueError(
                     f"Fator quantitativo '{self.name}' precisa de valores baixo e alto."
                 )
-            if self.low == self.high:
+            if has_pair and self.low == self.high:
                 raise ValueError(
                     f"Fator quantitativo '{self.name}': baixo e alto não podem ser iguais."
                 )
@@ -96,6 +108,37 @@ class CCDConfig(BaseModel):
     center_axial: int = Field(default=4, ge=0, le=20)  # centers in star block
 
 
+class TaguchiConfig(BaseModel):
+    """Configuration for a Taguchi orthogonal-array design.
+
+    ``array_name`` picks a specific OA from the pyDOE3 catalog (e.g. "L8(2^7)"
+    or the short "L8"). ``None`` auto-selects the smallest OA whose columns can
+    host every factor's level count. ``sn_objective`` drives the S/N ratio.
+    """
+
+    array_name: str | None = None
+    sn_objective: SNObjective = SNObjective.LARGER
+
+
+class OptimalConfig(BaseModel):
+    """Configuration for a D/I-optimal exchange design.
+
+    ``n_runs`` is the requested design size (must be >= number of model
+    parameters). ``model`` picks the RSM term set the design is optimized for.
+    """
+
+    criterion: OptimalCriterion = OptimalCriterion.D
+    n_runs: int = Field(ge=2, le=200)
+    model: RSMModel = RSMModel.LINEAR_INTERACTIONS
+    n_levels: int = Field(default=3, ge=2, le=5)  # candidate grid resolution
+
+
+class DSDConfig(BaseModel):
+    """Configuration for a Definitive Screening Design (2-level categoricals)."""
+
+    add_extra_runs: int = Field(default=0, ge=0, le=12)  # n_fake_factors → +2 each
+
+
 class DesignGenerateRequest(BaseModel):
     """POST /designs/generate body."""
 
@@ -109,6 +152,9 @@ class DesignGenerateRequest(BaseModel):
     # family-specific knobs (ignored by families that don't use them)
     fractional: FractionalConfig | None = None
     ccd: CCDConfig | None = None
+    taguchi: TaguchiConfig | None = None
+    optimal: OptimalConfig | None = None
+    dsd: DSDConfig | None = None
     bbd_center: int = Field(default=3, ge=0, le=20)  # BBD center points
     center_points: int = Field(default=0, ge=0, le=20)  # 2^k / fractional
 
@@ -167,6 +213,24 @@ class DesignRead(BaseModel):
     # fractional 2^(k-p) only; None for every other family
     resolution: int | None = None
     aliasing: list[str] | None = None
+    # Taguchi/optimal only; None for every other family
+    array_name: str | None = None
+    optimal_efficiency: float | None = None
+
+
+class TaguchiArrayRead(BaseModel):
+    """One orthogonal array of the Taguchi catalog (for the DesignPicker)."""
+
+    name: str  # pyDOE3 catalog name, e.g. "L8(2^7)"
+    runs: int  # number of experimental runs (rows)
+    n_columns: int  # total columns available for factor assignment
+    level_capacity: dict[int, int]  # {levels: number of columns supporting it}
+
+
+class TaguchiCatalogRead(BaseModel):
+    """The full Taguchi orthogonal-array catalog."""
+
+    arrays: list[TaguchiArrayRead]
 
 
 # --- data entry (issue 03) ---------------------------------------------------
