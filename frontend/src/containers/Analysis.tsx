@@ -1,22 +1,30 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { ExportPlotKind } from "@/api/exportPlots";
+import { exportPlot } from "@/api/exportPlots";
 import { AnovaTable } from "@/components/AnovaTable";
 import { CoefTable } from "@/components/CoefTable";
 import { ContourPlot } from "@/components/ContourPlot";
+import { CubePlot } from "@/components/CubePlot";
+import { DesirabilityOverlay } from "@/components/DesirabilityOverlay";
 import { EffectsTable } from "@/components/EffectsTable";
 import { EstimabilityWarning } from "@/components/EstimabilityWarning";
 import { FactorPairSelector } from "@/components/FactorPairSelector";
+import { HalfNormalPlot } from "@/components/HalfNormalPlot";
+import { InfluencePlot } from "@/components/InfluencePlot";
 import { InteractionPlot } from "@/components/InteractionPlot";
 import { MainEffectsPlot } from "@/components/MainEffectsPlot";
 import { ModelBuilder } from "@/components/ModelBuilder";
 import { ObsVsPredPlot } from "@/components/ObsVsPredPlot";
 import { ParetoPlot } from "@/components/ParetoPlot";
-import { PlotCard } from "@/components/PlotCard";
+import { PlotCard, type PlotExportFormat } from "@/components/PlotCard";
+import { Profiler } from "@/components/Profiler";
 import { QQPlot } from "@/components/QQPlot";
 import { ResidualVsFittedPlot } from "@/components/ResidualVsFittedPlot";
+import { ResidualVsOrderPlot } from "@/components/ResidualVsOrderPlot";
 import { StatsPanel } from "@/components/StatsPanel";
 import { SurfacePlot } from "@/components/SurfacePlot";
 import type { RSMModel } from "@/domain/analysis";
@@ -87,6 +95,50 @@ export function Analysis({ experimentId }: AnalysisProps) {
   );
   const data = analysis.data;
   const plots = data?.plots ?? null;
+
+  // The factor pair currently driving surface/contour/interaction (state wins,
+  // else the backend's default selection) — exported figures must match on-screen.
+  const activePair = pair ?? plots?.selected_pair ?? null;
+
+  // Which plot is currently exporting (for the busy state) + last export error.
+  const [exporting, setExporting] = useState<ExportPlotKind | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const runExport = useCallback(
+    async (plot: ExportPlotKind, format: PlotExportFormat) => {
+      if (!response) return;
+      setExporting(plot);
+      setExportError(null);
+      try {
+        await exportPlot({
+          experiment_id: experimentId,
+          response_name: response,
+          model,
+          plot,
+          format,
+          dpi: 600,
+          factor_x: activePair?.[0] ?? null,
+          factor_y: activePair?.[1] ?? null,
+        });
+      } catch (err) {
+        setExportError(
+          err instanceof Error ? err.message : "Falha ao exportar a figura.",
+        );
+      } finally {
+        setExporting(null);
+      }
+    },
+    [experimentId, response, model, activePair],
+  );
+
+  // Build the export menu for one plot kind (bound to the current context).
+  const exportOptionsFor = useCallback(
+    (plot: ExportPlotKind) => ({
+      onExport: (format: PlotExportFormat) => void runExport(plot, format),
+      busy: exporting === plot,
+    }),
+    [runExport, exporting],
+  );
 
   if (runsQuery.isLoading) {
     return (
@@ -160,12 +212,19 @@ export function Analysis({ experimentId }: AnalysisProps) {
           <CoefTable coefficients={data.coefficients} saturated={data.saturated} />
           <StatsPanel stats={data.stats} lenth={data.lenth} />
 
+          {exportError ? (
+            <div className="rounded-xl border border-red-800 bg-slate-800 p-3 text-sm text-red-400">
+              {exportError}
+            </div>
+          ) : null}
+
           {plots ? (
             <div className="grid gap-6 lg:grid-cols-2">
               {plots.surface ? (
                 <PlotCard
                   title="Superfície de Resposta"
                   bodyClassName="h-96"
+                  exportOptions={exportOptionsFor("surface")}
                   hint={
                     plots.factor_pairs.length > 1 ? (
                       <FactorPairSelector
@@ -187,7 +246,11 @@ export function Analysis({ experimentId }: AnalysisProps) {
               ) : null}
 
               {plots.contour ? (
-                <PlotCard title="Gráfico de Contorno" bodyClassName="h-96">
+                <PlotCard
+                  title="Gráfico de Contorno"
+                  bodyClassName="h-96"
+                  exportOptions={exportOptionsFor("contour")}
+                >
                   <ContourPlot
                     contour={plots.contour}
                     responseName={response ?? ""}
@@ -199,13 +262,19 @@ export function Analysis({ experimentId }: AnalysisProps) {
               ) : null}
 
               {plots.pareto ? (
-                <PlotCard title="Pareto dos Efeitos">
+                <PlotCard
+                  title="Pareto dos Efeitos"
+                  exportOptions={exportOptionsFor("pareto")}
+                >
                   <ParetoPlot pareto={plots.pareto} />
                 </PlotCard>
               ) : null}
 
               {plots.main_effects.length > 0 ? (
-                <PlotCard title="Efeitos Principais">
+                <PlotCard
+                  title="Efeitos Principais"
+                  exportOptions={exportOptionsFor("main_effects")}
+                >
                   <MainEffectsPlot
                     mainEffects={plots.main_effects}
                     grandMean={plots.grand_mean}
@@ -216,7 +285,10 @@ export function Analysis({ experimentId }: AnalysisProps) {
               ) : null}
 
               {plots.interaction ? (
-                <PlotCard title="Gráfico de Interação">
+                <PlotCard
+                  title="Gráfico de Interação"
+                  exportOptions={exportOptionsFor("interaction")}
+                >
                   <InteractionPlot
                     interaction={plots.interaction}
                     responseName={response ?? ""}
@@ -226,14 +298,30 @@ export function Analysis({ experimentId }: AnalysisProps) {
                 </PlotCard>
               ) : null}
 
+              {plots.cube ? (
+                <PlotCard title="Cubo 2³" bodyClassName="h-96">
+                  <CubePlot
+                    cube={plots.cube}
+                    responseName={response ?? ""}
+                    responseUnit={responseUnit}
+                  />
+                </PlotCard>
+              ) : null}
+
               {plots.obs_vs_pred ? (
-                <PlotCard title="Observado vs. Predito">
+                <PlotCard
+                  title="Observado vs. Predito"
+                  exportOptions={exportOptionsFor("obs_vs_pred")}
+                >
                   <ObsVsPredPlot data={plots.obs_vs_pred} unit={responseUnit} />
                 </PlotCard>
               ) : null}
 
               {plots.residual_vs_fitted ? (
-                <PlotCard title="Resíduos vs. Ajustado">
+                <PlotCard
+                  title="Resíduos vs. Ajustado"
+                  exportOptions={exportOptionsFor("residual_vs_fitted")}
+                >
                   <ResidualVsFittedPlot
                     data={plots.residual_vs_fitted}
                     unit={responseUnit}
@@ -241,12 +329,67 @@ export function Analysis({ experimentId }: AnalysisProps) {
                 </PlotCard>
               ) : null}
 
+              {plots.residual_vs_order ? (
+                <PlotCard title="Resíduos vs. Ordem">
+                  <ResidualVsOrderPlot
+                    data={plots.residual_vs_order}
+                    unit={responseUnit}
+                  />
+                </PlotCard>
+              ) : null}
+
               {plots.qq ? (
-                <PlotCard title="Gráfico Q-Q Normal">
+                <PlotCard
+                  title="Gráfico Q-Q Normal"
+                  exportOptions={exportOptionsFor("qq")}
+                >
                   <QQPlot qq={plots.qq} unit={responseUnit} />
                 </PlotCard>
               ) : null}
+
+              {plots.half_normal ? (
+                <PlotCard title="Half-Normal dos Efeitos">
+                  <HalfNormalPlot halfNormal={plots.half_normal} />
+                </PlotCard>
+              ) : null}
+
+              {plots.influence ? (
+                <PlotCard title="Diagnóstico de Influência">
+                  <InfluencePlot influence={plots.influence} />
+                </PlotCard>
+              ) : null}
+
+              {plots.desirability ? (
+                <PlotCard title="Desejabilidade" bodyClassName="h-96">
+                  <DesirabilityOverlay
+                    desirability={plots.desirability}
+                    xUnit={factorUnit.get(plots.desirability.factor_x)}
+                    yUnit={factorUnit.get(plots.desirability.factor_y)}
+                  />
+                </PlotCard>
+              ) : null}
             </div>
+          ) : null}
+
+          {response ? (
+            <section className="rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-lg">
+              <header className="mb-3">
+                <h3 className="text-sm font-medium text-slate-200">
+                  Profiler interativo
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Arraste os sliders para explorar a predição do modelo; tudo é
+                  recalculado no backend.
+                </p>
+              </header>
+              <Profiler
+                experimentId={experimentId}
+                responseName={response}
+                responseUnit={responseUnit}
+                model={model}
+                factors={factors}
+              />
+            </section>
           ) : null}
         </>
       ) : null}
