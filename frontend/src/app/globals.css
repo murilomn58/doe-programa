@@ -7,3 +7,38 @@
 html {
   color-scheme: dark;
 }
+
+/* --- Printable /report route -----------------------------------------------
+ * The report renders on WHITE paper (captured by Playwright → PDF). Force the
+ * dark app chrome to light whenever the report page is mounted, and keep the
+ * background/colors when printing (Playwright uses print_background=True).
+ */
+body:has(.report-page) {
+  background: #ffffff;
+  color: #0f172a; /* slate-900 */
+  color-scheme: light;
+}
+
+.report-page {
+  color-scheme: light;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body,
+  .report-page,
+  .report-root {
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .report-section {
+    break-inside: avoid;
+  }
+}
