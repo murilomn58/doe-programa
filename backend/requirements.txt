@@ -15,6 +15,13 @@ statsmodels
 scipy
 pandas
 
+# publication-quality figure export (issue 08 / ADR-008 "render duplo").
+# NOTE: on Windows always use the "no-latex" SciencePlots variant (no LaTeX
+# toolchain installed); matplotlib runs on the headless "Agg" backend.
+matplotlib==3.10.6
+scienceplots==2.2.2
+Pillow
+
 # dev / test
 pytest
 pytest-asyncio

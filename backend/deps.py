@@ -16,6 +16,7 @@ from repositories.run_repo import SqlAlchemyRunRepo
 from services.analysis_service import AnalysisService
 from services.design_service import DesignService
 from services.experiment_service import ExperimentService
+from services.publication_service import PublicationService
 from services.retrospective_service_materialize import RetrospectiveService
 from services.run_service import RunService
 
@@ -59,6 +60,20 @@ def get_analysis_service(
 
 
 AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
+
+
+def get_publication_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> PublicationService:
+    # Reuses the run repo (read-only): PublicationService drives AnalysisService
+    # to get the PlotBundle, then renders it with matplotlib/SciencePlots.
+    repo = SqlAlchemyRunRepo(session)
+    return PublicationService(repo)
+
+
+PublicationServiceDep = Annotated[
+    PublicationService, Depends(get_publication_service)
+]
 
 
 def get_retrospective_service(
