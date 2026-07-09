@@ -164,7 +164,7 @@ def build_fractional_design(
                 )
             matrix = fracfact(cfg.generators)
         else:
-            matrix = fracfact_by_res(k, cfg.resolution)
+            matrix = _fraction_by_resolution(k, cfg.resolution)
     except DesignConfigError:
         raise
     except ValueError as exc:
@@ -205,6 +205,32 @@ def build_fractional_design(
         resolution=resolution,
         aliasing=aliasing,
     )
+
+
+def _fraction_by_resolution(k: int, resolution: int) -> np.ndarray:
+    """Minimal 2^(k-p) fraction of resolution ``>= resolution``.
+
+    ``pyDOE3.fracfact_by_res`` finds the smallest such fraction, but its search
+    misses the maximal-resolution half-fraction (e.g. k=3 at any resolution, or
+    k=4 resolution IV), raising ``ValueError('design not possible')``. Any
+    fraction of ``k`` factors has resolution at most ``k`` — reached by the
+    half-fraction whose single defining word is all ``k`` letters. So on that
+    miss we fall back to that half-fraction when it meets the request, and only
+    raise a clear, actionable error when no fraction can (``resolution > k``).
+    """
+    try:
+        return fracfact_by_res(k, resolution)
+    except ValueError:
+        if resolution > k:
+            raise DesignConfigError(
+                f"Não existe fração de resolução {resolution} para {k} fatores: "
+                f"a resolução máxima de uma fração de {k} fatores é {k}. Reduza a "
+                f"resolução, use o modo 'Por geradores', ou o fatorial completo "
+                f"2^{k} ({2**k} ensaios)."
+            ) from None
+        base = list(string.ascii_lowercase[: k - 1])
+        # extra factor = product of every base factor → defining word length k.
+        return fracfact(" ".join([*base, "".join(base)]))
 
 
 def _defining_words(matrix: np.ndarray) -> list[tuple[int, ...]]:
