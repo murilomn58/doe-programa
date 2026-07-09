@@ -21,12 +21,20 @@ export function Dashboard() {
             Planejamento de Experimentos — Dashboard
           </p>
         </div>
-        <Link
-          href="/setup"
-          className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-cyan-400"
-        >
-          + Novo planejamento fatorial
-        </Link>
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          <Link
+            href="/retrospective"
+            className="rounded-md border border-slate-600 px-4 py-2 text-center text-sm font-medium text-slate-200 transition hover:border-cyan-500 hover:text-cyan-300"
+          >
+            Já tenho resultados → Análise retrospectiva
+          </Link>
+          <Link
+            href="/setup"
+            className="rounded-md bg-cyan-500 px-4 py-2 text-center text-sm font-medium text-slate-900 transition hover:bg-cyan-400"
+          >
+            + Novo planejamento fatorial
+          </Link>
+        </div>
       </header>
 
       <section className="mb-10">

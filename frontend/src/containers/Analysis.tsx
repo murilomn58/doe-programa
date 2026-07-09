@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AnovaTable } from "@/components/AnovaTable";
@@ -19,6 +20,7 @@ import { ResidualVsFittedPlot } from "@/components/ResidualVsFittedPlot";
 import { StatsPanel } from "@/components/StatsPanel";
 import { SurfacePlot } from "@/components/SurfacePlot";
 import type { RSMModel } from "@/domain/analysis";
+import { RSM_MODELS } from "@/domain/analysis";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import { useRuns } from "@/hooks/useRuns";
 
@@ -26,17 +28,48 @@ interface AnalysisProps {
   experimentId: number;
 }
 
+const VALID_MODELS = new Set<RSMModel>(RSM_MODELS.map((m) => m.value));
+
+function initialModel(raw: string | null): RSMModel {
+  return raw && VALID_MODELS.has(raw as RSMModel)
+    ? (raw as RSMModel)
+    : "linear";
+}
+
 /** Orchestrates model selection + analysis rendering for one experiment. */
 export function Analysis({ experimentId }: AnalysisProps) {
   const runsQuery = useRuns(experimentId);
-  const [response, setResponse] = useState<string | null>(null);
-  const [model, setModel] = useState<RSMModel>("linear");
+  // Retrospective flow deep-links here with ?model= & ?response= — seed state.
+  const searchParams = useSearchParams();
+  const [response, setResponse] = useState<string | null>(
+    () => searchParams.get("response"),
+  );
+  const [model, setModel] = useState<RSMModel>(() =>
+    initialModel(searchParams.get("model")),
+  );
   const [pair, setPair] = useState<[string, string] | null>(null);
 
   const responses = useMemo(
     () => runsQuery.data?.responses ?? [],
     [runsQuery.data],
   );
+
+  const factors = useMemo(
+    () => runsQuery.data?.factors ?? [],
+    [runsQuery.data],
+  );
+
+  // Unit lookups: name → unit (undefined when the column has no unit).
+  const factorUnit = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of factors) if (f.unit) map.set(f.name, f.unit);
+    return map;
+  }, [factors]);
+
+  const responseUnit = useMemo(() => {
+    const found = responses.find((r) => r.name === response);
+    return found?.unit ?? undefined;
+  }, [responses, response]);
 
   // Default to the first response once the matrix loads.
   useEffect(() => {
@@ -146,13 +179,22 @@ export function Analysis({ experimentId }: AnalysisProps) {
                   <SurfacePlot
                     surface={plots.surface}
                     responseName={response ?? ""}
+                    xUnit={factorUnit.get(plots.surface.factor_x)}
+                    yUnit={factorUnit.get(plots.surface.factor_y)}
+                    zUnit={responseUnit}
                   />
                 </PlotCard>
               ) : null}
 
               {plots.contour ? (
                 <PlotCard title="Gráfico de Contorno" bodyClassName="h-96">
-                  <ContourPlot contour={plots.contour} />
+                  <ContourPlot
+                    contour={plots.contour}
+                    responseName={response ?? ""}
+                    xUnit={factorUnit.get(plots.contour.factor_x)}
+                    yUnit={factorUnit.get(plots.contour.factor_y)}
+                    zUnit={responseUnit}
+                  />
                 </PlotCard>
               ) : null}
 
@@ -168,6 +210,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
                     mainEffects={plots.main_effects}
                     grandMean={plots.grand_mean}
                     responseName={response ?? ""}
+                    responseUnit={responseUnit}
                   />
                 </PlotCard>
               ) : null}
@@ -177,25 +220,30 @@ export function Analysis({ experimentId }: AnalysisProps) {
                   <InteractionPlot
                     interaction={plots.interaction}
                     responseName={response ?? ""}
+                    xUnit={factorUnit.get(plots.interaction.factor_x)}
+                    responseUnit={responseUnit}
                   />
                 </PlotCard>
               ) : null}
 
               {plots.obs_vs_pred ? (
                 <PlotCard title="Observado vs. Predito">
-                  <ObsVsPredPlot data={plots.obs_vs_pred} />
+                  <ObsVsPredPlot data={plots.obs_vs_pred} unit={responseUnit} />
                 </PlotCard>
               ) : null}
 
               {plots.residual_vs_fitted ? (
                 <PlotCard title="Resíduos vs. Ajustado">
-                  <ResidualVsFittedPlot data={plots.residual_vs_fitted} />
+                  <ResidualVsFittedPlot
+                    data={plots.residual_vs_fitted}
+                    unit={responseUnit}
+                  />
                 </PlotCard>
               ) : null}
 
               {plots.qq ? (
                 <PlotCard title="Gráfico Q-Q Normal">
-                  <QQPlot qq={plots.qq} />
+                  <QQPlot qq={plots.qq} unit={responseUnit} />
                 </PlotCard>
               ) : null}
             </div>

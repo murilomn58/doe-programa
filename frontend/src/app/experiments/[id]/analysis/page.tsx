@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use } from "react";
+import { Suspense, use } from "react";
 
 import { Analysis } from "@/containers/Analysis";
 
@@ -32,7 +32,15 @@ export default function ExperimentAnalysisPage({
       </header>
 
       {Number.isFinite(experimentId) && experimentId > 0 ? (
-        <Analysis experimentId={experimentId} />
+        <Suspense
+          fallback={
+            <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 text-sm text-slate-400">
+              Carregando análise…
+            </div>
+          }
+        >
+          <Analysis experimentId={experimentId} />
+        </Suspense>
       ) : (
         <p className="text-sm text-red-400">
           Identificador de experimento inválido.
