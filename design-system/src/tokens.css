@@ -37,4 +37,30 @@
   --color-warning-soft: #fcd34d;     /* (amber-300) */
   --color-danger: #f87171;           /* erros, design singular (red-400) */
   --color-danger-soft: #fca5a5;      /* (red-300) */
+
+  /* Ação primária — formulários e CTAs (azul) */
+  --color-primary: #3b82f6;        /* botão primário, foco de input (blue-500) */
+  --color-primary-soft: #60a5fa;   /* hover/realce (blue-400) */
+  --color-primary-strong: #2563eb; /* pressionado (blue-600) */
+
+  /* Texto sobre superfícies coloridas */
+  --color-on-accent: #0f172a;  /* texto escuro sobre acento claro (slate-900) */
+  --color-on-primary: #ffffff; /* texto claro sobre ação primária */
+
+  /* Categoria informativa / especial (violeta) */
+  --color-info: #8b5cf6;      /* badge informativo (violet-500) */
+  --color-info-soft: #c4b5fd; /* (violet-300) */
+
+  /* Superfícies e bordas tonais dos badges de status (fundo escuro + borda) */
+  --color-danger-strong: #ef4444;      /* (red-500) */
+  --color-danger-border: #991b1b;      /* (red-800) */
+  --color-danger-surface: #450a0a;     /* (red-950) */
+  --color-warning-strong: #f59e0b;     /* (amber-500) */
+  --color-warning-border: #92400e;     /* (amber-800) */
+  --color-warning-surface: #451a03;    /* (amber-950) */
+  --color-significant-strong: #10b981;  /* (emerald-500) */
+  --color-significant-border: #065f46;  /* (emerald-800) */
+  --color-significant-surface: #052e16; /* (emerald-950) */
+  --color-accent-border: #0e7490;       /* borda de badge de acento (cyan-700) */
+  --color-accent-deep-border: #164e63;  /* borda tênue de acento (cyan-900) */
 }

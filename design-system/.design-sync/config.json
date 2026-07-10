@@ -4,5 +4,14 @@
   "shape": "package",
   "buildCmd": "npm run build",
   "cssEntry": "dist/styles.css",
-  "tsconfig": "tsconfig.json"
+  "tsconfig": "tsconfig.json",
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "AliasingReport": { "cardMode": "column" },
+    "AnovaTable": { "cardMode": "column" },
+    "DesignPicker": { "cardMode": "column" },
+    "EffectsTable": { "cardMode": "column" },
+    "FactorPairSelector": { "cardMode": "column" },
+    "ResponsesForm": { "cardMode": "column" }
+  }
 }
