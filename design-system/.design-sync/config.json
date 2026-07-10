@@ -1,0 +1,8 @@
+{
+  "pkg": "doe-design-system",
+  "globalName": "DoeDS",
+  "shape": "package",
+  "buildCmd": "npm run build",
+  "cssEntry": "dist/styles.css",
+  "tsconfig": "tsconfig.json"
+}

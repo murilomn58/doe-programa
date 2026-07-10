@@ -1,0 +1,40 @@
+/*
+ * Tokens semânticos do DoE Programa — contrato do redesenho.
+ * Codifica a paleta atual do app (slate/cyan/emerald, tema escuro).
+ * Trocar a identidade visual = editar SÓ este arquivo.
+ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Superfícies (tema escuro primário) */
+  --color-surface-0: #0f172a; /* fundo da página (slate-900) */
+  --color-surface-1: #1e293b; /* cards e painéis (slate-800) */
+  --color-surface-2: #334155; /* elementos elevados, inputs, botões (slate-700) */
+  --color-surface-3: #475569; /* hover/realce de superfície (slate-600) */
+
+  /* Bordas */
+  --color-border-subtle: #1e293b; /* divisórias internas (slate-800) */
+  --color-border: #334155;        /* borda padrão de card/tabela (slate-700) */
+  --color-border-strong: #475569; /* borda de controles (slate-600) */
+
+  /* Texto */
+  --color-foreground-strong: #f1f5f9; /* títulos (slate-100) */
+  --color-foreground: #e2e8f0;        /* corpo (slate-200) */
+  --color-foreground-soft: #cbd5e1;   /* corpo secundário (slate-300) */
+  --color-muted: #94a3b8;             /* rótulos, cabeçalhos de tabela (slate-400) */
+  --color-faint: #64748b;             /* hints, placeholders (slate-500) */
+
+  /* Acento — interativo / destaque (cyan) */
+  --color-accent: #67e8f9;        /* texto de destaque (cyan-300) */
+  --color-accent-mid: #22d3ee;    /* (cyan-400) */
+  --color-accent-strong: #06b6d4; /* bordas/CTAs (cyan-500) */
+  --color-accent-deep: #0891b2;   /* hover de CTA (cyan-600) */
+
+  /* Semântica estatística */
+  --color-significant: #34d399;      /* p < 0.05 (emerald-400) */
+  --color-significant-soft: #6ee7b7; /* (emerald-300) */
+  --color-warning: #fbbf24;          /* avisos, estimabilidade (amber-400) */
+  --color-warning-soft: #fcd34d;     /* (amber-300) */
+  --color-danger: #f87171;           /* erros, design singular (red-400) */
+  --color-danger-soft: #fca5a5;      /* (red-300) */
+}

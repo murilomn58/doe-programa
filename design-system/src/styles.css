@@ -1,0 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap");
+@import "tailwindcss";
+@import "./tokens.css";
+@source "../.design-sync/previews";
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-surface-0);
+  color: var(--color-foreground-strong);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
