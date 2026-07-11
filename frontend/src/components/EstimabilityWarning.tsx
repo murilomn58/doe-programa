@@ -12,8 +12,8 @@ export function EstimabilityWarning({
   if (warnings.length === 0) return null;
   const color =
     tone === "error"
-      ? "border-red-800 bg-red-950/40 text-red-300"
-      : "border-amber-800 bg-amber-950/30 text-amber-300";
+      ? "border-danger-border bg-danger-surface/40 text-danger-soft"
+      : "border-warning-border bg-warning-surface/30 text-warning-soft";
   return (
     <div className={`rounded-xl border p-4 text-sm ${color}`} role="alert">
       <p className="mb-1 font-semibold">

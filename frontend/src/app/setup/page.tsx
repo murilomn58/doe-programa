@@ -1,5 +1,5 @@
-import { ExperimentSetup } from "@/containers/ExperimentSetup";
+import { GuidedTour } from "@/containers/GuidedTour";
 
 export default function SetupPage() {
-  return <ExperimentSetup />;
+  return <GuidedTour />;
 }

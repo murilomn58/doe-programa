@@ -59,6 +59,33 @@ function codedToNatural(factor: FactorRead, coded: number): number | null {
   return mid + coded * half;
 }
 
+/**
+ * Inverso de {@link codedToNatural}: valor natural digitado → codificado [-1,1].
+ * Retorna null quando o fator não tem níveis naturais (qualitativo / não
+ * definido), caso em que o input passa a interpretar o número como codificado.
+ */
+function naturalToCoded(factor: FactorRead, natural: number): number | null {
+  const low = factor.levels.find((l) => l.coded_value === -1);
+  const high = factor.levels.find((l) => l.coded_value === 1);
+  if (
+    low?.natural_value === null ||
+    low?.natural_value === undefined ||
+    high?.natural_value === null ||
+    high?.natural_value === undefined
+  ) {
+    return null;
+  }
+  const half = (high.natural_value - low.natural_value) / 2;
+  if (half === 0) return null;
+  const mid = (low.natural_value + high.natural_value) / 2;
+  return (natural - mid) / half;
+}
+
+/** Número limpo para o campo (sem zeros à direita), aceitando vírgula. */
+function trimNum(v: number): string {
+  return String(Number(v.toFixed(4)));
+}
+
 export function Profiler({
   experimentId,
   responseName,
@@ -121,7 +148,7 @@ export function Profiler({
 
   if (sliderFactors.length === 0) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-faint">
         O profiler exige ao menos um fator quantitativo.
       </p>
     );
@@ -143,8 +170,8 @@ export function Profiler({
         />
         <div className="flex items-center gap-3 text-right">
           <div>
-            <div className="text-xs text-slate-500">Ótimo (máx)</div>
-            <div className="text-sm font-medium text-emerald-300">
+            <div className="text-xs text-faint">Ótimo (máx)</div>
+            <div className="text-sm font-medium text-significant-soft">
               {fmt(result?.optimum.value ?? null, responseUnit)}
             </div>
           </div>
@@ -152,7 +179,7 @@ export function Profiler({
             type="button"
             onClick={goToOptimum}
             disabled={!result}
-            className="rounded-md border border-emerald-600 bg-emerald-600/10 px-3 py-1.5 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-600/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-significant-strong bg-significant-strong/10 px-3 py-1.5 text-xs font-medium text-significant-soft transition-colors hover:bg-significant-strong/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Ir ao ótimo
           </button>
@@ -160,7 +187,7 @@ export function Profiler({
       </div>
 
       {query.isError ? (
-        <p className="text-sm text-red-400">
+        <p className="text-sm text-danger">
           {query.error instanceof Error
             ? query.error.message
             : "Falha ao calcular o profiler."}
@@ -201,15 +228,15 @@ function PredictionReadout({
 }) {
   return (
     <div>
-      <div className="text-xs text-slate-500">Predição no ponto</div>
+      <div className="text-xs text-faint">Predição no ponto</div>
       <div
         className={`text-2xl font-semibold tabular-nums ${
-          stale ? "text-slate-500" : "text-cyan-300"
+          stale ? "text-faint" : "text-accent"
         }`}
       >
         {fmt(prediction, unit)}
       </div>
-      <div className="text-xs text-slate-500">
+      <div className="text-xs text-faint">
         IC 95%: {fmt(ciLow)} – {fmt(ciHigh)}
       </div>
     </div>
@@ -234,17 +261,52 @@ function FactorSlice({
   responseUnit: string | undefined;
   onChange: (coded: number) => void;
 }) {
+  const hasNatural = natural !== null;
+  // Texto local do campo editável: o usuário digita o valor natural (ou o
+  // codificado quando não há níveis naturais). Sincroniza quando o valor muda
+  // por fora (slider, "Ir ao ótimo") mas NÃO enquanto o usuário digita.
+  const [text, setText] = useState("");
+  useEffect(() => {
+    const target = hasNatural ? (natural as number) : coded;
+    const cur = Number(text.replace(",", "."));
+    if (!Number.isFinite(cur) || Math.abs(cur - target) > 1e-9) {
+      setText(hasNatural ? trimNum(natural as number) : coded.toFixed(2));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coded, natural, hasNatural]);
+
+  const commitText = (raw: string) => {
+    setText(raw);
+    const v = Number(raw.replace(",", "."));
+    if (!Number.isFinite(v)) return;
+    const nextCoded = hasNatural ? naturalToCoded(factor, v) : v;
+    if (nextCoded === null) return;
+    onChange(Math.max(-1, Math.min(1, nextCoded)));
+  };
+
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800/60 p-3">
+    <div className="rounded-lg border border-border bg-surface-1/60 p-3">
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <span className="text-sm font-medium text-slate-200">
+        <span className="text-sm font-medium text-foreground">
           {factor.name}
           {factor.unit ? (
-            <span className="ml-1 text-xs text-slate-500">({factor.unit})</span>
+            <span className="ml-1 text-xs text-faint">({factor.unit})</span>
           ) : null}
         </span>
-        <span className="text-xs tabular-nums text-cyan-300">
-          {natural !== null ? fmt(natural) : `${coded.toFixed(2)} (cod.)`}
+        <span className="flex items-baseline gap-1">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={text}
+            onChange={(e) => commitText(e.target.value)}
+            className="w-20 rounded border border-border-strong bg-surface-0 px-1.5 py-0.5 text-right text-xs tabular-nums text-accent outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+            aria-label={`Valor de ${factor.name}${
+              hasNatural ? "" : " (codificado)"
+            }`}
+          />
+          {!hasNatural ? (
+            <span className="text-[10px] text-faint">(cod.)</span>
+          ) : null}
         </span>
       </div>
 
@@ -255,10 +317,10 @@ function FactorSlice({
         step={0.02}
         value={coded}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-cyan-400"
+        className="w-full accent-accent-mid"
         aria-label={`Nível codificado de ${factor.name}`}
       />
-      <div className="mt-0.5 flex justify-between text-[10px] text-slate-600">
+      <div className="mt-0.5 flex justify-between text-[10px] text-faint">
         <span>−1</span>
         <span>0</span>
         <span>+1</span>
@@ -273,7 +335,7 @@ function FactorSlice({
             responseUnit={responseUnit}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-slate-600">
+          <div className="flex h-full items-center justify-center text-xs text-faint">
             Sem fatia disponível.
           </div>
         )}

@@ -27,6 +27,7 @@ import { ResidualVsFittedPlot } from "@/components/ResidualVsFittedPlot";
 import { ResidualVsOrderPlot } from "@/components/ResidualVsOrderPlot";
 import { StatsPanel } from "@/components/StatsPanel";
 import { SurfacePlot } from "@/components/SurfacePlot";
+import { Callout } from "@/components/ui/Callout";
 import type { RSMModel } from "@/domain/analysis";
 import { RSM_MODELS } from "@/domain/analysis";
 import { useAnalysis } from "@/hooks/useAnalysis";
@@ -142,7 +143,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
 
   if (runsQuery.isLoading) {
     return (
-      <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 text-sm text-slate-400">
+      <div className="rounded-xl border border-border bg-surface-1 p-6 text-sm text-muted">
         Carregando experimento…
       </div>
     );
@@ -150,7 +151,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
 
   if (runsQuery.isError || !runsQuery.data) {
     return (
-      <div className="rounded-xl border border-red-800 bg-slate-800 p-6 text-sm text-red-400">
+      <div className="rounded-xl border border-danger-border bg-surface-1 p-6 text-sm text-danger">
         Não foi possível carregar o experimento.
       </div>
     );
@@ -158,7 +159,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
 
   if (responses.length === 0) {
     return (
-      <div className="rounded-xl border border-amber-800 bg-slate-800 p-6 text-sm text-amber-400">
+      <div className="rounded-xl border border-warning-border bg-surface-1 p-6 text-sm text-warning">
         Este experimento não tem variáveis de resposta para analisar.
       </div>
     );
@@ -166,6 +167,12 @@ export function Analysis({ experimentId }: AnalysisProps) {
 
   return (
     <div className="space-y-6">
+      <Callout label="Como ler">
+        Comece pela variável de resposta e pelo modelo. Na ANOVA e nos efeitos,
+        os valores em <b className="text-significant">verde</b> têm p &lt; 0,05
+        (estatisticamente significativos). O R² mostra o quanto o modelo
+        explica; os gráficos ajudam a validar o ajuste e a achar o ponto ótimo.
+      </Callout>
       <ModelBuilder
         responses={responses.map((r) => r.name)}
         selectedResponse={response}
@@ -176,13 +183,13 @@ export function Analysis({ experimentId }: AnalysisProps) {
       />
 
       {analysis.isLoading ? (
-        <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 text-sm text-slate-400">
+        <div className="rounded-xl border border-border bg-surface-1 p-6 text-sm text-muted">
           Calculando análise…
         </div>
       ) : null}
 
       {analysis.isError ? (
-        <div className="rounded-xl border border-red-800 bg-slate-800 p-6 text-sm text-red-400">
+        <div className="rounded-xl border border-danger-border bg-surface-1 p-6 text-sm text-danger">
           {analysis.error instanceof Error
             ? analysis.error.message
             : "Falha ao rodar a análise."}
@@ -213,7 +220,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
           <StatsPanel stats={data.stats} lenth={data.lenth} />
 
           {exportError ? (
-            <div className="rounded-xl border border-red-800 bg-slate-800 p-3 text-sm text-red-400">
+            <div className="rounded-xl border border-danger-border bg-surface-1 p-3 text-sm text-danger">
               {exportError}
             </div>
           ) : null}
@@ -372,14 +379,14 @@ export function Analysis({ experimentId }: AnalysisProps) {
           ) : null}
 
           {response ? (
-            <section className="rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-lg">
+            <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-lg">
               <header className="mb-3">
-                <h3 className="text-sm font-medium text-slate-200">
+                <h3 className="text-sm font-medium text-foreground">
                   Profiler interativo
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Arraste os sliders para explorar a predição do modelo; tudo é
-                  recalculado no backend.
+                <p className="text-xs text-faint">
+                  Arraste os sliders ou digite o valor exato para explorar a
+                  predição do modelo; tudo é recalculado no backend.
                 </p>
               </header>
               <Profiler

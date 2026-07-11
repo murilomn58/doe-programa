@@ -1,8 +1,5 @@
 @import "tailwindcss";
-
-@theme inline {
-  --font-sans: var(--font-inter);
-}
+@import "./tokens.css";
 
 html {
   color-scheme: dark;

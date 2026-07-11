@@ -9,19 +9,19 @@ interface EffectsTableProps {
 }
 
 const th =
-  "border-b border-slate-700 px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-400";
+  "border-b border-border px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted";
 const thL = `${th} text-left`;
-const td = "border-b border-slate-800 px-3 py-2 text-right font-mono text-sm text-slate-200";
+const td = "border-b border-border-subtle px-3 py-2 text-right font-mono text-sm text-foreground";
 const tdL = `${td} text-left`;
 
 export function EffectsTable({ effects, saturated }: EffectsTableProps) {
   if (effects.length === 0) return null;
   return (
-    <section className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
-      <h3 className="mb-3 text-base font-medium text-slate-200">
+    <section className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
+      <h3 className="mb-3 text-base font-medium text-foreground">
         Estimativa dos Efeitos
         {saturated ? (
-          <span className="ml-2 text-xs font-normal text-amber-400">
+          <span className="ml-2 text-xs font-normal text-warning">
             (saturado — significância via PSE de Lenth)
           </span>
         ) : null}
@@ -51,9 +51,9 @@ export function EffectsTable({ effects, saturated }: EffectsTableProps) {
                 ? e.significant === true
                 : e.p !== null && e.p < 0.05;
               return (
-                <tr key={e.term} className="hover:bg-slate-900/40">
-                  <td className={`${tdL} text-cyan-300`}>{e.term}</td>
-                  <td className={`${td} ${sig ? "font-semibold text-emerald-400" : ""}`}>
+                <tr key={e.term} className="hover:bg-surface-0/40">
+                  <td className={`${tdL} text-accent`}>{e.term}</td>
+                  <td className={`${td} ${sig ? "font-semibold text-significant" : ""}`}>
                     {fmt(e.effect, 5)}
                   </td>
                   <td className={td}>{fmt(e.coef_coded, 5)}</td>
@@ -63,7 +63,7 @@ export function EffectsTable({ effects, saturated }: EffectsTableProps) {
                     <>
                       <td className={td}>{fmt(e.std_err, 5)}</td>
                       <td className={td}>{fmt(e.t, 4)}</td>
-                      <td className={`${td} ${sig ? "font-semibold text-emerald-400" : ""}`}>
+                      <td className={`${td} ${sig ? "font-semibold text-significant" : ""}`}>
                         {fmtP(e.p)}
                       </td>
                       <td className={td}>

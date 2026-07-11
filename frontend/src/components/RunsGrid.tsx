@@ -33,8 +33,8 @@ interface RunsGridProps {
 }
 
 const th =
-  "border-b border-slate-700 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400";
-const td = "border-b border-slate-800 px-3 py-2 font-mono text-sm text-slate-200";
+  "border-b border-border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted";
+const td = "border-b border-border-subtle px-3 py-2 font-mono text-sm text-foreground";
 
 function factorDisplay(cell: RunCellRead | undefined): string {
   if (!cell) return "";
@@ -195,16 +195,16 @@ export function RunsGrid({
   const canSave = dirtyCount > 0 && invalidCount === 0 && !isSaving;
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
+    <div className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
       <div className="mb-4 flex items-baseline justify-between">
-        <h2 className="text-lg font-medium text-slate-200">
+        <h2 className="text-lg font-medium text-foreground">
           Entrada de dados — respostas dos ensaios
         </h2>
-        <span className="font-mono text-xs text-slate-500">{rowCount} ensaios</span>
+        <span className="font-mono text-xs text-faint">{rowCount} ensaios</span>
       </div>
 
       {colCount === 0 ? (
-        <p className="text-sm text-amber-400">
+        <p className="text-sm text-warning">
           Nenhuma variável de resposta definida para este experimento.
         </p>
       ) : (
@@ -219,18 +219,18 @@ export function RunsGrid({
                   <th className={th}>Blk</th>
                   <th className={th}>Rep</th>
                   {factors.map((factor) => (
-                    <th key={`f-${factor.name}`} className={`${th} text-cyan-400`}>
+                    <th key={`f-${factor.name}`} className={`${th} text-accent-mid`}>
                       {factor.name}
                       {factor.unit ? (
-                        <span className="text-slate-500"> ({factor.unit})</span>
+                        <span className="text-faint"> ({factor.unit})</span>
                       ) : null}
                     </th>
                   ))}
                   {responses.map((response) => (
-                    <th key={`r-${response.name}`} className={`${th} text-blue-400`}>
+                    <th key={`r-${response.name}`} className={`${th} text-primary-soft`}>
                       {response.name}
                       {response.unit ? (
-                        <span className="text-slate-500"> ({response.unit})</span>
+                        <span className="text-faint"> ({response.unit})</span>
                       ) : null}
                     </th>
                   ))}
@@ -238,8 +238,8 @@ export function RunsGrid({
               </thead>
               <tbody>
                 {orderedRuns.map((run, r) => (
-                  <tr key={run.id ?? run.run_order} className="hover:bg-slate-900/40">
-                    <td className={`${td} text-cyan-400`}>{run.run_order}</td>
+                  <tr key={run.id ?? run.run_order} className="hover:bg-surface-0/40">
+                    <td className={`${td} text-accent-mid`}>{run.run_order}</td>
                     <td className={td}>{run.std_order}</td>
                     <td className={td}>{run.point_type}</td>
                     <td className={td}>{run.block}</td>
@@ -254,12 +254,12 @@ export function RunsGrid({
                       const status = classifyCell(value);
                       const ring =
                         status === "invalid"
-                          ? "border-red-500 focus:border-red-400 focus:ring-red-400"
+                          ? "border-danger-strong focus:border-danger focus:ring-danger"
                           : status === "empty"
-                            ? "border-slate-700 focus:border-blue-500 focus:ring-blue-500"
-                            : "border-slate-600 focus:border-blue-500 focus:ring-blue-500";
+                            ? "border-border focus:border-primary focus:ring-primary"
+                            : "border-border-strong focus:border-primary focus:ring-primary";
                       return (
-                        <td key={response.name} className="border-b border-slate-800 px-1 py-1">
+                        <td key={response.name} className="border-b border-border-subtle px-1 py-1">
                           <input
                             ref={(el) => {
                               const k = `${r}-${c}`;
@@ -277,7 +277,7 @@ export function RunsGrid({
                             onKeyDown={(e) => handleKeyDown(e, r, c)}
                             onPaste={(e) => handlePaste(e, r, c)}
                             onFocus={(e) => e.currentTarget.select()}
-                            className={`w-24 rounded-md border bg-slate-900 px-2 py-1 text-right font-mono text-sm text-slate-100 outline-none transition focus:ring-1 ${ring}`}
+                            className={`w-24 rounded-md border bg-surface-0 px-2 py-1 text-right font-mono text-sm text-foreground-strong outline-none transition focus:ring-1 ${ring}`}
                             placeholder="—"
                           />
                         </td>
@@ -292,30 +292,30 @@ export function RunsGrid({
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-col gap-1 text-xs">
               {invalidCount > 0 ? (
-                <span className="text-red-400">
+                <span className="text-danger">
                   Corrija {invalidCount} valor(es) não numérico(s) para salvar.
                 </span>
               ) : null}
               {emptyCount > 0 ? (
-                <span className="text-amber-400">
+                <span className="text-warning">
                   {emptyCount} célula(s) de resposta ainda vazia(s) — o salvamento
                   parcial é permitido.
                 </span>
               ) : (
-                <span className="text-emerald-400">
+                <span className="text-significant">
                   Todas as respostas preenchidas.
                 </span>
               )}
-              {saveError ? <span className="text-red-400">{saveError}</span> : null}
+              {saveError ? <span className="text-danger">{saveError}</span> : null}
               {savedAt && dirtyCount === 0 && !saveError ? (
-                <span className="text-emerald-400">Respostas salvas.</span>
+                <span className="text-significant">Respostas salvas.</span>
               ) : null}
             </div>
             <button
               type="button"
               onClick={handleSave}
               disabled={!canSave}
-              className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-md bg-accent-strong px-4 py-2 text-sm font-medium text-on-accent transition hover:bg-accent-mid disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving
                 ? "Salvando…"
@@ -325,7 +325,7 @@ export function RunsGrid({
             </button>
           </div>
 
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-faint">
             Edite as células de resposta e navegue com Tab, Enter e as setas. Você
             pode colar um bloco copiado do Excel a partir de qualquer célula.
           </p>

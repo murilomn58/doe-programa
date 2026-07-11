@@ -15,7 +15,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" className={inter.variable}>
-      <body className="min-h-screen bg-slate-900 font-sans text-slate-100 antialiased">
+      <body className="min-h-screen bg-surface-0 font-sans text-foreground-strong antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

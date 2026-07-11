@@ -36,7 +36,7 @@ export const Plot = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-64 items-center justify-center text-sm text-slate-500">
+      <div className="flex h-full min-h-64 items-center justify-center text-sm text-faint">
         Carregando gráfico…
       </div>
     ),

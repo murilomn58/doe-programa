@@ -10,9 +10,9 @@ interface StatsPanelProps {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-4 py-3">
-      <dt className="text-xs uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-1 font-mono text-lg text-cyan-300">{value}</dd>
+    <div className="rounded-lg border border-border bg-surface-0/50 px-4 py-3">
+      <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>
+      <dd className="mt-1 font-mono text-lg text-accent">{value}</dd>
     </div>
   );
 }
@@ -20,8 +20,8 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function StatsPanel({ stats, lenth }: StatsPanelProps) {
   if (!stats && !lenth) return null;
   return (
-    <section className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
-      <h3 className="mb-3 text-base font-medium text-slate-200">Estatísticas</h3>
+    <section className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
+      <h3 className="mb-3 text-base font-medium text-foreground">Estatísticas</h3>
       {stats ? (
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Stat label="R²" value={fmt(stats.r_squared, 5)} />

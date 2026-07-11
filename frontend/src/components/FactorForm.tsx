@@ -10,7 +10,7 @@ interface FactorFormProps {
 }
 
 const inputClass =
-  "rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
+  "rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-foreground-strong outline-none transition focus:border-primary focus:ring-1 focus:ring-primary";
 
 const labelFor = (index: number) => String.fromCharCode(65 + index); // A, B, C…
 
@@ -25,10 +25,10 @@ export function FactorForm({
   onRemove,
 }: FactorFormProps) {
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
+    <div className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-medium text-slate-200">Fatores</h2>
-        <span className="font-mono text-xs text-slate-500">
+        <h2 className="text-lg font-medium text-foreground">Fatores</h2>
+        <span className="font-mono text-xs text-faint">
           {factors.length} fator(es)
         </span>
       </div>
@@ -37,16 +37,16 @@ export function FactorForm({
         {factors.map((factor, index) => (
           <div
             key={index}
-            className="rounded-lg border border-slate-700 bg-slate-900/60 p-4"
+            className="rounded-lg border border-border bg-surface-0/60 p-4"
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="font-mono text-sm font-semibold text-cyan-400">
+              <span className="font-mono text-sm font-semibold text-accent-mid">
                 {labelFor(index)}
               </span>
               <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="text-xs text-slate-400 transition hover:text-red-400"
+                className="text-xs text-muted transition hover:text-danger"
               >
                 Remover
               </button>
@@ -54,7 +54,7 @@ export function FactorForm({
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-slate-300">Nome</span>
+                <span className="text-foreground-soft">Nome</span>
                 <input
                   type="text"
                   value={factor.name}
@@ -67,7 +67,7 @@ export function FactorForm({
               </label>
 
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-slate-300">Tipo</span>
+                <span className="text-foreground-soft">Tipo</span>
                 <select
                   value={factor.factor_type}
                   onChange={(e) =>
@@ -84,7 +84,7 @@ export function FactorForm({
               </label>
 
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-slate-300">Unidade</span>
+                <span className="text-foreground-soft">Unidade</span>
                 <input
                   type="text"
                   value={factor.unit ?? ""}
@@ -104,7 +104,7 @@ export function FactorForm({
               {factor.factor_type === "quantitative" ? (
                 <>
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-slate-300">Nível baixo (−1)</span>
+                    <span className="text-foreground-soft">Nível baixo (−1)</span>
                     <input
                       type="number"
                       value={factor.low ?? ""}
@@ -119,7 +119,7 @@ export function FactorForm({
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-slate-300">Nível alto (+1)</span>
+                    <span className="text-foreground-soft">Nível alto (+1)</span>
                     <input
                       type="number"
                       value={factor.high ?? ""}
@@ -137,7 +137,7 @@ export function FactorForm({
               ) : (
                 <>
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-slate-300">Rótulo baixo (−1)</span>
+                    <span className="text-foreground-soft">Rótulo baixo (−1)</span>
                     <input
                       type="text"
                       value={factor.low_label ?? ""}
@@ -152,7 +152,7 @@ export function FactorForm({
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-slate-300">Rótulo alto (+1)</span>
+                    <span className="text-foreground-soft">Rótulo alto (+1)</span>
                     <input
                       type="text"
                       value={factor.high_label ?? ""}
@@ -176,7 +176,7 @@ export function FactorForm({
       <button
         type="button"
         onClick={onAdd}
-        className="mt-4 rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-blue-500 hover:text-blue-400"
+        className="mt-4 rounded-md border border-border-strong px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary-soft"
       >
         + Adicionar fator
       </button>

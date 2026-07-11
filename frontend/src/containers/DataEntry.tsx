@@ -15,7 +15,7 @@ export function DataEntry({ experimentId }: DataEntryProps) {
 
   if (runsQuery.isLoading) {
     return (
-      <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 text-sm text-slate-400">
+      <div className="rounded-xl border border-border bg-surface-1 p-6 text-sm text-muted">
         Carregando ensaios…
       </div>
     );
@@ -23,7 +23,7 @@ export function DataEntry({ experimentId }: DataEntryProps) {
 
   if (runsQuery.isError || !runsQuery.data) {
     return (
-      <div className="rounded-xl border border-red-800 bg-slate-800 p-6 text-sm text-red-400">
+      <div className="rounded-xl border border-danger-border bg-surface-1 p-6 text-sm text-danger">
         {runsQuery.error instanceof Error
           ? runsQuery.error.message
           : "Não foi possível carregar os ensaios deste experimento."}

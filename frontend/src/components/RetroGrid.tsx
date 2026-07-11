@@ -27,7 +27,7 @@ const FACTOR_TYPE_LABEL: Record<FactorScale, string> = {
 const FACTOR_TYPE_ORDER: FactorScale[] = ["auto", "quantitative", "qualitative"];
 
 const th =
-  "border-b border-slate-700 px-2 py-2 text-left text-xs font-semibold text-slate-300";
+  "border-b border-border px-2 py-2 text-left text-xs font-semibold text-foreground-soft";
 
 /** Editable grid with dynamic factor/response columns (all cells editable). */
 export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
@@ -198,10 +198,10 @@ export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
   }
 
   const btn =
-    "rounded-md border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-700";
+    "rounded-md border border-border-strong px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-border hover:bg-surface-2";
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
+    <div className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button type="button" onClick={addFactor} className={btn}>
           + Fator
@@ -230,7 +230,7 @@ export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
             e.target.value = "";
           }}
         />
-        <span className="ml-auto text-xs text-slate-500">
+        <span className="ml-auto text-xs text-faint">
           Dica: cole (Ctrl+V) um bloco copiado do Excel em qualquer célula.
         </span>
       </div>
@@ -239,9 +239,9 @@ export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th className={`${th} w-10 text-center text-slate-500`}>#</th>
+              <th className={`${th} w-10 text-center text-faint`}>#</th>
               {model.factorCols.map((col, c) => (
-                <th key={`f-head-${c}`} className={`${th} bg-cyan-500/5`}>
+                <th key={`f-head-${c}`} className={`${th} bg-accent-strong/5`}>
                   <ColumnHeader
                     name={col.name}
                     accent="cyan"
@@ -257,7 +257,7 @@ export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
               {model.responseCols.map((col, i) => {
                 const c = nFactors + i;
                 return (
-                  <th key={`r-head-${i}`} className={`${th} bg-emerald-500/5`}>
+                  <th key={`r-head-${i}`} className={`${th} bg-significant-strong/5`}>
                     <ColumnHeader
                       name={col.name}
                       accent="emerald"
@@ -274,19 +274,19 @@ export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
           </thead>
           <tbody>
             {rows.map((cells, r) => (
-              <tr key={r} className="hover:bg-slate-900/40">
-                <td className="border-b border-slate-800 px-2 py-1 text-center font-mono text-xs text-slate-500">
+              <tr key={r} className="hover:bg-surface-0/40">
+                <td className="border-b border-border-subtle px-2 py-1 text-center font-mono text-xs text-faint">
                   {r + 1}
                 </td>
                 {cells.map((value, c) => {
                   const isFactor = c < nFactors;
                   const accent = isFactor
-                    ? "border-cyan-900/60 focus:border-cyan-500 focus:ring-cyan-500"
-                    : "border-emerald-900/60 focus:border-emerald-500 focus:ring-emerald-500";
+                    ? "border-accent-deep-border/60 focus:border-accent-strong focus:ring-accent-strong"
+                    : "border-significant-border/60 focus:border-significant-strong focus:ring-significant-strong";
                   return (
                     <td
                       key={c}
-                      className="border-b border-slate-800 px-1 py-1"
+                      className="border-b border-border-subtle px-1 py-1"
                     >
                       <input
                         ref={(el) => {
@@ -300,18 +300,18 @@ export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
                         onKeyDown={(e) => handleKeyDown(e, r, c)}
                         onPaste={(e) => handlePaste(e, r, c)}
                         onFocus={(e) => e.currentTarget.select()}
-                        className={`w-24 rounded-md border bg-slate-900 px-2 py-1 text-right font-mono text-sm text-slate-100 outline-none transition focus:ring-1 ${accent}`}
+                        className={`w-24 rounded-md border bg-surface-0 px-2 py-1 text-right font-mono text-sm text-foreground-strong outline-none transition focus:ring-1 ${accent}`}
                         placeholder="—"
                       />
                     </td>
                   );
                 })}
-                <td className="border-b border-slate-800 px-1 py-1 text-center">
+                <td className="border-b border-border-subtle px-1 py-1 text-center">
                   <button
                     type="button"
                     aria-label={`Remover linha ${r + 1}`}
                     onClick={() => removeRow(r)}
-                    className="rounded px-1.5 text-slate-500 transition hover:bg-red-500/10 hover:text-red-400"
+                    className="rounded px-1.5 text-faint transition hover:bg-danger-strong/10 hover:text-danger"
                   >
                     ×
                   </button>
@@ -322,10 +322,10 @@ export function RetroGrid({ model, onChange, onImportFile }: RetroGridProps) {
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-faint">
         Marque cada coluna como{" "}
-        <span className="text-cyan-400">fator</span> ou{" "}
-        <span className="text-emerald-400">resposta</span> e defina o tipo do
+        <span className="text-accent-mid">fator</span> ou{" "}
+        <span className="text-significant">resposta</span> e defina o tipo do
         fator (auto/quant/qual). Navegue com Tab, Enter e as setas.
       </p>
     </div>
@@ -353,7 +353,7 @@ function ColumnHeader({
   onToggleRole,
   onRemove,
 }: ColumnHeaderProps) {
-  const nameColor = accent === "cyan" ? "text-cyan-300" : "text-emerald-300";
+  const nameColor = accent === "cyan" ? "text-accent" : "text-significant-soft";
   return (
     <div className="flex min-w-24 flex-col gap-1">
       <div className="flex items-center gap-1">
@@ -361,13 +361,13 @@ function ColumnHeader({
           value={name}
           onChange={(e) => onRename(e.target.value)}
           aria-label={`Nome da coluna ${role}`}
-          className={`w-full rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-xs font-semibold outline-none focus:border-slate-500 ${nameColor}`}
+          className={`w-full rounded border border-border bg-surface-0 px-1.5 py-0.5 text-xs font-semibold outline-none focus:border-border ${nameColor}`}
         />
         <button
           type="button"
           aria-label="Remover coluna"
           onClick={onRemove}
-          className="rounded px-1 text-slate-500 transition hover:bg-red-500/10 hover:text-red-400"
+          className="rounded px-1 text-faint transition hover:bg-danger-strong/10 hover:text-danger"
         >
           ×
         </button>
@@ -379,8 +379,8 @@ function ColumnHeader({
           title="Alternar entre fator e resposta"
           className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition ${
             accent === "cyan"
-              ? "bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25"
-              : "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+              ? "bg-accent-strong/15 text-accent hover:bg-accent-strong/25"
+              : "bg-significant-strong/15 text-significant-soft hover:bg-significant-strong/25"
           }`}
         >
           {role}
@@ -390,7 +390,7 @@ function ColumnHeader({
             type="button"
             onClick={onToggleType}
             title="Tipo do fator (auto → quantitativo → qualitativo)"
-            className="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-300 transition hover:bg-slate-600"
+            className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-foreground-soft transition hover:bg-surface-3"
           >
             {typeLabel}
           </button>

@@ -1,0 +1,50 @@
+/** Cabeçalho de página: título acento, subtítulo, link de voltar e ações à direita. */
+
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+interface PageHeaderProps {
+  title: string;
+  subtitle?: ReactNode;
+  /** Link de voltar (href para navegação, ou onClick para passos internos). */
+  back?: { label: string; href?: string; onClick?: () => void };
+  right?: ReactNode;
+}
+
+export function PageHeader({ title, subtitle, back, right }: PageHeaderProps) {
+  return (
+    <header className="mb-8">
+      {back ? (
+        back.href ? (
+          <Link
+            href={back.href}
+            className="mb-2 inline-block text-sm text-muted transition hover:text-accent"
+          >
+            ← {back.label}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={back.onClick}
+            className="mb-2 inline-block text-sm text-muted transition hover:text-accent"
+          >
+            ← {back.label}
+          </button>
+        )
+      ) : null}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-accent-mid">
+            {title}
+          </h1>
+          {subtitle ? (
+            <p className="mt-2 max-w-[60ch] text-base text-foreground-soft">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+        {right ? <div className="flex gap-3">{right}</div> : null}
+      </div>
+    </header>
+  );
+}

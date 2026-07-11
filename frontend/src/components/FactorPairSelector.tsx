@@ -24,7 +24,7 @@ export function FactorPairSelector({
           onSelect([parts[0], parts[1]]);
         }
       }}
-      className="rounded border border-slate-600 bg-slate-700 px-2 py-0.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+      className="rounded border border-border-strong bg-surface-2 px-2 py-0.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent-mid"
     >
       {pairs.map((p) => (
         <option key={p.join("|")} value={p.join("|")}>

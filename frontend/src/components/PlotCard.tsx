@@ -44,11 +44,11 @@ export function PlotCard({
   exportOptions,
 }: PlotCardProps) {
   return (
-    <section className="rounded-xl border border-slate-700 bg-slate-800 p-4 shadow-lg">
+    <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-lg">
       <header className="mb-2 flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-medium text-slate-200">{title}</h3>
+        <h3 className="text-sm font-medium text-foreground">{title}</h3>
         <div className="flex items-center gap-3">
-          {hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
+          {hint ? <span className="text-xs text-faint">{hint}</span> : null}
           {exportOptions ? <ExportMenu options={exportOptions} /> : null}
         </div>
       </header>
@@ -87,14 +87,14 @@ function ExportMenu({ options }: { options: PlotExportOptions }) {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="rounded-md border border-slate-600 bg-slate-700/60 px-2 py-1 text-xs font-medium text-slate-300 transition-colors hover:border-cyan-500 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-md border border-border-strong bg-surface-2/60 px-2 py-1 text-xs font-medium text-foreground-soft transition-colors hover:border-accent-strong hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
       >
         {busy ? "Exportando…" : "⤓ Exportar"}
       </button>
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-md border border-slate-600 bg-slate-800 shadow-xl"
+          className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-md border border-border-strong bg-surface-1 shadow-xl"
         >
           {formats.map((fmt) => (
             <button
@@ -105,7 +105,7 @@ function ExportMenu({ options }: { options: PlotExportOptions }) {
                 setOpen(false);
                 onExport(fmt);
               }}
-              className="block w-full px-3 py-2 text-left text-xs text-slate-300 transition-colors hover:bg-slate-700 hover:text-cyan-300"
+              className="block w-full px-3 py-2 text-left text-xs text-foreground-soft transition-colors hover:bg-surface-2 hover:text-accent"
             >
               {FORMAT_LABEL[fmt]}
             </button>

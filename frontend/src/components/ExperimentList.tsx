@@ -14,12 +14,12 @@ export function ExperimentList({
   errorMessage,
 }: ExperimentListProps) {
   if (isLoading) {
-    return <p className="text-sm text-slate-400">Carregando…</p>;
+    return <p className="text-sm text-muted">Carregando…</p>;
   }
 
   if (errorMessage) {
     return (
-      <p className="text-sm text-red-400">
+      <p className="text-sm text-danger">
         Erro ao carregar experimentos: {errorMessage}
       </p>
     );
@@ -27,7 +27,7 @@ export function ExperimentList({
 
   if (experiments.length === 0) {
     return (
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-muted">
         Nenhum experimento ainda. Crie o primeiro acima.
       </p>
     );
@@ -39,20 +39,20 @@ export function ExperimentList({
         <li key={experiment.id}>
           <Link
             href={`/experiments/${experiment.id}`}
-            className="block rounded-lg border border-slate-700 bg-slate-800 p-4 transition hover:border-cyan-500/60 hover:bg-slate-800/70"
+            className="block rounded-lg border border-border bg-surface-1 p-4 transition hover:border-accent-strong/60 hover:bg-surface-1/70"
           >
             <div className="flex items-baseline justify-between gap-4">
-              <h3 className="font-medium text-slate-100">{experiment.name}</h3>
-              <span className="font-mono text-xs text-slate-500">
+              <h3 className="font-medium text-foreground-strong">{experiment.name}</h3>
+              <span className="font-mono text-xs text-faint">
                 #{experiment.id}
               </span>
             </div>
             {experiment.description ? (
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-muted">
                 {experiment.description}
               </p>
             ) : null}
-            <p className="mt-2 font-mono text-xs text-cyan-400/70">
+            <p className="mt-2 font-mono text-xs text-accent-mid/70">
               {new Date(experiment.created_at).toLocaleString("pt-BR")}
             </p>
           </Link>

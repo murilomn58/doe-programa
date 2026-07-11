@@ -292,10 +292,10 @@ interface DesignPickerProps {
 }
 
 const inputClass =
-  "rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
+  "rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-foreground-strong outline-none transition focus:border-primary focus:ring-1 focus:ring-primary";
 
 const panelClass =
-  "flex flex-col gap-3 rounded-lg border border-slate-700 bg-slate-900/50 p-4";
+  "flex flex-col gap-3 rounded-lg border border-border bg-surface-0/50 p-4";
 
 export function DesignPicker({
   config,
@@ -361,12 +361,12 @@ export function DesignPicker({
     config.designType === "optimal" && config.optimalNRuns < optimalParams;
 
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg">
-      <h2 className="mb-4 text-lg font-medium text-slate-200">Planejamento</h2>
+    <div className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
+      <h2 className="mb-4 text-lg font-medium text-foreground">Planejamento</h2>
 
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-slate-300">Família de planejamento</span>
+          <span className="text-foreground-soft">Família de planejamento</span>
           <select
             value={config.designType}
             onChange={(e) => set({ designType: e.target.value as DesignType })}
@@ -387,7 +387,7 @@ export function DesignPicker({
 
         {config.designType === "fractional_factorial_2kp" ? (
           <fieldset className={panelClass}>
-            <legend className="px-1 text-sm font-medium text-slate-300">
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
               Fração 2^(k-p)
             </legend>
             <div className="flex gap-6 text-sm">
@@ -397,9 +397,9 @@ export function DesignPicker({
                   name="fractional-mode"
                   checked={config.fractionalMode === "resolution"}
                   onChange={() => set({ fractionalMode: "resolution" })}
-                  className="accent-cyan-400"
+                  className="accent-accent-mid"
                 />
-                <span className="text-slate-200">Por resolução</span>
+                <span className="text-foreground">Por resolução</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2">
                 <input
@@ -407,15 +407,15 @@ export function DesignPicker({
                   name="fractional-mode"
                   checked={config.fractionalMode === "generators"}
                   onChange={() => set({ fractionalMode: "generators" })}
-                  className="accent-cyan-400"
+                  className="accent-accent-mid"
                 />
-                <span className="text-slate-200">Por geradores</span>
+                <span className="text-foreground">Por geradores</span>
               </label>
             </div>
 
             {config.fractionalMode === "resolution" ? (
               <label className="flex w-40 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Resolução</span>
+                <span className="text-foreground-soft">Resolução</span>
                 <select
                   value={config.fractionalResolution}
                   onChange={(e) =>
@@ -427,14 +427,14 @@ export function DesignPicker({
                   <option value={4}>IV</option>
                   <option value={5}>V</option>
                 </select>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-faint">
                   III: triagem · IV: efeitos principais limpos · V: interações
                   de 2 fatores limpas
                 </span>
               </label>
             ) : (
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-slate-300">Geradores (sintaxe pyDOE3)</span>
+                <span className="text-foreground-soft">Geradores (sintaxe pyDOE3)</span>
                 <input
                   type="text"
                   value={config.fractionalGenerators}
@@ -444,7 +444,7 @@ export function DesignPicker({
                   placeholder="a b ab"
                   className={`${inputClass} font-mono`}
                 />
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-faint">
                   Uma palavra por fator: letras sozinhas são os fatores-base;
                   palavras compostas (ex.: ab) definem os fatores fracionados.
                 </span>
@@ -452,7 +452,7 @@ export function DesignPicker({
             )}
 
             {resolutionUnavailable ? (
-              <p className="text-xs text-amber-400">
+              <p className="text-xs text-warning">
                 Não existe fração 2^(k-p) de resolução{" "}
                 {toRoman(config.fractionalResolution)} para {k} fator(es) —
                 reduza a resolução ou use o fatorial completo.
@@ -463,7 +463,7 @@ export function DesignPicker({
 
         {config.designType === "central_composite" ? (
           <fieldset className={panelClass}>
-            <legend className="px-1 text-sm font-medium text-slate-300">
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
               Composto central
             </legend>
             <div className="flex flex-col gap-2 text-sm">
@@ -477,11 +477,11 @@ export function DesignPicker({
                     name="ccd-variant"
                     checked={config.ccdVariant === variant.value}
                     onChange={() => set({ ccdVariant: variant.value })}
-                    className="mt-1 accent-cyan-400"
+                    className="mt-1 accent-accent-mid"
                   />
                   <span>
-                    <span className="text-slate-200">{variant.label}</span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="text-foreground">{variant.label}</span>
+                    <span className="block text-xs text-faint">
                       {variant.description}
                     </span>
                   </span>
@@ -490,7 +490,7 @@ export function DesignPicker({
             </div>
             <div className="flex flex-wrap gap-4">
               <label className="flex w-40 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Centros (fatorial)</span>
+                <span className="text-foreground-soft">Centros (fatorial)</span>
                 <input
                   type="number"
                   min={0}
@@ -503,7 +503,7 @@ export function DesignPicker({
                 />
               </label>
               <label className="flex w-40 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Centros (axial)</span>
+                <span className="text-foreground-soft">Centros (axial)</span>
                 <input
                   type="number"
                   min={0}
@@ -516,11 +516,11 @@ export function DesignPicker({
                 />
               </label>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted">
               {alphaPreview !== null ? (
                 <>
                   α previsto:{" "}
-                  <span className="font-mono text-cyan-400">
+                  <span className="font-mono text-accent-mid">
                     {alphaPreview.toFixed(3)}
                   </span>
                 </>
@@ -533,16 +533,16 @@ export function DesignPicker({
 
         {config.designType === "box_behnken" ? (
           <fieldset className={panelClass}>
-            <legend className="px-1 text-sm font-medium text-slate-300">
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
               Box-Behnken
             </legend>
             {k < 3 ? (
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-danger">
                 Box-Behnken exige pelo menos 3 fatores (há {k}).
               </p>
             ) : null}
             <label className="flex w-40 flex-col gap-1 text-sm">
-              <span className="text-slate-300">Pontos centrais</span>
+              <span className="text-foreground-soft">Pontos centrais</span>
               <input
                 type="number"
                 min={0}
@@ -559,16 +559,16 @@ export function DesignPicker({
 
         {config.designType === "taguchi" ? (
           <fieldset className={panelClass}>
-            <legend className="px-1 text-sm font-medium text-slate-300">
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
               Taguchi (arranjo ortogonal)
             </legend>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-faint">
               Arranjos ortogonais estimam efeitos principais com poucos ensaios;
               o objetivo S/N define como o backend classifica a robustez.
             </p>
             <div className="flex flex-wrap gap-4">
               <label className="flex w-56 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Arranjo</span>
+                <span className="text-foreground-soft">Arranjo</span>
                 <select
                   value={config.taguchiArray}
                   onChange={(e) => set({ taguchiArray: e.target.value })}
@@ -583,18 +583,18 @@ export function DesignPicker({
                   ))}
                 </select>
                 {catalogQuery.isLoading ? (
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-faint">
                     Carregando catálogo…
                   </span>
                 ) : catalogQuery.isError ? (
-                  <span className="text-xs text-amber-400">
+                  <span className="text-xs text-warning">
                     Catálogo indisponível — use &quot;Automático&quot;.
                   </span>
                 ) : null}
               </label>
 
               <label className="flex w-40 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Níveis por fator</span>
+                <span className="text-foreground-soft">Níveis por fator</span>
                 <select
                   value={config.taguchiLevels}
                   onChange={(e) =>
@@ -608,14 +608,14 @@ export function DesignPicker({
                     </option>
                   ))}
                 </select>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-faint">
                   Fatores com 3+ níveis exigem colunas do arranjo que os
                   comportem.
                 </span>
               </label>
 
               <label className="flex w-56 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Objetivo S/N</span>
+                <span className="text-foreground-soft">Objetivo S/N</span>
                 <select
                   value={config.taguchiSN}
                   onChange={(e) =>
@@ -633,9 +633,9 @@ export function DesignPicker({
             </div>
 
             {taguchiResolved !== null ? (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted">
                 Arranjo:{" "}
-                <span className="font-mono text-cyan-400">
+                <span className="font-mono text-accent-mid">
                   {taguchiResolved.name}
                 </span>{" "}
                 — {taguchiResolved.runs} ensaios, {taguchiResolved.n_columns}{" "}
@@ -644,7 +644,7 @@ export function DesignPicker({
             ) : null}
 
             {config.taguchiArray !== TAGUCHI_AUTO && !taguchiFits ? (
-              <p className="text-xs text-amber-400">
+              <p className="text-xs text-warning">
                 O arranjo {config.taguchiArray} não tem {k} coluna(s) de{" "}
                 {config.taguchiLevels} níveis — escolha um arranjo maior ou use
                 &quot;Automático&quot;.
@@ -652,7 +652,7 @@ export function DesignPicker({
             ) : null}
 
             {taguchiNoAutoFit ? (
-              <p className="text-xs text-amber-400">
+              <p className="text-xs text-warning">
                 Nenhum arranjo do catálogo comporta {k} fator(es) de{" "}
                 {config.taguchiLevels} níveis — reduza os fatores ou os níveis.
               </p>
@@ -662,21 +662,21 @@ export function DesignPicker({
 
         {config.designType === "plackett_burman" ? (
           <fieldset className={panelClass}>
-            <legend className="px-1 text-sm font-medium text-slate-300">
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
               Plackett-Burman
             </legend>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-faint">
               Triagem de muitos fatores em poucos ensaios (2 níveis). O nº de
               ensaios é o próximo múltiplo de 4 ≥ k+1.
             </p>
             {k < 2 ? (
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-danger">
                 Plackett-Burman exige pelo menos 2 fatores (há {k}).
               </p>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted">
                 {k} fator(es) →{" "}
-                <span className="font-mono text-cyan-400">
+                <span className="font-mono text-accent-mid">
                   {plackettBurmanRuns(k)}
                 </span>{" "}
                 ensaios.
@@ -687,10 +687,10 @@ export function DesignPicker({
 
         {config.designType === "optimal" ? (
           <fieldset className={panelClass}>
-            <legend className="px-1 text-sm font-medium text-slate-300">
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
               D/I-ótimo
             </legend>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-faint">
               Aceita fator qualitativo; ideal para restrições ou orçamento fixo
               de ensaios.
             </p>
@@ -705,11 +705,11 @@ export function DesignPicker({
                     name="optimal-criterion"
                     checked={config.optimalCriterion === c.value}
                     onChange={() => set({ optimalCriterion: c.value })}
-                    className="mt-1 accent-cyan-400"
+                    className="mt-1 accent-accent-mid"
                   />
                   <span>
-                    <span className="text-slate-200">{c.label}</span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="text-foreground">{c.label}</span>
+                    <span className="block text-xs text-faint">
                       {c.description}
                     </span>
                   </span>
@@ -718,7 +718,7 @@ export function DesignPicker({
             </div>
             <div className="flex flex-wrap gap-4">
               <label className="flex w-64 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Modelo alvo</span>
+                <span className="text-foreground-soft">Modelo alvo</span>
                 <select
                   value={config.optimalModel}
                   onChange={(e) =>
@@ -732,12 +732,12 @@ export function DesignPicker({
                     </option>
                   ))}
                 </select>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-faint">
                   Parâmetros do modelo: {optimalParams}.
                 </span>
               </label>
               <label className="flex w-40 flex-col gap-1 text-sm">
-                <span className="text-slate-300">Nº de ensaios</span>
+                <span className="text-foreground-soft">Nº de ensaios</span>
                 <input
                   type="number"
                   min={optimalParams}
@@ -749,20 +749,20 @@ export function DesignPicker({
                   }
                   className={inputClass}
                 />
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-faint">
                   Recomendado ≥ {optimalParams} (nº de parâmetros).
                 </span>
               </label>
             </div>
             {optimalTooFew ? (
-              <p className="text-xs text-amber-400">
+              <p className="text-xs text-warning">
                 {config.optimalNRuns} ensaio(s) é menos que os {optimalParams}{" "}
                 parâmetros do modelo — o design ficaria singular. Aumente para ≥{" "}
                 {optimalParams}.
               </p>
             ) : null}
             {k < 2 ? (
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-danger">
                 O planejamento ótimo exige pelo menos 2 fatores (há {k}).
               </p>
             ) : null}
@@ -771,28 +771,28 @@ export function DesignPicker({
 
         {config.designType === "dsd" ? (
           <fieldset className={panelClass}>
-            <legend className="px-1 text-sm font-medium text-slate-300">
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
               Definitive Screening (DSD)
             </legend>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-faint">
               Estima curvatura com poucos ensaios; fatores quantitativos (+
               categóricos de 2 níveis).
             </p>
             {k < 2 ? (
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-danger">
                 O DSD exige pelo menos 2 fatores (há {k}).
               </p>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted">
                 {k} fator(es) → 2·{k} + 1 ={" "}
-                <span className="font-mono text-cyan-400">
+                <span className="font-mono text-accent-mid">
                   {dsdRuns(k, config.dsdExtraRuns)}
                 </span>{" "}
                 ensaios{config.dsdExtraRuns > 0 ? " (com extras)" : ""}.
               </p>
             )}
             <label className="flex w-56 flex-col gap-1 text-sm">
-              <span className="text-slate-300">Corridas extras (fake factors)</span>
+              <span className="text-foreground-soft">Corridas extras (fake factors)</span>
               <input
                 type="number"
                 min={0}
@@ -803,7 +803,7 @@ export function DesignPicker({
                 }
                 className={inputClass}
               />
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-faint">
                 Cada corrida extra adiciona 2 ensaios (melhora a estimativa do
                 erro).
               </span>
@@ -813,7 +813,7 @@ export function DesignPicker({
 
         {showCenterPoints ? (
           <label className="flex w-56 flex-col gap-1 text-sm">
-            <span className="text-slate-300">Pontos centrais</span>
+            <span className="text-foreground-soft">Pontos centrais</span>
             <input
               type="number"
               min={0}
@@ -824,14 +824,14 @@ export function DesignPicker({
               }
               className={inputClass}
             />
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-faint">
               Recomendado 3–5 para estimar curvatura e erro puro.
             </span>
           </label>
         ) : null}
 
         <label className="flex w-40 flex-col gap-1 text-sm">
-          <span className="text-slate-300">Réplicas</span>
+          <span className="text-foreground-soft">Réplicas</span>
           <input
             type="number"
             min={1}
@@ -845,20 +845,20 @@ export function DesignPicker({
         </label>
 
         {qualitativeBlocked ? (
-          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-400">
+          <p className="rounded-md border border-warning-strong/40 bg-warning-strong/10 px-3 py-2 text-sm text-warning">
             CCD/Box-Behnken exigem fatores quantitativos — remova ou converta
             os fatores qualitativos antes de gerar.
           </p>
         ) : null}
 
-        <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-4">
-          <p className="text-sm text-slate-300">
+        <div className="rounded-lg border border-accent-strong/30 bg-accent-strong/5 p-4">
+          <p className="text-sm text-foreground-soft">
             <RunFormula config={config} k={k} baseRuns={baseRuns} />
             {baseRuns !== null ? <> × {replicates} réplica(s)</> : null}
           </p>
-          <p className="mt-1 text-sm text-slate-200">
+          <p className="mt-1 text-sm text-foreground">
             Número de ensaios:{" "}
-            <span className="font-mono text-lg font-semibold text-cyan-400">
+            <span className="font-mono text-lg font-semibold text-accent-mid">
               {totalRuns ?? "—"}
             </span>
           </p>
@@ -882,7 +882,7 @@ function RunFormula({
       return (
         <>
           {k} fatores × 2 níveis = 2<sup>{k}</sup> ={" "}
-          <span className="font-mono text-cyan-400">
+          <span className="font-mono text-accent-mid">
             {k >= 1 ? 2 ** k : 0}
           </span>{" "}
           combinações + {config.centerPoints} ponto(s) central(is)
@@ -901,7 +901,7 @@ function RunFormula({
       return (
         <>
           2<sup>{k}−{p}</sup> ={" "}
-          <span className="font-mono text-cyan-400">{corners}</span> corridas +{" "}
+          <span className="font-mono text-accent-mid">{corners}</span> corridas +{" "}
           {config.centerPoints} ponto(s) central(is)
         </>
       );
@@ -917,7 +917,7 @@ function RunFormula({
       return k >= 3 ? (
         <>
           4·{k}·({k}−1)/2 ={" "}
-          <span className="font-mono text-cyan-400">{2 * k * (k - 1)}</span>{" "}
+          <span className="font-mono text-accent-mid">{2 * k * (k - 1)}</span>{" "}
           corridas + {config.bbdCenter} ponto(s) central(is)
         </>
       ) : (
@@ -929,14 +929,14 @@ function RunFormula({
       ) : (
         <>
           Arranjo ortogonal ={" "}
-          <span className="font-mono text-cyan-400">{baseRuns}</span> ensaios
+          <span className="font-mono text-accent-mid">{baseRuns}</span> ensaios
         </>
       );
     case "plackett_burman":
       return k >= 2 ? (
         <>
           próximo múltiplo de 4 ≥ {k}+1 ={" "}
-          <span className="font-mono text-cyan-400">
+          <span className="font-mono text-accent-mid">
             {plackettBurmanRuns(k)}
           </span>{" "}
           ensaios
@@ -950,14 +950,14 @@ function RunFormula({
       ) : (
         <>
           {config.optimalCriterion}-ótimo ={" "}
-          <span className="font-mono text-cyan-400">{baseRuns}</span> ensaios
+          <span className="font-mono text-accent-mid">{baseRuns}</span> ensaios
         </>
       );
     case "dsd":
       return k >= 2 ? (
         <>
           2·{k} + 1 ={" "}
-          <span className="font-mono text-cyan-400">
+          <span className="font-mono text-accent-mid">
             {dsdRuns(k, config.dsdExtraRuns)}
           </span>{" "}
           ensaios
