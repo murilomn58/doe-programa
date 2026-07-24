@@ -258,6 +258,59 @@ def retro_diagnose(req: dict) -> dict:
     return payload.model_dump(mode="json")
 
 
+# --- fronteira única JSON (chamada pelo worker) --------------------------------
+
+
+async def call_json(op: str, args_json: str) -> str:
+    """Única fronteira JS<->Python: strings JSON dos dois lados.
+
+    Evita toda a classe de bugs de conversão JsProxy/JsNull: o worker manda
+    JSON.stringify(args) e recebe uma string JSON de volta.
+    """
+    import json
+
+    args = json.loads(args_json)
+
+    if op == "taguchi_catalog":
+        out = taguchi_catalog()
+    elif op == "generate_design":
+        out = generate_design(args["req"])
+    elif op == "analyze":
+        out = await analyze(args["bundle"], args["req"])
+    elif op == "profiler":
+        out = await profiler(args["bundle"], args["req"])
+    elif op == "export_plot":
+        out = await export_plot(
+            args["bundle"],
+            args["experiment_id"],
+            args["response_name"],
+            args["model"],
+            args["plot"],
+            args["fmt"],
+            args.get("dpi") or 600,
+            args.get("factor_x"),
+            args.get("factor_y"),
+        )
+    elif op == "export_plot_report":
+        out = await export_plot_report(
+            args["bundle"],
+            args["experiment_id"],
+            args["response_name"],
+            args["model"],
+            args["plot"],
+            args.get("factor_x"),
+            args.get("factor_y"),
+        )
+    elif op == "retro_diagnose":
+        out = retro_diagnose(args["req"])
+    elif op == "retro_materialize":
+        out = retro_materialize(args["req"])
+    else:
+        raise ValueError(f"Operação desconhecida: {op}")
+
+    return json.dumps(out)
+
+
 def retro_materialize(req: dict) -> dict:
     """Pure part of materialize: build the design; TS persists and assigns ids."""
     request = RetroMaterializeRequest.model_validate(req)

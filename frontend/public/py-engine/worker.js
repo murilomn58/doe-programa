@@ -65,6 +65,8 @@ async function bootStage1() {
   status("ready-analysis", "Análise e geração de planos prontas");
 }
 
+let exportError = null;
+
 async function bootStage2() {
   try {
     status("loading-export", "Carregando o renderizador de figuras (matplotlib)");
@@ -80,29 +82,21 @@ async function bootStage2() {
     status("ready-export", "Exportação em qualidade de publicação pronta");
   } catch (err) {
     // export é opcional: análise continua funcionando
-    status("export-failed", String(err && err.message ? err.message : err));
+    exportError = String(err && err.message ? err.message : err);
+    status("export-failed", exportError);
   }
 }
 
+let stage2Promise = null;
 const bootPromise = bootStage1()
   .then(() => {
     // estágio 2 em seguida, sem bloquear as chamadas de análise
-    bootStage2();
+    stage2Promise = bootStage2();
   })
   .catch((err) => {
     bootError = String(err && err.message ? err.message : err);
     status("boot-failed", bootError);
   });
-
-/** Converte um resultado PyProxy (dict) em objeto JS puro e libera o proxy. */
-function toJs(pyResult) {
-  if (pyResult && typeof pyResult.toJs === "function") {
-    const js = pyResult.toJs({ dict_converter: Object.fromEntries, create_pyproxies: false });
-    pyResult.destroy();
-    return js;
-  }
-  return pyResult;
-}
 
 async function dispatch(op, args) {
   if (op === "ping") return { ready: engine !== null, exportReady };
@@ -110,110 +104,32 @@ async function dispatch(op, args) {
   await bootPromise;
   if (bootError) throw new Error(`Motor não iniciou: ${bootError}`);
 
-  const asPy = (obj) => pyodide.toPy(obj);
-
-  switch (op) {
-    case "taguchi_catalog":
-      return toJs(engine.taguchi_catalog());
-    case "generate_design": {
-      const req = asPy(args.req);
-      try {
-        return toJs(engine.generate_design(req));
-      } finally {
-        req.destroy();
-      }
+  if (op === "export_plot" || op === "export_plot_report") {
+    // Espera o estágio 2 terminar em vez de falhar: o /report e o clique de
+    // exportar chegam legitimamente antes do matplotlib acabar de carregar.
+    if (stage2Promise) await stage2Promise;
+    if (!exportReady) {
+      throw new Error(
+        exportError
+          ? `O exportador de figuras não carregou: ${exportError}`
+          : "O exportador de figuras não está disponível.",
+      );
     }
-    case "analyze": {
-      const bundle = asPy(args.bundle);
-      const req = asPy(args.req);
-      try {
-        return toJs(await engine.analyze(bundle, req));
-      } finally {
-        bundle.destroy();
-        req.destroy();
-      }
-    }
-    case "profiler": {
-      const bundle = asPy(args.bundle);
-      const req = asPy(args.req);
-      try {
-        return toJs(await engine.profiler(bundle, req));
-      } finally {
-        bundle.destroy();
-        req.destroy();
-      }
-    }
-    case "export_plot": {
-      if (!exportReady) {
-        throw new Error(
-          "O exportador de figuras ainda está carregando. Tenta de novo em alguns segundos.",
-        );
-      }
-      const bundle = asPy(args.bundle);
-      try {
-        return toJs(
-          await engine.export_plot(
-            bundle,
-            args.experiment_id,
-            args.response_name,
-            args.model,
-            args.plot,
-            args.fmt,
-            args.dpi || 600,
-            args.factor_x || null,
-            args.factor_y || null,
-          ),
-        );
-      } finally {
-        bundle.destroy();
-      }
-    }
-    case "export_plot_report": {
-      if (!exportReady) {
-        throw new Error("O exportador de figuras ainda está carregando.");
-      }
-      const bundle = asPy(args.bundle);
-      try {
-        const out = await engine.export_plot_report(
-          bundle,
-          args.experiment_id,
-          args.response_name,
-          args.model,
-          args.plot,
-          args.factor_x || null,
-          args.factor_y || null,
-        );
-        return out === undefined || out === null ? null : toJs(out);
-      } finally {
-        bundle.destroy();
-      }
-    }
-    case "retro_diagnose": {
-      const req = asPy(args.req);
-      try {
-        return toJs(engine.retro_diagnose(req));
-      } finally {
-        req.destroy();
-      }
-    }
-    case "retro_materialize": {
-      const req = asPy(args.req);
-      try {
-        return toJs(engine.retro_materialize(req));
-      } finally {
-        req.destroy();
-      }
-    }
-    default:
-      throw new Error(`Operação desconhecida: ${op}`);
   }
+
+  // Fronteira única JS<->Python: strings JSON dos dois lados (sem JsProxy).
+  const out = await engine.call_json(op, JSON.stringify(args));
+  return out == null || out === "null" ? null : JSON.parse(out);
 }
 
 self.onmessage = async (event) => {
   const { id, op, args } = event.data || {};
   if (!id) return;
   try {
-    const result = await dispatch(op, args || {});
+    // Normaliza pra JSON puro: remove `undefined` (que o pydantic rejeitaria
+    // como valor) e garante objetos planos antes do toPy.
+    const cleanArgs = JSON.parse(JSON.stringify(args || {}));
+    const result = await dispatch(op, cleanArgs);
     post({ id, ok: true, result });
   } catch (err) {
     // erros de domínio Python chegam como PythonError com a mensagem no fim
