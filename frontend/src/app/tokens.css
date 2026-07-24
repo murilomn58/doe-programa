@@ -1,69 +1,64 @@
 /*
- * DoE Programa — camada de tokens (redesenho claude.ai/design, 2026-07).
- * Registra as cores como tema do Tailwind 4 (@theme) → gera as classes
- * semânticas (bg-surface-1, text-accent, border-primary, text-significant…).
- * Trocar a identidade visual = editar SÓ este arquivo.
- *
- * Valores: tema escuro científico. Superfícies slate, acento cyan,
- * AÇÃO PRIMÁRIA = indigo (mudança do redesenho, antes era azul),
- * significant = emerald (p < 0.05), warning = amber, danger = red.
+ * DoE Programa — tokens (redesenho "pesquisa científica" claro, 2026-07).
+ * Fundo branco, detalhes em azul, tipografia técnica. Trocar identidade = só aqui.
  */
 @theme {
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", monospace;
 
-  /* Superfícies */
-  --color-surface-0: #0f172a;
-  --color-surface-1: #1e293b;
-  --color-surface-2: #334155;
-  --color-surface-3: #475569;
+  /* Superfícies — branco → cinza-frio muito claro */
+  --color-surface-0: #ffffff;
+  --color-surface-1: #f8fafc;
+  --color-surface-2: #f1f5f9;
+  --color-surface-3: #e2e8f0;
 
   /* Bordas */
-  --color-border-subtle: #1e293b;
-  --color-border: #334155;
-  --color-border-strong: #475569;
+  --color-border-subtle: #eef2f7;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
 
-  /* Texto */
-  --color-foreground-strong: #f1f5f9;
-  --color-foreground: #e2e8f0;
-  --color-foreground-soft: #cbd5e1;
-  --color-muted: #94a3b8;
-  --color-faint: #64748b;
+  /* Texto — tinta escura sobre branco */
+  --color-foreground-strong: #0f172a;
+  --color-foreground: #1e293b;
+  --color-foreground-soft: #334155;
+  --color-muted: #64748b;
+  --color-faint: #94a3b8;
 
-  /* Acento — destaque/dados (cyan) */
-  --color-accent: #67e8f9;
-  --color-accent-mid: #22d3ee;
-  --color-accent-strong: #06b6d4;
-  --color-accent-deep: #0891b2;
-  --color-accent-border: #0e7490;
-  --color-accent-deep-border: #164e63;
+  /* Acento — destaque/dados (azul, escurecido p/ contraste em branco) */
+  --color-accent: #0ea5e9;
+  --color-accent-mid: #0284c7;
+  --color-accent-strong: #0369a1;
+  --color-accent-deep: #075985;
+  --color-accent-border: #7dd3fc;
+  --color-accent-deep-border: #bae6fd;
 
-  /* Ação primária — formulários/CTAs (indigo) */
-  --color-primary: #6366f1;
-  --color-primary-soft: #818cf8;
-  --color-primary-strong: #4f46e5;
+  /* Ação primária — CTAs/formulários (AZUL) */
+  --color-primary: #2563eb;
+  --color-primary-soft: #3b82f6;
+  --color-primary-strong: #1d4ed8;
 
-  /* Semântica estatística */
-  --color-significant: #34d399;
-  --color-significant-soft: #6ee7b7;
-  --color-significant-strong: #10b981;
-  --color-significant-border: #065f46;
-  --color-significant-surface: #052e16;
-  --color-warning: #fbbf24;
-  --color-warning-soft: #fcd34d;
-  --color-warning-strong: #f59e0b;
-  --color-warning-border: #92400e;
-  --color-warning-surface: #451a03;
-  --color-danger: #f87171;
-  --color-danger-soft: #fca5a5;
-  --color-danger-strong: #ef4444;
-  --color-danger-border: #991b1b;
-  --color-danger-surface: #450a0a;
+  /* Semântica estatística (escurecida p/ fundo claro) */
+  --color-significant: #059669;
+  --color-significant-soft: #10b981;
+  --color-significant-strong: #047857;
+  --color-significant-border: #a7f3d0;
+  --color-significant-surface: #ecfdf5;
+  --color-warning: #d97706;
+  --color-warning-soft: #f59e0b;
+  --color-warning-strong: #b45309;
+  --color-warning-border: #fde68a;
+  --color-warning-surface: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-soft: #ef4444;
+  --color-danger-strong: #b91c1c;
+  --color-danger-border: #fecaca;
+  --color-danger-surface: #fef2f2;
 
-  /* Informativo/especial (violeta) */
-  --color-info: #8b5cf6;
-  --color-info-soft: #c4b5fd;
+  /* Informativo/especial (azul-índigo, discreto) */
+  --color-info: #4f46e5;
+  --color-info-soft: #c7d2fe;
 
   /* Texto sobre superfícies coloridas */
-  --color-on-accent: #0f172a;
+  --color-on-accent: #ffffff;
   --color-on-primary: #ffffff;
 }

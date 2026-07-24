@@ -63,4 +63,4 @@ Ponteiros de skill (abra a skill só quando a tarefa pedir):
 Nada entra no `main` sem QA verde + revisão do PR pelo Murilo. Mesmo com tech-lead e QA atuando, o PR é revisado antes do merge. Sem revisar = voltou pro vibe coding.
 
 ## Mapa vivo
-Este projeto tem um `arquitetura_doe_programa.html` na raiz (canvas estilo n8n): features e dependências, endpoints, webhooks e integrações externas, cada nó linkando o arquivo real (`C:\dev\DoE_programa\...`). Atualizado pela skill `gerar-mapa` no fim de cada `/adp-spec`. Use-o pra achar rápido qual arquivo mexer.
+O antigo `arquitetura_doe_programa.html` (canvas estilo n8n na raiz) foi descontinuado no deploy e removido do repo — era artefato de dev e não vai para produção. Para navegar o código, use a estrutura em camadas descrita acima (backend `router → controller → service → repository`; frontend `api → hook → container → presentational`) e as skills `backend-layers` / `frontend-react`.

@@ -2,7 +2,16 @@
 @import "./tokens.css";
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
+}
+
+/* fundo com grade técnica sutil (papel milimetrado) — usar em heros/dashboard,
+ * NÃO atrás de tabelas/grids de dados (evita ruído). */
+.sci-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* --- Printable /report route -----------------------------------------------

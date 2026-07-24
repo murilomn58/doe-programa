@@ -6,8 +6,8 @@
  * Plotly touches ``window`` at import time, so it must never run during SSR
  * (Next 15 would throw "window is not defined"). We load the prebuilt
  * ``plotly.js-dist-min`` bundle + the react-plotly factory lazily, client-side
- * only (``ssr: false``). A shared dark "scientific" theme keeps every chart on
- * the same slate/cyan palette as the rest of the app, with a closed frame
+ * only (``ssr: false``). A shared light "scientific" theme keeps every chart on
+ * the same white/blue palette as the rest of the app, with a closed frame
  * (SciencePlots-style mirror axes), outside ticks and PT-BR separators.
  */
 
@@ -43,25 +43,26 @@ export const Plot = dynamic(
   },
 ) as ComponentType<PlotParams>;
 
-/** Scientific dark palette (aligned with the Tailwind slate/cyan theme). */
+/** Scientific light palette (aligned with the Tailwind white/blue theme). */
 export const PLOT_COLORS = {
-  cyan: "#22d3ee",
-  blue: "#3b82f6",
-  emerald: "#34d399",
-  amber: "#fbbf24",
-  rose: "#fb7185",
-  violet: "#a78bfa",
-  grid: "#2a3850",
-  axis: "#64748b",
-  text: "#cbd5e1",
-  /** Dark edge for markers (slate-900) — shared by every scatter marker. */
-  markerEdge: "#0f172a",
+  cyan: "#0ea5e9",
+  blue: "#2563eb",
+  emerald: "#059669",
+  amber: "#d97706",
+  rose: "#dc2626",
+  violet: "#4f46e5",
+  grid: "#e2e8f0",
+  axis: "#94a3b8",
+  text: "#1e293b",
+  /** Light edge for markers (white) — shared by every scatter marker. */
+  markerEdge: "#ffffff",
 };
 
 export const SERIES_COLORS = [
+  PLOT_COLORS.blue,
   PLOT_COLORS.cyan,
-  PLOT_COLORS.amber,
   PLOT_COLORS.emerald,
+  PLOT_COLORS.amber,
   PLOT_COLORS.violet,
   PLOT_COLORS.rose,
 ];
@@ -105,9 +106,9 @@ export function darkLayout(overrides: Partial<Layout> = {}): Partial<Layout> {
     },
     margin: { l: 64, r: 24, t: 24, b: 56 },
     hoverlabel: {
-      bgcolor: "#0f172a",
+      bgcolor: "#ffffff",
       bordercolor: PLOT_COLORS.grid,
-      font: { size: 12 },
+      font: { size: 12, color: PLOT_COLORS.text },
     },
     separators: ",.",
     colorway: SERIES_COLORS,
@@ -187,7 +188,7 @@ export function scene3d(
     color: PLOT_COLORS.text,
     tickfont: { color: PLOT_COLORS.text, size: 11 },
     showbackground: true,
-    backgroundcolor: "rgba(15,23,42,0.5)",
+    backgroundcolor: "rgba(248,250,252,0.5)",
     showspikes: false,
   });
   return {
