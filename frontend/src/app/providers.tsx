@@ -1,8 +1,9 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SessionProvider } from "next-auth/react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { warmUpEngine } from "@/engine/client";
+import { EngineStatusBar } from "@/components/EngineStatusBar";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -14,9 +15,21 @@ export function Providers({ children }: { children: ReactNode }) {
       }),
   );
 
+  // Boot do motor científico local (Pyodide) assim que o app abre, e registro
+  // do service worker que cacheia o runtime pra visita seguinte abrir rápido.
+  useEffect(() => {
+    warmUpEngine();
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/engine-sw.js").catch(() => {
+        // cache é otimização: sem SW o app continua funcionando online
+      });
+    }
+  }, []);
+
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </SessionProvider>
+    <QueryClientProvider client={queryClient}>
+      <EngineStatusBar />
+      {children}
+    </QueryClientProvider>
   );
 }

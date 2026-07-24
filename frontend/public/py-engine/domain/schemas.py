@@ -1,0 +1,677 @@
+"""Pydantic request/response schemas (the HTTP contract)."""
+
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from domain.types import (
+    CCDVariant,
+    DesignType,
+    FactorType,
+    OptimalCriterion,
+    RSMModel,
+    SNObjective,
+)
+
+
+class ExperimentCreate(BaseModel):
+    """POST /experiments body."""
+
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+
+
+class ExperimentRead(BaseModel):
+    """Experiment as returned by the API."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    description: str | None
+    created_at: datetime
+
+
+# --- Design generation (issue 02) --------------------------------------------
+
+
+class FactorSpec(BaseModel):
+    """A factor as described by the user in the setup wizard."""
+
+    name: str = Field(min_length=1, max_length=255)
+    factor_type: FactorType
+    unit: str | None = Field(default=None, max_length=50)
+    # quantitative: numeric endpoints
+    low: float | None = None
+    high: float | None = None
+    # qualitative: category labels
+    low_label: str | None = Field(default=None, max_length=255)
+    high_label: str | None = Field(default=None, max_length=255)
+    # Taguchi 3+-level factors: explicit ordered level list (quantitative values
+    # or qualitative labels). None → the two-level low/high pair is used.
+    levels: list[float] | None = None
+
+    @model_validator(mode="after")
+    def _check_levels(self) -> "FactorSpec":
+        if self.factor_type is FactorType.QUANTITATIVE:
+            has_pair = self.low is not None and self.high is not None
+            has_list = self.levels is not None and len(self.levels) >= 2
+            if not has_pair and not has_list:
+                raise ValueError(
+                    f"Fator quantitativo '{self.name}' precisa de valores baixo e alto."
+                )
+            if has_pair and self.low == self.high:
+                raise ValueError(
+                    f"Fator quantitativo '{self.name}': baixo e alto não podem ser iguais."
+                )
+        else:
+            if not self.low_label or not self.high_label:
+                raise ValueError(
+                    f"Fator qualitativo '{self.name}' precisa de rótulos baixo e alto."
+                )
+        return self
+
+
+class ResponseSpec(BaseModel):
+    """A response (output) column to be measured."""
+
+    name: str = Field(min_length=1, max_length=255)
+    unit: str | None = Field(default=None, max_length=50)
+
+
+class FractionalConfig(BaseModel):
+    """Configuration for a fractional factorial 2^(k-p) design.
+
+    Exactly ONE of ``generators`` (pyDOE3 ``fracfact`` string, e.g. "a b ab")
+    or ``resolution`` (pyDOE3 ``fracfact_by_res``) must be provided.
+    """
+
+    generators: str | None = None
+    resolution: int | None = Field(default=None, ge=3, le=6)
+
+    @model_validator(mode="after")
+    def _exactly_one(self) -> "FractionalConfig":
+        if (self.generators is None) == (self.resolution is None):
+            raise ValueError(
+                "Planejamento fracionado: informe exatamente um entre "
+                "'generators' e 'resolution'."
+            )
+        return self
+
+
+class CCDConfig(BaseModel):
+    """Configuration for a Central Composite Design."""
+
+    variant: CCDVariant = CCDVariant.ROTATABLE
+    center_factorial: int = Field(default=4, ge=0, le=20)  # centers in cube block
+    center_axial: int = Field(default=4, ge=0, le=20)  # centers in star block
+
+
+class TaguchiConfig(BaseModel):
+    """Configuration for a Taguchi orthogonal-array design.
+
+    ``array_name`` picks a specific OA from the pyDOE3 catalog (e.g. "L8(2^7)"
+    or the short "L8"). ``None`` auto-selects the smallest OA whose columns can
+    host every factor's level count. ``sn_objective`` drives the S/N ratio.
+    """
+
+    array_name: str | None = None
+    sn_objective: SNObjective = SNObjective.LARGER
+
+
+class OptimalConfig(BaseModel):
+    """Configuration for a D/I-optimal exchange design.
+
+    ``n_runs`` is the requested design size (must be >= number of model
+    parameters). ``model`` picks the RSM term set the design is optimized for.
+    """
+
+    criterion: OptimalCriterion = OptimalCriterion.D
+    n_runs: int = Field(ge=2, le=200)
+    model: RSMModel = RSMModel.LINEAR_INTERACTIONS
+    n_levels: int = Field(default=3, ge=2, le=5)  # candidate grid resolution
+
+
+class DSDConfig(BaseModel):
+    """Configuration for a Definitive Screening Design (2-level categoricals)."""
+
+    add_extra_runs: int = Field(default=0, ge=0, le=12)  # n_fake_factors → +2 each
+
+
+class DesignGenerateRequest(BaseModel):
+    """POST /designs/generate body."""
+
+    name: str | None = Field(default=None, max_length=255)
+    experiment_id: int | None = None
+    design_type: DesignType = DesignType.FULL_FACTORIAL_2K
+    replicates: int = Field(default=1, ge=1, le=20)
+    factors: list[FactorSpec] = Field(min_length=1)
+    responses: list[ResponseSpec] = Field(default_factory=list)
+    seed: int | None = None  # optional: deterministic run-order randomization
+    # family-specific knobs (ignored by families that don't use them)
+    fractional: FractionalConfig | None = None
+    ccd: CCDConfig | None = None
+    taguchi: TaguchiConfig | None = None
+    optimal: OptimalConfig | None = None
+    dsd: DSDConfig | None = None
+    bbd_center: int = Field(default=3, ge=0, le=20)  # BBD center points
+    center_points: int = Field(default=0, ge=0, le=20)  # 2^k / fractional
+
+
+class LevelRead(BaseModel):
+    coded_value: int
+    natural_value: float | None = None
+    label: str | None = None
+
+
+class FactorRead(BaseModel):
+    id: int | None = None
+    name: str
+    factor_type: FactorType
+    unit: str | None = None
+    position: int
+    levels: list[LevelRead]
+
+
+class ResponseRead(BaseModel):
+    id: int | None = None
+    name: str
+    unit: str | None = None
+    position: int
+
+
+class RunCellRead(BaseModel):
+    # int | float (smart union): 2^k/fractional corners stay JSON ints exactly
+    # as before (golden bytes intact); CCD axials/centers carry floats.
+    coded: int | float
+    natural: float | None = None
+    label: str | None = None
+
+
+class RunRead(BaseModel):
+    id: int | None = None
+    run_order: int
+    std_order: int
+    point_type: int
+    block: int
+    replicate: int
+    factors: dict[str, RunCellRead]
+    # Measured response values keyed by response name; empty until entered.
+    response_values: dict[str, float | None] = Field(default_factory=dict)
+
+
+class DesignRead(BaseModel):
+    """The generated matrix returned to the frontend RunsTable (read-only)."""
+
+    experiment_id: int
+    design_type: DesignType
+    n_runs: int
+    factors: list[FactorRead]
+    responses: list[ResponseRead]
+    runs: list[RunRead]
+    # fractional 2^(k-p) only; None for every other family
+    resolution: int | None = None
+    aliasing: list[str] | None = None
+    # Taguchi/optimal only; None for every other family
+    array_name: str | None = None
+    optimal_efficiency: float | None = None
+
+
+class TaguchiArrayRead(BaseModel):
+    """One orthogonal array of the Taguchi catalog (for the DesignPicker)."""
+
+    name: str  # pyDOE3 catalog name, e.g. "L8(2^7)"
+    runs: int  # number of experimental runs (rows)
+    n_columns: int  # total columns available for factor assignment
+    level_capacity: dict[int, int]  # {levels: number of columns supporting it}
+
+
+class TaguchiCatalogRead(BaseModel):
+    """The full Taguchi orthogonal-array catalog."""
+
+    arrays: list[TaguchiArrayRead]
+
+
+# --- data entry (issue 03) ---------------------------------------------------
+
+
+class RunsRead(BaseModel):
+    """The persisted matrix + response values for the editable RunsGrid."""
+
+    experiment_id: int
+    n_runs: int
+    factors: list[FactorRead]
+    responses: list[ResponseRead]
+    runs: list[RunRead]
+
+
+class ResponseValueUpsert(BaseModel):
+    """One cell of the response grid to persist.
+
+    ``value`` is the raw cell text (spreadsheet-style): the service parses it,
+    accepting ``.``/``,`` decimals and treating empty/whitespace as "cleared"
+    (stored as null so partial entry survives).
+    """
+
+    run_id: int
+    response_name: str = Field(min_length=1, max_length=255)
+    value: str | None = None
+
+
+class ResponsesUpsertRequest(BaseModel):
+    """POST /experiments/{id}/runs/responses body — a bulk upsert."""
+
+    values: list[ResponseValueUpsert] = Field(default_factory=list)
+
+
+# --- analysis (issue 04) -----------------------------------------------------
+
+
+class AnalysisRequest(BaseModel):
+    """POST /analysis body — one response, one RSM model.
+
+    ``factor_x``/``factor_y`` pick which pair of quantitative factors the
+    surface/contour/interaction charts plot (defaults to the first pair).
+    """
+
+    experiment_id: int
+    response_name: str = Field(min_length=1, max_length=255)
+    model: RSMModel = RSMModel.LINEAR
+    factor_x: str | None = None
+    factor_y: str | None = None
+
+
+class TermRead(BaseModel):
+    label: str
+    kind: str
+
+
+class AnovaRowRead(BaseModel):
+    source: str
+    ss: float
+    df: int
+    ms: float | None = None
+    f: float | None = None
+    p: float | None = None
+
+
+class EffectRowRead(BaseModel):
+    term: str
+    effect: float
+    coef_coded: float
+    std_err: float | None = None
+    t: float | None = None
+    p: float | None = None
+    ci_low: float | None = None
+    ci_high: float | None = None
+    pseudo_t: float | None = None
+    significant: bool | None = None
+
+
+class CoefRowRead(BaseModel):
+    term: str
+    coef_coded: float
+    coef_natural: float | None = None
+    std_err: float | None = None
+    t: float | None = None
+    p: float | None = None
+    ci_low: float | None = None
+    ci_high: float | None = None
+    vif: float | None = None
+
+
+class StatsPanelRead(BaseModel):
+    n_obs: int
+    df_resid: int
+    r_squared: float
+    adj_r_squared: float
+    rmse: float
+    sse: float
+    total_ss: float
+    press: float | None = None
+    predicted_r_squared: float | None = None
+
+
+class LenthRead(BaseModel):
+    pse: float
+    me: float
+    sme: float
+    alpha: float
+
+
+# --- plots (issue 05) --------------------------------------------------------
+
+
+class SurfaceRead(BaseModel):
+    factor_x: str
+    factor_y: str
+    x: list[float]
+    y: list[float]
+    z: list[list[float | None]]
+    # observed experimental points (natural units) for the contour overlay
+    points_x: list[float] = Field(default_factory=list)
+    points_y: list[float] = Field(default_factory=list)
+
+
+class ParetoRead(BaseModel):
+    terms: list[str]
+    std_effects: list[float]
+    sig_line: float
+    alpha: float
+
+
+class MainEffectRead(BaseModel):
+    factor: str
+    level_labels: list[str]
+    levels: list[float]
+    means: list[float | None]
+
+
+class InteractionLineRead(BaseModel):
+    level_label: str
+    x: list[float]
+    y: list[float | None]
+    ci_low: list[float | None]
+    ci_high: list[float | None]
+
+
+class InteractionRead(BaseModel):
+    factor_x: str
+    factor_group: str
+    x_levels: list[float]
+    x_labels: list[str]
+    lines: list[InteractionLineRead]
+
+
+class ObsVsPredRead(BaseModel):
+    observed: list[float]
+    predicted: list[float]
+    line_min: float
+    line_max: float
+    r_squared: float | None = None
+
+
+class ScatterRead(BaseModel):
+    x: list[float]
+    y: list[float]
+
+
+class QQRead(BaseModel):
+    theoretical: list[float]
+    sample: list[float]
+    line_slope: float
+    line_intercept: float
+
+
+class CubeRead(BaseModel):
+    factors: list[str]
+    corner_coded: list[list[float]]
+    corner_values: list[float | None]
+
+
+class HalfNormalRead(BaseModel):
+    terms: list[str]
+    abs_effects: list[float | None]
+    theoretical: list[float | None]
+    labels_significant: list[str]
+
+
+class InfluenceRead(BaseModel):
+    run_order: list[int]
+    leverage: list[float | None]
+    cook: list[float | None]
+    std_resid: list[float | None]
+    threshold_leverage: float | None = None
+    threshold_cook: float | None = None
+
+
+class DesirabilityRead(BaseModel):
+    factor_x: str
+    factor_y: str
+    x: list[float]
+    y: list[float]
+    d: list[list[float | None]]
+
+
+class PlotsRead(BaseModel):
+    factor_pairs: list[list[str]]
+    selected_pair: list[str] | None = None
+    grand_mean: float
+    surface: SurfaceRead | None = None
+    contour: SurfaceRead | None = None
+    pareto: ParetoRead | None = None
+    main_effects: list[MainEffectRead] = Field(default_factory=list)
+    interaction: InteractionRead | None = None
+    obs_vs_pred: ObsVsPredRead | None = None
+    residual_vs_fitted: ScatterRead | None = None
+    qq: QQRead | None = None
+    # advanced diagnostics (issue 10)
+    cube: CubeRead | None = None
+    half_normal: HalfNormalRead | None = None
+    influence: InfluenceRead | None = None
+    residual_vs_order: ScatterRead | None = None
+    desirability: DesirabilityRead | None = None
+
+
+# --- profiler (issue 10) -----------------------------------------------------
+
+
+class ProfilerRequest(BaseModel):
+    """POST /analysis/profiler body — one response/model at a coded point.
+
+    ``point`` maps factor name -> coded coordinate in [-1, 1]; omitted factors
+    default to the coded center (0). ``maximize`` picks the optimum direction.
+    """
+
+    experiment_id: int
+    response_name: str = Field(min_length=1, max_length=255)
+    model: RSMModel = RSMModel.LINEAR
+    point: dict[str, float] = Field(default_factory=dict)
+    maximize: bool = True
+
+
+class ProfilerSliceRead(BaseModel):
+    factor: str
+    coded: list[float]
+    predicted: list[float | None]
+    ci_low: list[float | None]
+    ci_high: list[float | None]
+
+
+class ProfilerOptimumRead(BaseModel):
+    point: dict[str, float]
+    value: float | None = None
+
+
+class ProfilerResultRead(BaseModel):
+    """POST /analysis/profiler result — prediction + per-factor slices + optimum."""
+
+    prediction: float | None = None
+    ci_low: float | None = None
+    ci_high: float | None = None
+    slices: list[ProfilerSliceRead] = Field(default_factory=list)
+    optimum: ProfilerOptimumRead
+
+
+class AnalysisResultRead(BaseModel):
+    """The full analysis returned by POST /analysis."""
+
+    response_name: str
+    model: RSMModel
+    estimable: bool
+    saturated: bool
+    warnings: list[str]
+    sign_maps: dict[str, dict[str, str]]
+    terms: list[TermRead]
+    anova: list[AnovaRowRead]
+    pure_error: AnovaRowRead | None = None
+    lack_of_fit: AnovaRowRead | None = None
+    total: AnovaRowRead | None = None
+    effects: list[EffectRowRead]
+    coefficients: list[CoefRowRead]
+    stats: StatsPanelRead | None = None
+    lenth: LenthRead | None = None
+    r_squared: float | None = None
+    adj_r_squared: float | None = None
+    ms_pure_error: float | None = None
+    plots: PlotsRead | None = None
+
+
+# --- retrospective (detecção retrospectiva de planejamento) -------------------
+# Parte 1 (motor puro): request + read models do diagnóstico. A parte 2 desta
+# lane acrescenta aqui os modelos de estimabilidade/completions e o read model
+# agregado do endpoint.
+
+
+class RetroFactorSpec(BaseModel):
+    """A factor column of a pasted table ("auto" lets the backend infer the type)."""
+
+    name: str = Field(min_length=1, max_length=255)
+    factor_type: Literal["auto", "quantitative", "qualitative"] = "auto"
+    unit: str | None = Field(default=None, max_length=50)
+
+
+class RetroResponseSpec(BaseModel):
+    """A response column of a pasted table."""
+
+    name: str = Field(min_length=1, max_length=255)
+    unit: str | None = Field(default=None, max_length=50)
+
+
+class RetroRow(BaseModel):
+    """One raw table row; cells are raw strings (backend parses ','/'.' decimals)."""
+
+    factors: dict[str, str] = Field(default_factory=dict)
+    responses: dict[str, str] = Field(default_factory=dict)
+
+
+class RetroDiagnoseRequest(BaseModel):
+    """POST /retrospective/diagnose body — the pasted table as typed."""
+
+    factors: list[RetroFactorSpec] = Field(min_length=1)
+    responses: list[RetroResponseSpec] = Field(default_factory=list)
+    rows: list[RetroRow] = Field(min_length=1, max_length=5000)
+    response_name: str | None = None
+
+
+class RowIssue(BaseModel):
+    """A row excluded (or degraded) during parsing, with a PT-BR message."""
+
+    row: int
+    message: str
+
+
+class FactorScaleRead(BaseModel):
+    """The inferred coding scale of one factor column."""
+
+    name: str
+    factor_type: str
+    low: float | None = None
+    high: float | None = None
+    center: float | None = None
+    n_levels: int
+    distinct_levels: list[float] | None = None
+    labels: list[str] | None = None
+    alpha: float | None = None
+    is_constant: bool = False
+    warnings: list[str] = Field(default_factory=list)
+
+
+class RunClassRead(BaseModel):
+    """One parsed run in coded space with its geometric classification."""
+
+    row: int
+    point_type: str  # "factorial" | "center" | "axial" | "edge" | "other"
+    coded: dict[str, float]
+    replicate_group: int
+
+
+class DesignMatchRead(BaseModel):
+    """One design-family hypothesis scored against the data."""
+
+    design_type: str
+    variant: str | None = None
+    status: Literal["complete", "partial", "irregular"]
+    detail: str
+    match_pct: float
+    resolution: int | None = None
+    defining_relation: str | None = None
+    aliasing: list[str] | None = None
+    missing_runs: list[dict[str, float | str | None]] = Field(default_factory=list)
+    n_matched: int
+    n_expected: int
+
+
+class ReplicateInfoRead(BaseModel):
+    """Pure-error structure of the table (groups of identical coded points)."""
+
+    n_points_replicated: int
+    runs_per_point_max: int
+    df_pure_error: int
+
+
+# --- retrospective part 2: estimability, completions, diagnose, materialize ---
+
+
+class ModelAssessmentRead(BaseModel):
+    """Whether one RSM model can be fit to the pasted data (estimability guard)."""
+
+    model: str  # RSMModel value: linear | linear_interactions | linear_quadratic | full
+    status: Literal["estimable", "saturated", "not_estimable", "no_data"]
+    n_params: int | None = None  # columns of X (incl. intercept)
+    rank: int | None = None  # numeric rank of X
+    df_resid: int | None = None  # n_rows - n_params (only when estimable)
+    reason: str | None = None  # PT-BR explanation when not estimable / saturated
+
+
+class CompletionRead(BaseModel):
+    """A concrete, deterministic suggestion of runs to add to unlock a model."""
+
+    target: str  # design_type or RSM model the completion enables
+    variant: str | None = None  # e.g. face_centered / rotatable / fold_over
+    title: str
+    runs_to_add: list[dict[str, float | str]] = Field(default_factory=list)
+    n_runs_to_add: int
+    enables: list[str] = Field(default_factory=list)  # RSM models it makes estimable
+    rationale: str
+
+
+class RetroDiagnoseResponse(BaseModel):
+    """POST /retrospective/diagnose result — the full retrospective diagnosis."""
+
+    n_rows: int  # rows submitted
+    n_rows_valid: int  # rows that parsed cleanly
+    row_issues: list[RowIssue] = Field(default_factory=list)
+    factors: list[FactorScaleRead]
+    runs: list[RunClassRead]
+    replicates: ReplicateInfoRead
+    design_matches: list[DesignMatchRead]
+    best_design: str | None = None  # design_type of the top-ranked match
+    models: list[ModelAssessmentRead]
+    best_model: str | None = None
+    response_used: str | None = None  # which response drove the estimability check
+    completions: list[CompletionRead] = Field(default_factory=list)
+
+
+class RetroMaterializeRequest(BaseModel):
+    """POST /retrospective/materialize body — persist an already-run table."""
+
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    factors: list[RetroFactorSpec] = Field(min_length=1)
+    responses: list[RetroResponseSpec] = Field(default_factory=list)
+    rows: list[RetroRow] = Field(min_length=1, max_length=5000)
+    response_name: str | None = None
+    # Extra runs to execute (natural values/labels), appended without responses.
+    append_runs: list[dict[str, float | str]] | None = None
+
+
+class RetroMaterializeResult(BaseModel):
+    """POST /retrospective/materialize result — the created experiment summary."""
+
+    experiment_id: int
+    design_type: str
+    n_runs: int
+    excluded_constant_factors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)

@@ -304,6 +304,17 @@ export function Report({ experimentId, response, model }: ReportProps) {
         DoE Programa — relatório gerado automaticamente.
       </footer>
 
+      {/* Salvar PDF local: sem servidor headless, o print do navegador gera o PDF. */}
+      {ready ? (
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="fixed bottom-6 right-6 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-strong print:hidden"
+        >
+          Salvar como PDF
+        </button>
+      ) : null}
+
       {/* Sentinel: Playwright waits for #report-ready before printing. */}
       {ready ? <div id="report-ready" data-ready="true" /> : null}
     </div>

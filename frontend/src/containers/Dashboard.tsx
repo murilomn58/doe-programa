@@ -41,6 +41,28 @@ export function Dashboard() {
         </span>
       </Link>
 
+      {/* O método em 4 estações — onboarding visual do pesquisador */}
+      <section aria-label="Como funciona" className="mt-8 rounded-xl border border-border bg-surface-1 px-6 py-5">
+        <svg viewBox="0 0 720 84" className="w-full" role="img" aria-label="Planejar, executar, analisar e otimizar">
+          {[
+            { x: 40, label: "Planejar", hint: "fatores e matriz" },
+            { x: 240, label: "Executar", hint: "ensaios no lab" },
+            { x: 440, label: "Analisar", hint: "ANOVA e efeitos" },
+            { x: 640, label: "Otimizar", hint: "ponto ótimo" },
+          ].map((s, i) => (
+            <g key={s.label}>
+              {i < 3 ? (
+                <line x1={s.x + 44} y1={30} x2={s.x + 156} y2={30} stroke="var(--color-border-strong)" strokeWidth={1.5} strokeDasharray="5 4" />
+              ) : null}
+              <circle cx={s.x} cy={30} r={17} fill={i === 3 ? "var(--color-primary)" : "var(--color-surface-0)"} stroke={i === 3 ? "var(--color-primary)" : "var(--color-accent-mid)"} strokeWidth={1.6} />
+              <text x={s.x} y={35} textAnchor="middle" fontSize={13} fontWeight={600} fill={i === 3 ? "#ffffff" : "var(--color-accent-strong)"}>{i + 1}</text>
+              <text x={s.x} y={64} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--color-foreground)">{s.label}</text>
+              <text x={s.x} y={79} textAnchor="middle" fontSize={11} fill="var(--color-muted)">{s.hint}</text>
+            </g>
+          ))}
+        </svg>
+      </section>
+
       <section className="mt-10">
         <h2 className="mb-4 text-lg font-medium text-foreground">
           Experimentos
@@ -50,6 +72,11 @@ export function Dashboard() {
           isLoading={isLoading}
           errorMessage={isError && error ? error.message : null}
         />
+        <p className="mt-4 text-xs text-muted">
+          Seus projetos ficam salvos neste navegador (nada sai do seu
+          computador). Conta e sincronização entre dispositivos chegam em
+          breve.
+        </p>
       </section>
     </main>
   );

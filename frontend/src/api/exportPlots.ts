@@ -1,7 +1,9 @@
-/** API layer: publication-quality figure export (issue 08). No React here. */
+/** API layer: publication-quality figure export, rendered by the LOCAL engine
+ * (matplotlib + SciencePlots inside the Pyodide worker). Same signatures. */
 
 import type { RSMModel } from "@/domain/analysis";
-import { API_BASE_URL } from "@/lib/config";
+import { callEngine } from "@/engine/client";
+import { getAnalysisBundle } from "@/engine/store";
 
 export type ExportPlotKind =
   | "surface"
@@ -27,43 +29,34 @@ export interface ExportPlotBody {
   factor_y?: string | null;
 }
 
-/**
- * POST /export/plot → recebe a imagem (bytes), lê o nome do arquivo do header
- * ``Content-Disposition`` (ou deriva de plot/format) e dispara o download no
- * browser via ``createObjectURL`` + ``<a download>``. O cálculo/renderização é
- * TODO no backend (matplotlib/SciencePlots) — o front só entrega os bytes.
- */
-export async function exportPlot(body: ExportPlotBody): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/export/plot`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dpi: 600, ...body }),
-  });
-  if (!res.ok) {
-    throw new Error(await describeError(res));
-  }
-
-  const blob = await res.blob();
-  const filename =
-    filenameFromDisposition(res.headers.get("Content-Disposition")) ??
-    `${body.plot}.${body.format}`;
-
-  triggerDownload(blob, filename);
+interface ExportedPlot {
+  content_b64: string;
+  media_type: string;
+  filename: string;
 }
 
-/** Parse ``filename="..."`` (or RFC 5987 ``filename*=``) do Content-Disposition. */
-function filenameFromDisposition(header: string | null): string | null {
-  if (!header) return null;
-  const utf8 = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(header);
-  if (utf8?.[1]) {
-    try {
-      return decodeURIComponent(utf8[1].trim().replace(/^"|"$/g, ""));
-    } catch {
-      // fall through to the plain filename form
-    }
-  }
-  const plain = /filename="?([^";]+)"?/i.exec(header);
-  return plain?.[1]?.trim() ?? null;
+export async function exportPlot(body: ExportPlotBody): Promise<void> {
+  const bundle = await getAnalysisBundle(body.experiment_id);
+  const out = await callEngine<ExportedPlot>("export_plot", {
+    bundle,
+    experiment_id: body.experiment_id,
+    response_name: body.response_name,
+    model: body.model,
+    plot: body.plot,
+    fmt: body.format,
+    dpi: body.dpi ?? 600,
+    factor_x: body.factor_x ?? null,
+    factor_y: body.factor_y ?? null,
+  });
+  const blob = b64ToBlob(out.content_b64, out.media_type);
+  triggerDownload(blob, out.filename || `${body.plot}.${body.format}`);
+}
+
+function b64ToBlob(b64: string, mediaType: string): Blob {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mediaType });
 }
 
 /** Cria um object URL temporário e clica um ``<a download>`` invisível. */
@@ -77,18 +70,4 @@ function triggerDownload(blob: Blob, filename: string): void {
   a.remove();
   // Revoke on the next tick — Firefox needs the URL alive during the click.
   setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
-async function describeError(res: Response): Promise<string> {
-  try {
-    const body = (await res.json()) as { detail?: unknown };
-    if (typeof body.detail === "string") return body.detail;
-    if (Array.isArray(body.detail) && body.detail.length > 0) {
-      const first = body.detail[0] as { msg?: string };
-      if (first.msg) return first.msg;
-    }
-  } catch {
-    // fall through to the generic message
-  }
-  return `Falha ao exportar a figura (HTTP ${res.status})`;
 }

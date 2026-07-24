@@ -1,0 +1,33 @@
+{
+ "files": [
+  "domain/__init__.py",
+  "domain/analysis.py",
+  "domain/design.py",
+  "domain/errors.py",
+  "domain/models.py",
+  "domain/plots.py",
+  "domain/schemas.py",
+  "domain/types.py",
+  "engine_api.py",
+  "services/__init__.py",
+  "services/analysis_service.py",
+  "services/design_builders.py",
+  "services/design_builders_screening.py",
+  "services/design_service.py",
+  "services/plot_service.py",
+  "services/publication_service.py",
+  "services/read_mappers.py",
+  "services/retrospective_analysis.py",
+  "services/retrospective_completions.py",
+  "services/retrospective_service.py",
+  "services/retrospective_service_materialize.py",
+  "services/stats_service.py",
+  "vendor/__init__.py",
+  "vendor/dsd/__init__.py",
+  "vendor/dsd/_generalized_dsd.py"
+ ],
+ "wheels": [
+  "pydoe3-1.6.2-py2.py3-none-any.whl",
+  "scienceplots-2.2.2-py3-none-any.whl"
+ ]
+}

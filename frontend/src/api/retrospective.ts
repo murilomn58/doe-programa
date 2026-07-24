@@ -1,4 +1,4 @@
-/** API layer: typed fetch calls for retrospective design detection. No React. */
+/** API layer: retrospective diagnosis/materialization on the local engine. */
 
 import type {
   RetroDiagnoseRequest,
@@ -6,46 +6,41 @@ import type {
   RetroMaterializeRequest,
   RetroMaterializeResult,
 } from "@/domain/retrospective";
-import { API_BASE_URL } from "@/lib/config";
+import type { GeneratedDesign } from "@/domain/design";
+import { callEngine } from "@/engine/client";
+import { persistGeneratedDesign } from "@/engine/store";
 
 export async function postDiagnose(
   input: RetroDiagnoseRequest,
 ): Promise<RetroDiagnoseResponse> {
-  const res = await fetch(`${API_BASE_URL}/retrospective/diagnose`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    throw new Error(await describeError(res, "Falha ao diagnosticar a tabela"));
-  }
-  return res.json() as Promise<RetroDiagnoseResponse>;
+  return callEngine<RetroDiagnoseResponse>("retro_diagnose", { req: input });
+}
+
+interface MaterializePayload {
+  design: GeneratedDesign;
+  design_type: string;
+  n_runs: number;
+  excluded_constant_factors: string[];
+  warnings: string[];
+  name: string;
+  description: string | null;
 }
 
 export async function postMaterialize(
   input: RetroMaterializeRequest,
 ): Promise<RetroMaterializeResult> {
-  const res = await fetch(`${API_BASE_URL}/retrospective/materialize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+  const payload = await callEngine<MaterializePayload>("retro_materialize", {
+    req: input,
   });
-  if (!res.ok) {
-    throw new Error(await describeError(res, "Falha ao criar o experimento"));
-  }
-  return res.json() as Promise<RetroMaterializeResult>;
-}
-
-async function describeError(res: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await res.json()) as { detail?: unknown };
-    if (typeof body.detail === "string") return body.detail;
-    if (Array.isArray(body.detail) && body.detail.length > 0) {
-      const first = body.detail[0] as { msg?: string };
-      if (first.msg) return first.msg;
-    }
-  } catch {
-    // fall through to the generic message
-  }
-  return `${fallback} (HTTP ${res.status})`;
+  const persisted = await persistGeneratedDesign(payload.design, {
+    experimentId: null,
+    name: payload.name,
+  });
+  return {
+    experiment_id: persisted.experiment_id,
+    design_type: payload.design_type,
+    n_runs: payload.n_runs,
+    excluded_constant_factors: payload.excluded_constant_factors,
+    warnings: payload.warnings,
+  };
 }

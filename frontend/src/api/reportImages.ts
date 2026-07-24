@@ -1,14 +1,12 @@
 /**
- * API layer: fetch a publication-quality figure (PNG, white background, 600 DPI)
- * from ``POST /export/plot`` as a blob → object URL, for embedding as an <img>
- * in the printable /report route. No React here.
- *
- * The report embeds the *server-rendered* matplotlib figures (not the live
- * Plotly dark charts) so the PDF comes out journal-ready and print-friendly.
+ * API layer: publication-quality PNG (600 DPI, white background) rendered by
+ * the LOCAL engine for the printable /report route. Returns an object URL, or
+ * null when the fitted model does not produce that figure (old 422-skip).
  */
 
 import type { RSMModel } from "@/domain/analysis";
-import { API_BASE_URL } from "@/lib/config";
+import { callEngine } from "@/engine/client";
+import { getAnalysisBundle } from "@/engine/store";
 
 /** The eight figures the report may show, in rendering order. */
 export const REPORT_PLOTS = [
@@ -33,35 +31,28 @@ export interface ReportPlotRequest {
   factorY?: string | null;
 }
 
-/**
- * Fetches one figure as an object URL, or ``null`` when the fitted model does
- * not produce that plot (backend answers 422). The caller revokes the URL on
- * unmount. A non-422 error (e.g. 404/500) rejects so the report can surface it.
- */
+interface ExportedPlot {
+  content_b64: string;
+  media_type: string;
+  filename: string;
+}
+
 export async function fetchReportPlot(
   input: ReportPlotRequest,
 ): Promise<string | null> {
-  const res = await fetch(`${API_BASE_URL}/export/plot`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      experiment_id: input.experimentId,
-      response_name: input.responseName,
-      model: input.model,
-      plot: input.plot,
-      format: "png",
-      dpi: 600,
-      factor_x: input.factorX ?? null,
-      factor_y: input.factorY ?? null,
-    }),
+  const bundle = await getAnalysisBundle(input.experimentId);
+  const out = await callEngine<ExportedPlot | null>("export_plot_report", {
+    bundle,
+    experiment_id: input.experimentId,
+    response_name: input.responseName,
+    model: input.model,
+    plot: input.plot,
+    factor_x: input.factorX ?? null,
+    factor_y: input.factorY ?? null,
   });
-
-  // 422 = "o modelo ajustado nao produz esse grafico" → not an error, just skip.
-  if (res.status === 422) return null;
-  if (!res.ok) {
-    throw new Error(`Falha ao gerar a figura '${input.plot}' (HTTP ${res.status})`);
-  }
-
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
+  if (out === null) return null;
+  const bin = atob(out.content_b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: out.media_type }));
 }
