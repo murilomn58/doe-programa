@@ -6,7 +6,9 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ExperimentList } from "@/components/ExperimentList";
+import { Badge } from "@/components/ui/Badge";
 import { Callout } from "@/components/ui/Callout";
+import { LogoDoE } from "@/components/ui/LogoDoE";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { seedDemoExperiment } from "@/engine/demo";
 import { EXPERIMENTS_KEY, useExperiments } from "@/hooks/useExperiments";
@@ -31,13 +33,19 @@ export function Dashboard() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
       <PageHeader
-        title="DoE Programa"
-        subtitle="Planejamento de Experimentos"
+        title="Design of Experiments"
+        subtitle="Planejamento de experimentos. Grátis na versão beta."
+        logo={<LogoDoE size={34} cor="#1B4E79" corBorda="#042C53" />}
+        badge={
+          <Badge tone="accent" pill>
+            beta
+          </Badge>
+        }
       />
 
       <Callout label="Por onde começar">
         Vai <b>rodar</b> um experimento novo ou <b>já tem</b> os resultados? O
-        assistente guiado leva você do começo ao fim — define fatores,
+        assistente guiado leva você do começo ao fim: define fatores,
         recomenda o planejamento, gera a matriz e mostra os gráficos.
       </Callout>
 
@@ -112,9 +120,9 @@ export function Dashboard() {
           errorMessage={isError && error ? error.message : null}
         />
         <p className="mt-4 text-xs text-muted">
-          Seus projetos ficam salvos neste navegador (nada sai do seu
-          computador). Conta e sincronização entre dispositivos chegam em
-          breve.
+          Grátis na versão beta. Seus projetos ficam salvos neste navegador
+          (nada sai do seu computador); se você deixou seu email, avisamos
+          quando a sincronização entre dispositivos chegar.
         </p>
       </section>
     </main>

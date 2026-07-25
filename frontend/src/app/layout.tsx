@@ -6,8 +6,9 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "DoE Programa",
-  description: "Planejamento de Experimentos (Design of Experiments)",
+  title: "Design of Experiments",
+  description:
+    "Planejamento de experimentos no navegador: matriz, ANOVA, superfície de resposta e ponto ótimo. Grátis na versão beta.",
 };
 
 export default function RootLayout({

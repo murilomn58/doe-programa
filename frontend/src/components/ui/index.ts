@@ -7,5 +7,7 @@ export { PageHeader } from "./PageHeader";
 export { StepNav } from "./StepNav";
 export { Field } from "./Field";
 export { Input } from "./Input";
+export { Modal } from "./Modal";
+export { LogoDoE } from "./LogoDoE";
 export { Select } from "./Select";
 export { Textarea } from "./Textarea";

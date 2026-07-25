@@ -13,6 +13,7 @@ import {
   type DesignConfig,
 } from "@/components/DesignPicker";
 import { FactorForm } from "@/components/FactorForm";
+import { PedirEmailModal } from "@/components/PedirEmailModal";
 import { ResponsesForm } from "@/components/ResponsesForm";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -32,6 +33,7 @@ import {
 } from "@/domain/recommend";
 import { useGenerateDesign } from "@/hooks/useDesign";
 import { useTaguchiCatalog } from "@/hooks/useTaguchiCatalog";
+import { devePedirEmail } from "@/lib/conta";
 
 const emptyQuantFactor = (): FactorInput => ({
   name: "",
@@ -63,6 +65,7 @@ export function GuidedTour() {
   const [designConfig, setDesignConfig] =
     useState<DesignConfig>(defaultDesignConfig);
   const [advanced, setAdvanced] = useState(false);
+  const [pedirEmail, setPedirEmail] = useState(false);
 
   const generateDesign = useGenerateDesign();
   const taguchiCatalog = useTaguchiCatalog();
@@ -114,9 +117,13 @@ export function GuidedTour() {
 
   const generatedId = generateDesign.data?.experiment_id ?? null;
 
-  // Ao gerar a matriz com sucesso, avança para a entrada de dados.
+  // Ao gerar a matriz com sucesso, avança para a entrada de dados. Se o
+  // usuário entrou sem conta, este é o momento do re-prompt de email (1x).
   useEffect(() => {
-    if (generatedId !== null) setStep("data");
+    if (generatedId !== null) {
+      setStep("data");
+      if (devePedirEmail()) setPedirEmail(true);
+    }
   }, [generatedId]);
 
   function updateFactor(index: number, factor: FactorInput) {
@@ -433,6 +440,12 @@ export function GuidedTour() {
           </div>
         </div>
       ) : null}
+
+      <PedirEmailModal
+        aberto={pedirEmail}
+        contexto="salvar"
+        onFechar={() => setPedirEmail(false)}
+      />
     </main>
   );
 }

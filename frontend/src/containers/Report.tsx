@@ -313,7 +313,7 @@ export function Report({ experimentId, response, model }: ReportProps) {
       ) : null}
 
       <footer className="mt-10 border-t border-slate-300 pt-3 text-[10px] text-slate-400">
-        DoE Programa — relatório gerado automaticamente.
+        Design of Experiments: relatório gerado automaticamente.
       </footer>
 
       {/* Salvar PDF local: sem servidor headless, o print do navegador gera o PDF. */}

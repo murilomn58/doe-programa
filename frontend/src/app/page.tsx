@@ -1,5 +1,5 @@
-import { Dashboard } from "@/containers/Dashboard";
+import { HomeGate } from "@/containers/HomeGate";
 
 export default function Home() {
-  return <Dashboard />;
+  return <HomeGate />;
 }
