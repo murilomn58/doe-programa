@@ -1,14 +1,32 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { ExperimentList } from "@/components/ExperimentList";
 import { Callout } from "@/components/ui/Callout";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useExperiments } from "@/hooks/useExperiments";
+import { seedDemoExperiment } from "@/engine/demo";
+import { EXPERIMENTS_KEY, useExperiments } from "@/hooks/useExperiments";
 
 export function Dashboard() {
   const { data: experiments, isLoading, isError, error } = useExperiments();
+  const router = useRouter();
+  const qc = useQueryClient();
+  const [seeding, setSeeding] = useState(false);
+
+  async function openDemo() {
+    setSeeding(true);
+    try {
+      const id = await seedDemoExperiment();
+      void qc.invalidateQueries({ queryKey: EXPERIMENTS_KEY });
+      router.push(`/experiments/${id}/analysis?response=Resist%C3%AAncia&model=linear`);
+    } finally {
+      setSeeding(false);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
@@ -40,6 +58,27 @@ export function Dashboard() {
           →
         </span>
       </Link>
+
+      {/* Demo pronto: CCD com a história didática completa */}
+      <button
+        type="button"
+        disabled={seeding}
+        onClick={() => void openDemo()}
+        className="mt-3 flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-surface-1 px-6 py-4 text-left transition hover:border-accent-strong/60 disabled:opacity-60"
+      >
+        <span>
+          <span className="block font-semibold text-foreground-strong">
+            {seeding ? "Preparando o exemplo…" : "Explorar um exemplo pronto (superfície de resposta)"}
+          </span>
+          <span className="block text-sm text-foreground-soft">
+            Um CCD real com falta de ajuste no modelo linear: veja o assistente
+            sugerir o quadrático e ache o ponto ótimo no profiler.
+          </span>
+        </span>
+        <span className="shrink-0 text-xl text-accent" aria-hidden>
+          ⚗
+        </span>
+      </button>
 
       {/* O método em 4 estações — onboarding visual do pesquisador */}
       <section aria-label="Como funciona" className="mt-8 rounded-xl border border-border bg-surface-1 px-6 py-5">

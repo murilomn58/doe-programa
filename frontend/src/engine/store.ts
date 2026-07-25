@@ -244,3 +244,184 @@ export async function getAnalysisBundle(experimentId: number): Promise<Record<st
     })),
   };
 }
+
+// --- edição e evolução (Fase B da auditoria 2026-07) --------------------------
+
+export async function updateExperimentMeta(
+  experimentId: number,
+  meta: { name?: string; description?: string | null },
+): Promise<Experiment> {
+  const db = await openDb();
+  const tx = db.transaction("experiments", "readwrite");
+  const store = tx.objectStore("experiments");
+  const current = await reqResult(
+    store.get(experimentId) as IDBRequest<Experiment | undefined>,
+  );
+  if (!current) {
+    db.close();
+    throw new Error(`Experimento ${experimentId} não encontrado.`);
+  }
+  const updated = {
+    ...current,
+    ...(meta.name !== undefined ? { name: meta.name } : {}),
+    ...(meta.description !== undefined ? { description: meta.description } : {}),
+  };
+  store.put(updated);
+  await txDone(tx);
+  db.close();
+  return updated;
+}
+
+export async function deleteExperimentLocal(experimentId: number): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(["experiments", "designs"], "readwrite");
+  tx.objectStore("experiments").delete(experimentId);
+  tx.objectStore("designs").delete(experimentId);
+  await txDone(tx);
+  db.close();
+}
+
+export interface FactorEdit {
+  /** Nome atual do fator (chave). */
+  name: string;
+  newName?: string;
+  unit?: string | null;
+  /** Quantitativo: novos níveis naturais (o coded ±1 não muda). */
+  low?: number;
+  high?: number;
+  /** Qualitativo: novos rótulos. */
+  lowLabel?: string;
+  highLabel?: string;
+}
+
+/** Edita nome/unidade/níveis dos fatores PRESERVANDO as respostas medidas.
+ *  Os valores codificados não mudam; só o mapeamento coded→natural/rótulo. */
+export async function updateFactorsPreservingResponses(
+  experimentId: number,
+  edits: FactorEdit[],
+): Promise<RunsRead> {
+  const design = await (async () => {
+    const db = await openDb();
+    const tx = db.transaction("designs", "readonly");
+    const d = await reqResult(
+      tx.objectStore("designs").get(experimentId) as IDBRequest<
+        | {
+            experiment_id: number;
+            design_type: string;
+            factors: FactorRead[];
+            responses: ResponseRead[];
+            runs: RunRead[];
+            resolution: number | null;
+            aliasing: string[] | null;
+            array_name: string | null;
+            optimal_efficiency: number | null;
+          }
+        | undefined
+      >,
+    );
+    db.close();
+    return d ?? null;
+  })();
+  if (!design) throw new Error(`Experimento ${experimentId} não encontrado.`);
+
+  const byName = new Map(edits.map((e) => [e.name, e]));
+  const renames = new Map<string, string>();
+
+  design.factors = design.factors.map((f) => {
+    const e = byName.get(f.name);
+    if (!e) return f;
+    const isQuant = f.factor_type === "quantitative";
+    const levels = f.levels.map((lv) => {
+      if (isQuant && e.low !== undefined && e.high !== undefined) {
+        const center = (e.low + e.high) / 2;
+        const half = (e.high - e.low) / 2;
+        return { ...lv, natural_value: center + lv.coded_value * half };
+      }
+      if (!isQuant && (e.lowLabel !== undefined || e.highLabel !== undefined)) {
+        const label =
+          lv.coded_value < 0 ? (e.lowLabel ?? lv.label) : (e.highLabel ?? lv.label);
+        return { ...lv, label };
+      }
+      return lv;
+    });
+    const newName = e.newName?.trim() || f.name;
+    if (newName !== f.name) renames.set(f.name, newName);
+    return { ...f, name: newName, unit: e.unit !== undefined ? e.unit : f.unit, levels };
+  });
+
+  design.runs = design.runs.map((r) => {
+    const cells: RunRead["factors"] = {};
+    for (const [name, cell] of Object.entries(r.factors)) {
+      const target = renames.get(name) ?? name;
+      const factor = design.factors.find((f) => f.name === target);
+      let next = { ...cell };
+      if (factor) {
+        const lv = factor.levels.find((l) =>
+          Math.abs(l.coded_value - cell.coded) < 1e-9,
+        );
+        if (lv && factor.factor_type === "quantitative" && lv.natural_value != null) {
+          next = { ...next, natural: lv.natural_value };
+        } else if (factor.factor_type === "quantitative") {
+          // ponto central/axial: interpola pelo novo mapeamento linear
+          const lo = factor.levels.find((l) => l.coded_value === -1)?.natural_value;
+          const hi = factor.levels.find((l) => l.coded_value === 1)?.natural_value;
+          if (lo != null && hi != null) {
+            const center = (lo + hi) / 2;
+            const half = (hi - lo) / 2;
+            next = { ...next, natural: center + cell.coded * half };
+          }
+        }
+        if (factor.factor_type !== "quantitative" && lv) {
+          next = { ...next, label: lv.label ?? next.label };
+        }
+      }
+      cells[target] = next;
+    }
+    return { ...r, factors: cells };
+  });
+
+  const db = await openDb();
+  const tx = db.transaction("designs", "readwrite");
+  tx.objectStore("designs").put(design);
+  await txDone(tx);
+  db.close();
+  return getRunsReadLocal(experimentId);
+}
+
+/** Anexa runs novos (vindos do engine.augment_design) com ids sequenciais. */
+export async function appendRunsLocal(
+  experimentId: number,
+  newRuns: RunRead[],
+): Promise<RunsRead> {
+  const db = await openDb();
+  const tx = db.transaction("designs", "readwrite");
+  const store = tx.objectStore("designs");
+  const design = await reqResult(store.get(experimentId) as IDBRequest<
+    { runs: RunRead[] } | undefined
+  >);
+  if (!design) {
+    db.close();
+    throw new Error(`Experimento ${experimentId} não encontrado.`);
+  }
+  const maxId = design.runs.reduce((m, r) => Math.max(m, r.id ?? 0), 0);
+  design.runs = [
+    ...design.runs,
+    ...newRuns.map((r, i) => ({ ...r, id: maxId + i + 1 })),
+  ];
+  store.put(design);
+  await txDone(tx);
+  db.close();
+  return getRunsReadLocal(experimentId);
+}
+
+/** Design completo (com fatores/níveis) pro engine.augment_design. */
+export async function getDesignForAugment(
+  experimentId: number,
+): Promise<Record<string, unknown>> {
+  const runsRead = await getRunsReadLocal(experimentId);
+  return {
+    factors: runsRead.factors,
+    responses: runsRead.responses,
+    runs: runsRead.runs,
+  };
+}

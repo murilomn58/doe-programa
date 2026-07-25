@@ -301,6 +301,14 @@ async def call_json(op: str, args_json: str) -> str:
             args.get("factor_x"),
             args.get("factor_y"),
         )
+    elif op == "advise":
+        from services.advisor_service import advise as _advise
+
+        out = _sanitize(_advise(args["result"], args["design_meta"]))
+    elif op == "augment_design":
+        from services.design_augment import augment_design as _augment
+
+        out = _sanitize(_augment(args["design"], args["option"]))
     elif op == "retro_diagnose":
         out = retro_diagnose(args["req"])
     elif op == "retro_materialize":

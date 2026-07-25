@@ -37,25 +37,44 @@ export function ExperimentList({
     <ul className="flex flex-col gap-3">
       {experiments.map((experiment) => (
         <li key={experiment.id}>
-          <Link
-            href={`/experiments/${experiment.id}`}
-            className="block rounded-lg border border-border bg-surface-1 p-4 transition hover:border-accent-strong/60 hover:bg-surface-1/70"
-          >
-            <div className="flex items-baseline justify-between gap-4">
-              <h3 className="font-medium text-foreground-strong">{experiment.name}</h3>
-              <span className="font-mono text-xs text-faint">
-                #{experiment.id}
-              </span>
-            </div>
-            {experiment.description ? (
-              <p className="mt-1 text-sm text-muted">
-                {experiment.description}
+          <div className="rounded-lg border border-border bg-surface-1 p-4 transition hover:border-accent-strong/60">
+            <Link href={`/experiments/${experiment.id}`} className="block">
+              <div className="flex items-baseline justify-between gap-4">
+                <h3 className="font-medium text-foreground-strong">{experiment.name}</h3>
+                <span className="font-mono text-xs text-faint">
+                  #{experiment.id}
+                </span>
+              </div>
+              {experiment.description ? (
+                <p className="mt-1 text-sm text-muted">
+                  {experiment.description}
+                </p>
+              ) : null}
+              <p className="mt-2 font-mono text-xs text-accent-mid/70">
+                {new Date(experiment.created_at).toLocaleString("pt-BR")}
               </p>
-            ) : null}
-            <p className="mt-2 font-mono text-xs text-accent-mid/70">
-              {new Date(experiment.created_at).toLocaleString("pt-BR")}
-            </p>
-          </Link>
+            </Link>
+            <div className="mt-3 flex gap-2 border-t border-border-subtle pt-3 text-sm">
+              <Link
+                href={`/experiments/${experiment.id}`}
+                className="rounded-md border border-border px-3 py-1 text-foreground-soft transition hover:bg-surface-2"
+              >
+                Dados
+              </Link>
+              <Link
+                href={`/experiments/${experiment.id}/analysis`}
+                className="rounded-md border border-border px-3 py-1 text-foreground-soft transition hover:bg-surface-2"
+              >
+                Análise
+              </Link>
+              <Link
+                href={`/experiments/${experiment.id}/edit`}
+                className="rounded-md border border-border px-3 py-1 text-foreground-soft transition hover:bg-surface-2"
+              >
+                Editar
+              </Link>
+            </div>
+          </div>
         </li>
       ))}
     </ul>

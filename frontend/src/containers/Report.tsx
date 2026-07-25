@@ -183,12 +183,24 @@ export function Report({ experimentId, response, model }: ReportProps) {
     <div className="report-root mx-auto max-w-[21cm] bg-white px-10 py-10 text-slate-900">
       {/* Header */}
       <header className="mb-8 border-b-2 border-slate-800 pb-4">
-        <p className="text-xs uppercase tracking-widest text-slate-500">
-          Relatório de Planejamento de Experimentos (DoE)
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900">
-          Experimento #{experimentId}
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-slate-500">
+              Relatório de Planejamento de Experimentos (DoE)
+            </p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900">
+              Experimento #{experimentId}
+            </h1>
+          </div>
+          {/* Atalho no topo (o flutuante continua existindo no fim da página). */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary-strong print:hidden"
+          >
+            Salvar como PDF
+          </button>
+        </div>
         <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
           <span>
             Resposta:{" "}

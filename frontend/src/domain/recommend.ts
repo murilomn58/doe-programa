@@ -65,7 +65,7 @@ export function recommendDesign(input: RecommendInput): DesignRecommendation {
         designType: "full_factorial_2k",
         configPatch: { designType: "full_factorial_2k" },
         title: "Fatorial completo 2ᵏ",
-        why: "Você quer otimizar, mas um dos fatores é categórico (não numérico). A busca pelo ponto ótimo por superfície de resposta precisa de fatores numéricos, então começamos pelo fatorial completo — ele mede todos os efeitos e interações e mostra a direção de melhoria.",
+        why: "Você quer otimizar, mas um dos fatores é categórico (não numérico). A busca pelo ponto ótimo por superfície de resposta precisa de fatores numéricos, então começamos pelo fatorial completo, que mede todos os efeitos e interações e mostra a direção de melhoria.",
         caveat:
           "Para mapear a curvatura e achar o ótimo, deixe todos os fatores quantitativos e escolha um CCD.",
       };
@@ -76,8 +76,8 @@ export function recommendDesign(input: RecommendInput): DesignRecommendation {
       title: "Composto Central (CCD)",
       why:
         nFactors >= 3
-          ? "Para otimizar, o CCD acrescenta pontos axiais e centrais que medem a curvatura da resposta — assim dá para ajustar uma superfície e localizar o ponto ótimo. (Com 3+ fatores, o Box-Behnken é uma alternativa mais econômica, disponível no modo avançado.)"
-          : "Para otimizar, o CCD acrescenta pontos axiais e centrais que medem a curvatura da resposta — assim dá para ajustar uma superfície de resposta e localizar o ponto ótimo.",
+          ? "Para otimizar, o CCD acrescenta pontos axiais e centrais que medem a curvatura da resposta; assim dá para ajustar uma superfície e localizar o ponto ótimo. (Com 3+ fatores, o Box-Behnken é uma alternativa mais econômica, disponível no modo avançado.)"
+          : "Para otimizar, o CCD acrescenta pontos axiais e centrais que medem a curvatura da resposta; assim dá para ajustar uma superfície de resposta e localizar o ponto ótimo.",
     };
   }
 
@@ -87,7 +87,7 @@ export function recommendDesign(input: RecommendInput): DesignRecommendation {
       designType: "plackett_burman",
       configPatch: { designType: "plackett_burman" },
       title: "Plackett-Burman",
-      why: "Com muitos fatores, o Plackett-Burman tria quais importam usando pouquíssimos ensaios — ideal para uma primeira peneira antes de estudar os poucos fatores que sobrarem.",
+      why: "Com muitos fatores, o Plackett-Burman tria quais importam usando pouquíssimos ensaios; é ideal para uma primeira peneira antes de estudar a fundo os poucos fatores que sobrarem.",
     };
   }
   if (nFactors >= 4) {
@@ -99,13 +99,13 @@ export function recommendDesign(input: RecommendInput): DesignRecommendation {
         fractionalResolution: 4,
       },
       title: "Fatorial fracionado 2ᵏ⁻ᵖ",
-      why: "Com vários fatores, uma fração testa só metade das combinações e ainda separa os efeitos principais das interações (resolução IV) — bem mais barato que o fatorial completo.",
+      why: "Com vários fatores, uma fração testa só metade das combinações e ainda separa os efeitos principais das interações (resolução IV), saindo bem mais barato que o fatorial completo.",
     };
   }
   return {
     designType: "full_factorial_2k",
     configPatch: { designType: "full_factorial_2k" },
     title: "Fatorial completo 2ᵏ",
-    why: "Com poucos fatores, o fatorial completo testa todas as combinações e já entrega efeitos principais e interações — é o planejamento mais direto e didático para começar.",
+    why: "Com poucos fatores, o fatorial completo testa todas as combinações e já entrega efeitos principais e interações; é o planejamento mais direto e didático para começar.",
   };
 }

@@ -31,10 +31,20 @@ interface PlotCardProps {
 const DEFAULT_FORMATS: PlotExportFormat[] = ["png", "svg", "pdf"];
 
 const FORMAT_LABEL: Record<PlotExportFormat, string> = {
-  png: "PNG (600 DPI)",
-  svg: "SVG (vetorial)",
-  pdf: "PDF (vetorial)",
+  png: "PNG",
+  svg: "SVG",
+  pdf: "PDF",
 };
+
+/** Micro-descrição didática de cada formato (exibida no dropdown). */
+const FORMAT_DESC: Record<PlotExportFormat, string> = {
+  png: "600 DPI, pronto pra artigo",
+  svg: "vetorial, edita no Illustrator/Inkscape",
+  pdf: "vetorial, pronto pra imprimir",
+};
+
+const EXPORT_ERROR_MESSAGE =
+  "Não foi possível gerar o arquivo. Tente de novo em instantes.";
 
 export function PlotCard({
   title,
@@ -61,6 +71,7 @@ export function PlotCard({
 function ExportMenu({ options }: { options: PlotExportOptions }) {
   const { onExport, formats = DEFAULT_FORMATS, busy = false } = options;
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,37 +90,86 @@ function ExportMenu({ options }: { options: PlotExportOptions }) {
     };
   }, [open]);
 
+  /**
+   * Dispara o export com rede de segurança local: a API atual devolve void e o
+   * container trata o erro, mas se o callback lançar (ou devolver uma Promise
+   * rejeitada), mostramos um aviso amigável aqui em vez de falhar em silêncio.
+   */
+  function handleExport(fmt: PlotExportFormat) {
+    setOpen(false);
+    setError(null);
+    try {
+      const result = onExport(fmt) as void | Promise<void>;
+      if (result instanceof Promise) {
+        result.catch(() => setError(EXPORT_ERROR_MESSAGE));
+      }
+    } catch {
+      setError(EXPORT_ERROR_MESSAGE);
+    }
+  }
+
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         disabled={busy}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setError(null);
+          setOpen((v) => !v);
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         className="rounded-md border border-border-strong bg-surface-2/60 px-2 py-1 text-xs font-medium text-foreground-soft transition-colors hover:border-accent-strong hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {busy ? "Exportando…" : "⤓ Exportar"}
+        {busy ? (
+          <span className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+            />
+            Gerando…
+          </span>
+        ) : (
+          "⤓ Exportar"
+        )}
       </button>
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-md border border-border-strong bg-surface-1 shadow-xl"
+          className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-md border border-border-strong bg-surface-1 shadow-xl"
         >
           {formats.map((fmt) => (
             <button
               key={fmt}
               type="button"
               role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onExport(fmt);
-              }}
-              className="block w-full px-3 py-2 text-left text-xs text-foreground-soft transition-colors hover:bg-surface-2 hover:text-accent"
+              onClick={() => handleExport(fmt)}
+              className="block w-full px-3 py-2 text-left transition-colors hover:bg-surface-2"
             >
-              {FORMAT_LABEL[fmt]}
+              <span className="block text-xs font-medium text-foreground">
+                {FORMAT_LABEL[fmt]}
+              </span>
+              <span className="block text-[11px] leading-snug text-faint">
+                {FORMAT_DESC[fmt]}
+              </span>
             </button>
           ))}
+        </div>
+      ) : null}
+      {error && !open ? (
+        <div
+          role="alert"
+          className="absolute right-0 z-20 mt-1 flex w-60 items-start gap-2 rounded-md border border-danger/40 bg-surface-1 px-3 py-2 shadow-xl"
+        >
+          <span className="text-xs leading-snug text-danger">{error}</span>
+          <button
+            type="button"
+            aria-label="Fechar aviso"
+            onClick={() => setError(null)}
+            className="ml-auto text-xs text-muted transition-colors hover:text-foreground"
+          >
+            ×
+          </button>
         </div>
       ) : null}
     </div>

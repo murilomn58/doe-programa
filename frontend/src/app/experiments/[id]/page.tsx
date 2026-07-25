@@ -25,14 +25,24 @@ export default function ExperimentRunsPage({
         back={{ label: "Voltar ao dashboard", href: "/" }}
         right={
           valid ? (
-            <Button
-              variant="accent"
-              onClick={() =>
-                router.push(`/experiments/${experimentId}/analysis`)
-              }
-            >
-              Analisar →
-            </Button>
+            <span className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={() =>
+                  router.push(`/experiments/${experimentId}/edit`)
+                }
+              >
+                Editar
+              </Button>
+              <Button
+                variant="accent"
+                onClick={() =>
+                  router.push(`/experiments/${experimentId}/analysis`)
+                }
+              >
+                Analisar →
+              </Button>
+            </span>
           ) : undefined
         }
       />

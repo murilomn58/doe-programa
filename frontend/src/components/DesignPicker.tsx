@@ -15,6 +15,28 @@ export type FractionalMode = "resolution" | "generators";
 /** Sentinela do seletor de arranjo Taguchi: deixa o backend escolher. */
 export const TAGUCHI_AUTO = "" as const;
 
+/**
+ * Nota didática de 1 frase por família, exibida sob o seletor (e reutilizada
+ * no card de recomendação do tour guiado). Linguagem de professor para leigo.
+ */
+export const DESIGN_FAMILY_NOTE: Record<DesignType, string> = {
+  full_factorial_2k:
+    "Testa todas as combinações de níveis; ideal até 4 fatores, pois os ensaios dobram a cada fator novo.",
+  fractional_factorial_2kp:
+    "Triagem com metade (ou menos) dos ensaios do fatorial completo; em troca, algumas interações podem se confundir entre si.",
+  central_composite:
+    "Adiciona pontos axiais e centrais para ajustar a curvatura e localizar o ponto ótimo (superfície de resposta).",
+  box_behnken:
+    "Ajusta modelo quadrático sem levar todos os fatores aos extremos ao mesmo tempo; útil quando os cantos do domínio são arriscados ou caros.",
+  taguchi:
+    "Arranjos ortogonais voltados à robustez: estimam efeitos principais com poucos ensaios.",
+  plackett_burman:
+    "Triagem de muitos fatores em pouquíssimos ensaios; estima só os efeitos principais.",
+  optimal:
+    "Desenho construído sob medida quando há restrições ou orçamento fixo de ensaios.",
+  dsd: "Triagem definitiva: efeitos principais limpos de confusão com interações de 2 fatores.",
+};
+
 /** UI state of the design picker (mapped to the request payload on generate). */
 export interface DesignConfig {
   designType: DesignType;
@@ -235,7 +257,7 @@ const CCD_VARIANTS: ReadonlyArray<{
     value: "rotatable",
     label: "Rotável",
     description:
-      "α = (2^k)^(1/4) — variância de predição uniforme sobre a esfera.",
+      "α = (2^k)^(1/4): variância de predição uniforme sobre a esfera.",
   },
   {
     value: "orthogonal",
@@ -246,7 +268,7 @@ const CCD_VARIANTS: ReadonlyArray<{
     value: "face_centered",
     label: "Face-centrada",
     description:
-      "α = 1 — pontos axiais nas faces do cubo; não extrapola a faixa dos fatores.",
+      "α = 1: pontos axiais nas faces do cubo; não extrapola a faixa dos fatores.",
   },
 ];
 
@@ -266,12 +288,12 @@ const OPTIMAL_CRITERIA: ReadonlyArray<{
   {
     value: "D",
     label: "D-ótimo",
-    description: "Maximiza det(X'X) — coeficientes precisos (triagem).",
+    description: "Maximiza det(X'X): coeficientes precisos (triagem).",
   },
   {
     value: "I",
     label: "I-ótimo",
-    description: "Minimiza a variância média de predição — ideal para RSM.",
+    description: "Minimiza a variância média de predição; ideal para RSM.",
   },
 ];
 
@@ -383,6 +405,9 @@ export function DesignPicker({
             <option value="optimal">D/I-ótimo</option>
             <option value="dsd">Definitive Screening (DSD)</option>
           </select>
+          <span className="text-xs text-faint">
+            {DESIGN_FAMILY_NOTE[config.designType]}
+          </span>
         </label>
 
         {config.designType === "fractional_factorial_2kp" ? (
@@ -454,7 +479,7 @@ export function DesignPicker({
             {resolutionUnavailable ? (
               <p className="text-xs text-warning">
                 Não existe fração 2^(k-p) de resolução{" "}
-                {toRoman(config.fractionalResolution)} para {k} fator(es) —
+                {toRoman(config.fractionalResolution)} para {k} fator(es);
                 reduza a resolução ou use o fatorial completo.
               </p>
             ) : null}
@@ -578,7 +603,7 @@ export function DesignPicker({
                   <option value={TAGUCHI_AUTO}>Automático (backend escolhe)</option>
                   {(taguchiArrays ?? []).map((array) => (
                     <option key={array.name} value={array.name}>
-                      {array.name} — {array.runs} ensaios
+                      {array.name} · {array.runs} ensaios
                     </option>
                   ))}
                 </select>
@@ -588,7 +613,7 @@ export function DesignPicker({
                   </span>
                 ) : catalogQuery.isError ? (
                   <span className="text-xs text-warning">
-                    Catálogo indisponível — use &quot;Automático&quot;.
+                    Catálogo indisponível; use &quot;Automático&quot;.
                   </span>
                 ) : null}
               </label>
@@ -637,16 +662,16 @@ export function DesignPicker({
                 Arranjo:{" "}
                 <span className="font-mono text-accent-mid">
                   {taguchiResolved.name}
-                </span>{" "}
-                — {taguchiResolved.runs} ensaios, {taguchiResolved.n_columns}{" "}
-                coluna(s).
+                </span>
+                , com {taguchiResolved.runs} ensaios e{" "}
+                {taguchiResolved.n_columns} coluna(s).
               </p>
             ) : null}
 
             {config.taguchiArray !== TAGUCHI_AUTO && !taguchiFits ? (
               <p className="text-xs text-warning">
                 O arranjo {config.taguchiArray} não tem {k} coluna(s) de{" "}
-                {config.taguchiLevels} níveis — escolha um arranjo maior ou use
+                {config.taguchiLevels} níveis; escolha um arranjo maior ou use
                 &quot;Automático&quot;.
               </p>
             ) : null}
@@ -654,7 +679,7 @@ export function DesignPicker({
             {taguchiNoAutoFit ? (
               <p className="text-xs text-warning">
                 Nenhum arranjo do catálogo comporta {k} fator(es) de{" "}
-                {config.taguchiLevels} níveis — reduza os fatores ou os níveis.
+                {config.taguchiLevels} níveis; reduza os fatores ou os níveis.
               </p>
             ) : null}
           </fieldset>
@@ -757,7 +782,7 @@ export function DesignPicker({
             {optimalTooFew ? (
               <p className="text-xs text-warning">
                 {config.optimalNRuns} ensaio(s) é menos que os {optimalParams}{" "}
-                parâmetros do modelo — o design ficaria singular. Aumente para ≥{" "}
+                parâmetros do modelo; o design ficaria singular. Aumente para ≥{" "}
                 {optimalParams}.
               </p>
             ) : null}
@@ -846,7 +871,7 @@ export function DesignPicker({
 
         {qualitativeBlocked ? (
           <p className="rounded-md border border-warning-strong/40 bg-warning-strong/10 px-3 py-2 text-sm text-warning">
-            CCD/Box-Behnken exigem fatores quantitativos — remova ou converta
+            CCD/Box-Behnken exigem fatores quantitativos; remova ou converta
             os fatores qualitativos antes de gerar.
           </p>
         ) : null}
@@ -859,7 +884,7 @@ export function DesignPicker({
           <p className="mt-1 text-sm text-foreground">
             Número de ensaios:{" "}
             <span className="font-mono text-lg font-semibold text-accent-mid">
-              {totalRuns ?? "—"}
+              {totalRuns ?? "…"}
             </span>
           </p>
         </div>

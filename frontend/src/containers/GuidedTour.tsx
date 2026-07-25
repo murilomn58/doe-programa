@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AliasingReport } from "@/components/AliasingReport";
 import {
+  DESIGN_FAMILY_NOTE,
   DesignPicker,
   defaultDesignConfig,
   designBaseRuns,
@@ -151,7 +152,7 @@ export function GuidedTour() {
         />
         <Callout label="Por onde começar">
           Escolha abaixo de acordo com o momento da sua pesquisa. Não precisa
-          saber nomes técnicos de planejamento — o programa recomenda o mais
+          saber nomes técnicos de planejamento: o programa recomenda o mais
           adequado ao seu objetivo.
         </Callout>
         <h2 className="mb-4 mt-8 text-lg font-medium text-foreground">
@@ -201,8 +202,14 @@ export function GuidedTour() {
       {step === "goal" ? (
         <div className="flex flex-col gap-6">
           <Callout label="Passo 1">
-            Dê um nome ao experimento e diga o que você quer descobrir. Sua
-            resposta guia a recomendação do planejamento no passo 3.
+            Dê um nome ao experimento e diga o que você quer descobrir. Na{" "}
+            <b>triagem</b>, você ainda tem vários fatores candidatos e quer
+            separar, com poucos ensaios, os que realmente afetam o resultado;
+            na <b>otimização</b>, os fatores importantes já são conhecidos e a
+            meta é achar a combinação de valores que entrega a melhor resposta.
+            Essa escolha muda o planejamento: triagem pede economia de ensaios,
+            otimização pede pontos extras para mapear a curvatura. Sua resposta
+            guia a recomendação do passo 3.
           </Callout>
           <Card>
             <Field label="Nome do experimento" htmlFor="exp-name">
@@ -245,10 +252,15 @@ export function GuidedTour() {
       {step === "factors" ? (
         <div className="flex flex-col gap-6">
           <Callout label="Passo 2">
-            Liste tudo que você <b>controla</b> no experimento (os fatores) e
-            tudo que vai <b>medir</b> (as respostas). Para cada fator numérico,
-            informe o menor e o maior valor a testar — eles viram os níveis −1 e
-            +1.
+            Vocabulário rápido: <b>fator</b> é o que você controla (ex.:
+            temperatura), <b>nível</b> é o valor que o fator assume em cada
+            ensaio, <b>resposta</b> é o que você mede e <b>réplica</b> é a
+            repetição do mesmo ensaio para estimar o erro experimental. Para
+            cada fator numérico, informe o menor e o maior valor a testar: eles
+            viram os níveis −1 e +1. Prefira faixas realistas do seu processo
+            (nem estreitas demais, nem além do que o equipamento alcança) e
+            informe a unidade, pois é ela que dá sentido físico aos
+            coeficientes do modelo.
           </Callout>
           <FactorForm
             factors={factors}
@@ -286,9 +298,13 @@ export function GuidedTour() {
       {step === "design" ? (
         <div className="flex flex-col gap-6">
           <Callout label="Passo 3">
-            Com base no seu objetivo, recomendamos o planejamento abaixo. Aceite
-            e gere a matriz, ou abra as opções avançadas para escolher outra
-            família. O número de ensaios aparece ao vivo.
+            Com base no seu objetivo, recomendamos abaixo uma família de
+            planejamento: ela define quais combinações de níveis serão
+            ensaiadas e quantos ensaios você fará. A matriz sai com a ordem dos
+            ensaios sorteada (randomizada), o que protege as conclusões contra
+            tendências do equipamento e do ambiente ao longo do tempo. Aceite e
+            gere a matriz, ou abra as opções avançadas para escolher outra
+            família; o número de ensaios aparece ao vivo.
           </Callout>
 
           {recommendation ? (
@@ -304,10 +320,18 @@ export function GuidedTour() {
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <Badge tone="significant">{recommendation.title}</Badge>
+                  <span title={DESIGN_FAMILY_NOTE[recommendation.designType]}>
+                    <Badge tone="significant">{recommendation.title}</Badge>
+                  </span>
                 </div>
                 <p className="text-sm leading-relaxed text-foreground-soft">
+                  <span className="font-medium text-foreground">
+                    Por que essa escolha?{" "}
+                  </span>
                   {recommendation.why}
+                </p>
+                <p className="text-xs text-faint">
+                  {DESIGN_FAMILY_NOTE[recommendation.designType]}
                 </p>
                 {recommendation.caveat ? (
                   <p className="text-xs text-warning">
@@ -366,13 +390,15 @@ export function GuidedTour() {
       {step === "data" && generatedId !== null ? (
         <div className="flex flex-col gap-6">
           <Callout label="Passo 4">
-            A matriz foi gerada. Preencha as colunas de resposta (as últimas, à
-            direita) — dá para colar um bloco copiado do Excel. Quando terminar,
-            veja os resultados e gráficos.
+            A matriz foi gerada. Execute os ensaios na <b>ordem sorteada</b> da
+            coluna Ensaio (ela existe justamente para proteger contra
+            tendências ao longo do tempo) e preencha as colunas de resposta, as
+            últimas à direita. Dá para colar um bloco inteiro copiado do Excel;
+            quando terminar, siga para os resultados e gráficos.
           </Callout>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm text-significant">
-              Matriz gerada — experimento #{generatedId}.
+              Matriz gerada: experimento #{generatedId}.
             </span>
             <div className="flex items-center gap-2">
               {generateDesign.data?.array_name ? (

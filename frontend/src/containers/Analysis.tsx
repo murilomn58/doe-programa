@@ -3,8 +3,15 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+
 import type { ExportPlotKind } from "@/api/exportPlots";
 import { exportPlot } from "@/api/exportPlots";
+import { fetchAdvice } from "@/api/advisor";
+import { AdvisorPanel } from "@/components/AdvisorPanel";
+import { ExportAllBar } from "@/components/ExportAllBar";
+import { useAugmentDesign } from "@/hooks/useEditExperiment";
 import { AnovaTable } from "@/components/AnovaTable";
 import { CoefTable } from "@/components/CoefTable";
 import { ContourPlot } from "@/components/ContourPlot";
@@ -104,6 +111,41 @@ export function Analysis({ experimentId }: AnalysisProps) {
   // Which plot is currently exporting (for the busy state) + last export error.
   const [exporting, setExporting] = useState<ExportPlotKind | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportAllProgress, setExportAllProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+
+  const router = useRouter();
+  const augment = useAugmentDesign(experimentId);
+
+  // Assistente: interpreta o resultado JA computado (sem reanalisar).
+  const advisor = useQuery({
+    queryKey: ["advisor", experimentId, response, model, data?.r_squared ?? null,
+      data?.lack_of_fit?.p ?? null, data?.curvature?.p ?? null],
+    queryFn: () => fetchAdvice(experimentId, data!),
+    enabled: Boolean(data),
+    placeholderData: (prev) => prev,
+  });
+
+  const handleAdvisorAction = useCallback(
+    (action: string) => {
+      if (action.startsWith("switch_model:")) {
+        setModel(action.split(":")[1] as RSMModel);
+        return;
+      }
+      const option =
+        action === "add_center_points"
+          ? ({ kind: "center_points", n: 3 } as const)
+          : action === "extend_ccd"
+            ? ({ kind: "extend_ccd", n_center: 3 } as const)
+            : ({ kind: "replicates", n: 1 } as const);
+      augment.mutate(option, {
+        onSuccess: () => router.push(`/experiments/${experimentId}`),
+      });
+    },
+    [augment, router, experimentId],
+  );
 
   const runExport = useCallback(
     async (plot: ExportPlotKind, format: PlotExportFormat) => {
@@ -140,6 +182,43 @@ export function Analysis({ experimentId }: AnalysisProps) {
     }),
     [runExport, exporting],
   );
+
+  const presentPlots = useMemo<ExportPlotKind[]>(() => {
+    if (!plots) return [];
+    const kinds: ExportPlotKind[] = [];
+    if (plots.surface) kinds.push("surface");
+    if (plots.contour) kinds.push("contour");
+    if (plots.pareto) kinds.push("pareto");
+    if (plots.main_effects.length > 0) kinds.push("main_effects");
+    if (plots.interaction) kinds.push("interaction");
+    if (plots.obs_vs_pred) kinds.push("obs_vs_pred");
+    if (plots.residual_vs_fitted) kinds.push("residual_vs_fitted");
+    if (plots.qq) kinds.push("qq");
+    return kinds;
+  }, [plots]);
+
+  const exportAll = useCallback(async () => {
+    if (!response || presentPlots.length === 0) return;
+    setExportError(null);
+    setExportAllProgress({ done: 0, total: presentPlots.length });
+    try {
+      for (let i = 0; i < presentPlots.length; i++) {
+        await exportPlot({
+          experiment_id: experimentId,
+          response_name: response,
+          model,
+          plot: presentPlots[i],
+          format: "png",
+          dpi: 600,
+          factor_x: activePair?.[0] ?? null,
+          factor_y: activePair?.[1] ?? null,
+        });
+        setExportAllProgress({ done: i + 1, total: presentPlots.length });
+      }
+    } finally {
+      setExportAllProgress(null);
+    }
+  }, [response, presentPlots, experimentId, model, activePair]);
 
   if (runsQuery.isLoading) {
     return (
@@ -219,6 +298,23 @@ export function Analysis({ experimentId }: AnalysisProps) {
           <EffectsTable effects={data.effects} saturated={data.saturated} />
           <CoefTable coefficients={data.coefficients} saturated={data.saturated} />
           <StatsPanel stats={data.stats} lenth={data.lenth} />
+
+          <AdvisorPanel
+            report={advisor.data ?? null}
+            isLoading={advisor.isLoading}
+            busy={augment.isPending}
+            onAction={handleAdvisorAction}
+          />
+
+          {presentPlots.length > 0 && response ? (
+            <ExportAllBar
+              plots={presentPlots}
+              onExportAll={exportAll}
+              reportHref={`/report/${experimentId}?response=${encodeURIComponent(response)}&model=${model}`}
+              busy={exportAllProgress !== null}
+              progress={exportAllProgress}
+            />
+          ) : null}
 
           {exportError ? (
             <div className="rounded-xl border border-danger-border bg-surface-1 p-3 text-sm text-danger">

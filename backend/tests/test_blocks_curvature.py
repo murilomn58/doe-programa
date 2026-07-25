@@ -59,7 +59,7 @@ def _run(i: int, fib: float, cem: float, block: int, y: float) -> Run:
     return Run(
         run_order=i,
         std_order=i,
-        point_type=1 if fib == 0 and cem == 0 else 0,
+        point_type=0 if fib == 0 and cem == 0 else 1,
         block=block,
         replicate=1,
         cells={
