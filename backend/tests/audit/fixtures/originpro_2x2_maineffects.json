@@ -1,0 +1,20 @@
+{
+  "descricao": "OriginPro 'DOE Analysis.pdf' - 2^2 com 2 replicas, modelo SO efeitos principais (sem interacao), resposta DP",
+  "fonte": "contexto aulas/DOE Analysis.pdf (25/02/2025); dados brutos NAO impressos - verificacao por identidades fechadas + dataset equivalente por estatisticas suficientes",
+  "design": {"n_runs": 8, "celulas": 4, "replicas": 2, "modelo": "linear (main effects)", "n_params": 3},
+  "relatorio": {
+    "intercepto": 4.125,
+    "coef_fiber": 0.425, "efeito_fiber": 0.85,
+    "coef_cement": -1.75, "efeito_cement": -3.5,
+    "se_coef": 1.11434,
+    "ic_fiber": [-2.4395, 3.2895], "ic_cement": [-4.6145, 1.1145],
+    "t_fiber": 0.38139, "t_cement": -1.57044,
+    "p_fiber": 0.71858, "p_cement": 0.17711,
+    "df_error": 5, "rmse": 3.15182,
+    "r2": 0.34312, "r2_adj": 0.08037,
+    "press": 127.1552, "sse": 49.67, "ss_total": 75.615,
+    "anova": {"fiber": {"ss": 1.445, "f": 0.14546}, "cement": {"ss": 24.5, "f": 2.46628}},
+    "pred_r2_impresso": 0.0,
+    "nota_pred_r2": "OriginPro clampa Predicted R-Square negativo em 0; valor real = 1 - PRESS/SST = -0.68"
+  }
+}

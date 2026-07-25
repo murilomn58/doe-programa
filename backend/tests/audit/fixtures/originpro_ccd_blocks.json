@@ -1,0 +1,22 @@
+{
+  "descricao": "OriginPro 'Doe ANalysis pra superficie d resposta.pdf' - CCD k=2 em 2 blocos (4 fatoriais + 4 axiais + 3+3 centrais = 14 runs), modelo linear + Blocks, resposta DP",
+  "fonte": "contexto aulas/Doe ANalysis pra superficie d resposta.pdf (25/02/2025); dados brutos NAO impressos",
+  "design": {"n_runs": 14, "blocos": 2, "centrais_por_bloco": 3, "alpha_hipotese": [1.4142135623730951, 1.41421, 1.414, 1.4140], "n_params": 4},
+  "relatorio": {
+    "intercepto": 11.5, "coef_blocks": 0.78571, "coef_fiber": 4.95375, "coef_cement": 3.93609,
+    "se_intercepto": 1.68744, "se_blocks": 1.68744, "se_fiber": 2.23245, "se_cement": 2.23245,
+    "t_blocks": 0.46562, "t_fiber": 2.21898, "t_cement": 1.76313,
+    "p_blocks": 0.65146, "p_fiber": 0.05078, "p_cement": 0.10835,
+    "p_intercepto": 4.65379e-5,
+    "df_error": 10, "rmse": 6.31384,
+    "r2": 0.45203, "r2_adj": 0.28764,
+    "press": 864.33625, "sse": 398.64584, "ss_total": 727.5,
+    "anova": {
+      "blocks": {"ss": 8.64286, "f": 0.21681},
+      "fiber": {"ss": 196.28731, "f": 4.92385},
+      "cement": {"ss": 123.92399, "f": 3.10862}
+    },
+    "lack_of_fit": {"ss": 361.3125, "df": 6, "ms": 60.21875, "f": 6.45201, "p": 0.04628},
+    "pure_error": {"ss": 37.33333, "df": 4, "ms": 9.33333}
+  }
+}

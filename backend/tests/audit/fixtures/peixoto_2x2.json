@@ -1,0 +1,22 @@
+{
+  "descricao": "Peixoto Cap.3 - 2x2 classico: Rendimento (%) vs Temperatura (313/333 K) e Catalisador (A/B), 2 replicas por celula",
+  "fonte": "contexto aulas/prof PEIXOTO/Capítulo 3.pdf p.2-9",
+  "fatores": [
+    {"name": "Temperatura", "type": "quantitative", "low": 313, "high": 333, "unit": "K"},
+    {"name": "Catalisador", "type": "qualitative", "low_label": "A", "high_label": "B"}
+  ],
+  "resposta": "Rendimento",
+  "ensaios": [
+    {"t": -1, "c": -1, "y": [57, 61]},
+    {"t":  1, "c": -1, "y": [92, 88]},
+    {"t": -1, "c":  1, "y": [55, 53]},
+    {"t":  1, "c":  1, "y": [66, 70]}
+  ],
+  "esperado_aula": {
+    "media_global": 67.75, "erro_media": 0.9,
+    "efeito_T": 22.5, "efeito_C": -13.5, "efeito_TC": -8.5, "erro_efeito": 1.8,
+    "coef_T": 11.25, "coef_C": -6.75, "coef_TC": -4.25, "intercepto": 67.75,
+    "s2_pooled": 6.5, "gl_erro": 4
+  },
+  "errata_aula": "p.3 escreve (68-64) no numerador de E_T mas o valor usado e 54 (media do ensaio 3); resultado 22.5 esta correto"
+}
