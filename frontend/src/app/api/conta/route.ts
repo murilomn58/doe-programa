@@ -29,7 +29,8 @@ export async function POST(req: Request) {
       await put(
         `conta/${lead.origem}/${lead.ts.replace(/[:.]/g, "-")}-${lead.email}.json`,
         JSON.stringify(lead),
-        { access: "public", contentType: "application/json", addRandomSuffix: true },
+        // store privado (emails não devem ser acessíveis por URL pública)
+        { access: "private", contentType: "application/json", addRandomSuffix: true },
       );
     } catch (e) {
       console.error("[conta] falha ao gravar no blob:", e);
