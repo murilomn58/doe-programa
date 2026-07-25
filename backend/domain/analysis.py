@@ -109,6 +109,8 @@ class AnalysisResultData:
     anova: list[AnovaRow] = field(default_factory=list)
     pure_error: AnovaRow | None = None
     lack_of_fit: AnovaRow | None = None
+    # Teste de curvatura via pontos centrais (aula Cap.4 p4); None quando nao se aplica.
+    curvature: AnovaRow | None = None
     total: AnovaRow | None = None
     effects: list[EffectRow] = field(default_factory=list)
     coefficients: list[CoefRow] = field(default_factory=list)

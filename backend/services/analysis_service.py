@@ -549,6 +549,7 @@ class AnalysisService:
         natural: list[dict[str, float]] = []
         y: list[float] = []
         run_order: list[int] = []
+        run_blocks: list[int] = []
         for run in runs:
             value = (run.response_values or {}).get(response_name)
             if value is None:
@@ -562,6 +563,7 @@ class AnalysisService:
             )
             y.append(float(value))
             run_order.append(int(run.run_order))
+            run_blocks.append(int(getattr(run, "block", 1) or 1))
 
         if not y:
             raise InsufficientDataError(
@@ -569,15 +571,69 @@ class AnalysisService:
             )
 
         terms = terms_for_model(model, factors)
+
+        # --- Blocos na analise (auditoria 2026-07): com exatamente 2 blocos,
+        # o bloco entra como termo qualitativo +-1 (como o OriginPro), ajustando
+        # coeficientes/ANOVA/erro. Plots e profiler seguem no espaco dos fatores
+        # (design balanceado: coeficientes dos fatores nao mudam).
+        distinct_blocks = sorted(set(run_blocks))
+        factors_fit = factors
+        terms_fit = terms
+        coded_fit = coded
+        natural_fit = natural
+        if len(distinct_blocks) == 2:
+            b_lo, b_hi = distinct_blocks
+            block_factor = FactorInfo(
+                name="Bloco",
+                factor_type="qualitative",
+                low_label=f"Bloco {b_lo}",
+                high_label=f"Bloco {b_hi}",
+            )
+            factors_fit = [block_factor] + list(factors)
+            terms_fit = [_main_term("Bloco")] + list(terms)
+            coded_fit = [
+                {"Bloco": -1.0 if b == b_lo else 1.0, **row}
+                for row, b in zip(coded, run_blocks)
+            ]
+            natural_fit = [
+                {"Bloco": -1.0 if b == b_lo else 1.0, **row}
+                for row, b in zip(natural, run_blocks)
+            ]
+
         result = analyze(
-            factors=factors,
-            coded=coded,
-            natural=natural,
+            factors=factors_fit,
+            coded=coded_fit,
+            natural=natural_fit,
             y=y,
-            terms=terms,
+            terms=terms_fit,
             model_label=model.value,
             response_name=response_name,
         )
+
+        # --- Teste de curvatura via pontos centrais (aula Cap.4 p4): so quando o
+        # modelo ainda nao carrega termos quadraticos e todos os fatores sao
+        # quantitativos, com >=2 centrais e >=1 ponto fatorial.
+        if not any(t.kind == QUADRATIC for t in terms):
+            from services import stats_service as _stats_service
+
+            quant_mask = np.array([f.is_quantitative for f in factors], dtype=bool)
+            coded_matrix = np.array(
+                [[row[f.name] for f in factors] for row in coded], dtype=float
+            )
+            curv = _stats_service.curvature_test(
+                coded_matrix, np.array(y, dtype=float), quant_mask
+            )
+            if curv is not None:
+                ss_c, df_c, ms_c, f_c, p_c = curv
+                result.curvature = AnovaRow(
+                    source="Curvatura", ss=ss_c, df=df_c, ms=ms_c, f=f_c, p=p_c
+                )
+                if p_c < 0.05:
+                    result.warnings.append(
+                        "Curvatura significativa (p = "
+                        f"{p_c:.4f}): a resposta nao e plana na regiao. "
+                        "Considere um modelo quadratico (CCD/Box-Behnken)."
+                    )
 
         # Attach ready-to-draw plot arrays for an estimable, non-saturated fit.
         # Deferred import avoids a cycle (plot_service reuses helpers from here).

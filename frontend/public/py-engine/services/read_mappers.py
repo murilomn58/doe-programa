@@ -27,6 +27,7 @@ from domain.schemas import (
     ParetoRead,
     PlotsRead,
     ProfilerOptimumRead,
+    ProfilerRequest,
     ProfilerResultRead,
     ProfilerSliceRead,
     QQRead,
@@ -239,6 +240,7 @@ def _to_read(r: AnalysisResultData) -> AnalysisResultRead:
         anova=[_anova_row(row) for row in r.anova],  # type: ignore[misc]
         pure_error=_anova_row(r.pure_error),
         lack_of_fit=_anova_row(r.lack_of_fit),
+        curvature=_anova_row(r.curvature),
         total=_anova_row(r.total),
         effects=[
             EffectRowRead(

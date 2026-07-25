@@ -7,6 +7,7 @@ interface AnovaTableProps {
   rows: AnovaRow[];
   pureError: AnovaRow | null;
   lackOfFit: AnovaRow | null;
+  curvature?: AnovaRow | null;
   total: AnovaRow | null;
   rSquared: number | null;
   adjRSquared: number | null;
@@ -39,6 +40,7 @@ export function AnovaTable({
   rows,
   pureError,
   lackOfFit,
+  curvature,
   total,
   rSquared,
   adjRSquared,
@@ -79,6 +81,7 @@ export function AnovaTable({
             {rows.map((row) => (
               <Row key={row.source} row={row} />
             ))}
+            {curvature ? <Row row={curvature} /> : null}
             {lackOfFit ? <Row row={lackOfFit} muted /> : null}
             {pureError ? <Row row={pureError} muted /> : null}
             {total ? <Row row={total} muted /> : null}

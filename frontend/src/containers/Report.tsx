@@ -449,6 +449,7 @@ function fmtValue(value: number | null | undefined): string {
 function AnovaBlock({ data }: { data: AnalysisResult }) {
   const rows = [
     ...data.anova,
+    ...(data.curvature ? [data.curvature] : []),
     ...(data.lack_of_fit ? [data.lack_of_fit] : []),
     ...(data.pure_error ? [data.pure_error] : []),
     ...(data.total ? [data.total] : []),

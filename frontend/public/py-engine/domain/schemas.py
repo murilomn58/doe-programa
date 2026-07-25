@@ -507,6 +507,7 @@ class AnalysisResultRead(BaseModel):
     anova: list[AnovaRowRead]
     pure_error: AnovaRowRead | None = None
     lack_of_fit: AnovaRowRead | None = None
+    curvature: AnovaRowRead | None = None
     total: AnovaRowRead | None = None
     effects: list[EffectRowRead]
     coefficients: list[CoefRowRead]

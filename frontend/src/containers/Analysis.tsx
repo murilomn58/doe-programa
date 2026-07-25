@@ -209,6 +209,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
               rows={data.anova}
               pureError={data.pure_error}
               lackOfFit={data.lack_of_fit}
+              curvature={data.curvature}
               total={data.total}
               rSquared={data.r_squared}
               adjRSquared={data.adj_r_squared}

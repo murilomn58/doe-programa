@@ -207,3 +207,59 @@ def pure_error_and_lof(
     if df_lof <= 0:
         return (ss_pe, df_pe), None
     return (ss_pe, df_pe), (ss_lof, df_lof)
+
+
+def curvature_test(
+    coded_points: np.ndarray,
+    y: np.ndarray,
+    quantitative_mask: np.ndarray,
+) -> tuple[float, int, float, float, float] | None:
+    """Teste de curvatura com pontos centrais (aula ENQ41003, Cap. 4 Parte 4).
+
+    Compara a media dos pontos fatoriais com a media dos pontos centrais:
+
+        SS_curv = nF * nC * (yF_bar - yC_bar)^2 / (nF + nC)
+        F = SS_curv / MQE_C,  MQE_C = sum((y_c - yC_bar)^2) / (nC - 1)
+        F ~ F(1, nC - 1)
+
+    ``coded_points`` (n x k) na escala codificada; ``quantitative_mask`` marca
+    as colunas quantitativas. Ponto central = todas as colunas quantitativas em
+    zero. Retorna ``(ss_curv, df_curv, ms_curv, f, p)`` ou ``None`` quando o
+    teste nao se aplica (menos de 2 centrais, nenhum ponto fatorial, fator
+    qualitativo presente, ou variancia nula nos centrais).
+    """
+    from scipy import stats as _stats
+
+    coded_points = np.asarray(coded_points, dtype=float)
+    y = np.asarray(y, dtype=float)
+    quantitative_mask = np.asarray(quantitative_mask, dtype=bool)
+
+    if coded_points.ndim != 2 or coded_points.shape[0] != y.shape[0]:
+        return None
+    if not quantitative_mask.all():
+        # centrais so sao bem definidos quando todos os fatores sao quantitativos
+        return None
+
+    is_center = np.all(np.isclose(coded_points, 0.0), axis=1)
+    # fatoriais: pontos de vertice (todas as coords em +-1); exclui axiais de CCD
+    is_factorial = np.all(np.isclose(np.abs(coded_points), 1.0), axis=1)
+
+    n_c = int(is_center.sum())
+    n_f = int(is_factorial.sum())
+    if n_c < 2 or n_f == 0:
+        return None
+
+    y_c = y[is_center]
+    y_f = y[is_factorial]
+    yc_bar = float(y_c.mean())
+    yf_bar = float(y_f.mean())
+
+    sq_e_c = float(np.sum((y_c - yc_bar) ** 2))
+    if sq_e_c <= 0.0:
+        return None
+    mqe_c = sq_e_c / (n_c - 1)
+
+    ss_curv = n_f * n_c * (yf_bar - yc_bar) ** 2 / (n_f + n_c)
+    f_val = ss_curv / mqe_c
+    p_val = float(_stats.f.sf(f_val, 1, n_c - 1))
+    return (float(ss_curv), 1, float(ss_curv), float(f_val), p_val)
