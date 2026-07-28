@@ -29,7 +29,7 @@ describe("conta local", () => {
   it("controla o re-prompt de email", () => {
     expect(devePedirEmail()).toBe(true);
     dispensarCapa();
-    expect(devePedirEmail()).toBe(true); // dispensar a capa nao dispensa o prompt
+    expect(devePedirEmail()).toBe(true); // dispensar a capa não dispensa o prompt
     marcarPerguntado();
     expect(devePedirEmail()).toBe(false);
   });

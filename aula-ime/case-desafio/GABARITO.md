@@ -168,7 +168,7 @@ com 2 casas decimais, só a quantização do arredondamento (± 0,005 MPa) já d
 recuperado nessa ordem de grandeza, mesmo com `σ → 0`. Baixar `σ` a ponto de satisfazê-lo
 exigiria um coeficiente de variação abaixo de 0,2 % num ensaio de `fck` de solo-cimento,
 o que nenhum aluno acreditaria. A leitura em pontos percentuais é a fisicamente significativa
-(os fatores são medidos em porcento) e é a que governa a premiação.
+(os fatores são medidos em por cento) e é a que governa a premiação.
 
 ## 7. Como conduzir na sala
 

@@ -27,10 +27,10 @@
 \definecolor{azulDoE}{HTML}{1B4E79}
 \hypersetup{colorlinks=true,linkcolor=azulDoE,urlcolor=azulDoE,citecolor=azulDoE}
 
-% O sumario permanece em preto, embora continue clicavel. Com o linkcolor
-% padrao a pagina inteira do sumario sai azul, o que e a maior mancha de cor
+% O sumário permanece em preto, embora continue clicável. Com o linkcolor
+% padrão a página inteira do sumário sai azul, o que é a maior mancha de cor
 % do documento e destoa da regra "cor de apoio apenas em regras de destaque,
-% links no corpo do texto e series de grafico". Para reverter, basta apagar
+% links no corpo do texto e séries de gráfico". Para reverter, basta apagar
 % este bloco.
 \makeatletter
 \let\doe@tableofcontents\tableofcontents
@@ -43,7 +43,7 @@
 \titleformat{\subsubsection}{\normalfont\normalsize\itshape}{\thesubsubsection}{0.6em}{}
 \titlespacing*{\section}{0pt}{1.6\baselineskip}{0.7\baselineskip}
 
-% group-digits=integer e obrigatorio: sem ele o siunitx v3 agrupa tambem a
+% group-digits=integer é obrigatório: sem ele o siunitx v3 agrupa também a
 % parte decimal, e \num{0.777873} sai como "0,777.873" em vez de "0,777873".
 \sisetup{output-decimal-marker={,},group-separator={.},group-minimum-digits=4,
   group-digits=integer}
