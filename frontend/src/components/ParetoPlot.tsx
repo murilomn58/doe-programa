@@ -16,8 +16,21 @@ interface ParetoPlotProps {
   pareto: ParetoData;
 }
 
-/** Color of the non-significant bars (slate-600, recedes behind the cyan). */
-const NON_SIG_COLOR = "#475569";
+/**
+ * Cor das barras não significativas — recuam atrás do teal das significativas.
+ *
+ * Reusa ``PLOT_COLORS.axis`` em vez de uma cor literal: ele já carrega
+ * exatamente ``rgba(28,26,23,.45)``, o mesmo valor do token ``--color-faint``.
+ * Assim o gráfico acompanha a identidade papel/terracota por uma fonte única,
+ * e não por uma cópia que envelhece sozinha. O ``#475569`` (slate-600) que
+ * estava fixo aqui era um cinza azulado frio, deslocado numa paleta quente.
+ *
+ * Observação de contraste: sobre o painel branco este cinza morno dá 2,88:1,
+ * abaixo dos 3:1 de objeto gráfico (WCAG 1.4.11). A leitura não depende da cor
+ * — cada barra traz o valor numérico impresso ao lado (12,6:1) e a linha de t
+ * crítico separa significativo de não significativo por posição.
+ */
+const NON_SIG_COLOR = PLOT_COLORS.axis;
 
 export function ParetoPlot({ pareto }: ParetoPlotProps) {
   // Horizontal bars render bottom-up; reverse so the largest effect is on top.

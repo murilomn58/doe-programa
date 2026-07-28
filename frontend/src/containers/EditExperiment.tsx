@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { PRIMARY_SURFACE } from "@/components/ui/Button";
 import { Callout } from "@/components/ui/Callout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import {
@@ -268,7 +269,7 @@ export function EditExperiment({ experimentId }: EditExperimentProps) {
           type="button"
           disabled={busy}
           onClick={saveAll}
-          className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:opacity-50"
+          className={`mt-4 rounded-lg ${PRIMARY_SURFACE} px-5 py-2.5 text-sm font-semibold transition disabled:opacity-50`}
         >
           {busy ? "Salvando…" : "Salvar alterações"}
         </button>
