@@ -169,7 +169,8 @@ DICIONARIO: dict[str, str] = {
     "presenca": "presença",
     "ausencia": "ausência",
     "existencia": "existência",
-    "influencia": "influência",
+    # "influencia" fica de fora: é também o verbo influenciar na 3ª pessoa
+    # ("o fator influencia a resposta"), legítimo sem acento.
     "ciencia": "ciência",
     "ciencias": "ciências",
     "importancia": "importância",
@@ -233,7 +234,8 @@ DICIONARIO: dict[str, str] = {
     "dinamica": "dinâmica",
     "estatico": "estático",
     "publico": "público",
-    "publica": "pública",
+    # "publica" fica de fora: é também o verbo publicar na 3ª pessoa
+    # ("o que se publica"), legítimo sem acento.
     "especifico_": "específico",
     "grafica": "gráfica",
     "logica": "lógica",
