@@ -24,7 +24,9 @@ export function Card({
       {title || right ? (
         <header className="mb-4 flex items-baseline justify-between gap-3">
           {title ? (
-            <h3 className="text-lg font-medium text-foreground">{title}</h3>
+            <h3 className="font-display text-lg font-medium text-foreground">
+              {title}
+            </h3>
           ) : (
             <span />
           )}

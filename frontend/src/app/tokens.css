@@ -1,62 +1,64 @@
 /*
- * DoE Programa — tokens (redesenho "pesquisa científica" claro, 2026-07).
- * Fundo branco, detalhes em azul, tipografia técnica. Trocar identidade = só aqui.
+ * DoE Programa — tokens (identidade herdada do hub iacommurilo, 2026-07).
+ * Papel #F7F5F1, painel branco, terracota, teal, tinta #1C1A17. Trocar identidade = só aqui.
+ * Referência: iacommurilo-hub/lib/page-tokens.ts (paleta paper/clay).
  */
 @theme {
-  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", monospace;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jbmono), ui-monospace, monospace;
+  --font-display: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
 
-  /* Superfícies — branco → cinza-frio muito claro */
-  --color-surface-0: #ffffff;
-  --color-surface-1: #f8fafc;
-  --color-surface-2: #f1f5f9;
-  --color-surface-3: #e2e8f0;
+  /* Superfícies — papel → painel branco → papel rebaixado */
+  --color-surface-0: #F7F5F1;
+  --color-surface-1: #FFFFFF;
+  --color-surface-2: #F1EEE8;
+  --color-surface-3: #E7E2D9;
 
-  /* Bordas */
-  --color-border-subtle: #eef2f7;
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
+  /* Bordas — tinta translúcida */
+  --color-border-subtle: rgba(28, 26, 23, 0.06);
+  --color-border: rgba(28, 26, 23, 0.1);
+  --color-border-strong: rgba(28, 26, 23, 0.16);
 
-  /* Texto — tinta escura sobre branco */
-  --color-foreground-strong: #0f172a;
-  --color-foreground: #1e293b;
-  --color-foreground-soft: #334155;
-  --color-muted: #64748b;
-  --color-faint: #94a3b8;
+  /* Texto — tinta sobre papel */
+  --color-foreground-strong: #1C1A17;
+  --color-foreground: #2A2723;
+  --color-foreground-soft: rgba(28, 26, 23, 0.72);
+  --color-muted: rgba(28, 26, 23, 0.62);
+  --color-faint: rgba(28, 26, 23, 0.45);
 
-  /* Acento — destaque/dados (azul, escurecido p/ contraste em branco) */
-  --color-accent: #0ea5e9;
-  --color-accent-mid: #0284c7;
-  --color-accent-strong: #0369a1;
-  --color-accent-deep: #075985;
-  --color-accent-border: #7dd3fc;
-  --color-accent-deep-border: #bae6fd;
+  /* Acento — destaque/dados (teal do hub, escurecido p/ contraste em branco) */
+  --color-accent: #1793B5;
+  --color-accent-mid: #0E7A97;
+  --color-accent-strong: #0B6076;
+  --color-accent-deep: #084A5B;
+  --color-accent-border: rgba(23, 147, 181, 0.4);
+  --color-accent-deep-border: rgba(23, 147, 181, 0.22);
 
-  /* Ação primária — CTAs/formulários (AZUL) */
-  --color-primary: #2563eb;
-  --color-primary-soft: #3b82f6;
-  --color-primary-strong: #1d4ed8;
+  /* Ação primária — CTAs/formulários (TERRACOTA) */
+  --color-primary: #C2673F;
+  --color-primary-soft: #D07A50;
+  --color-primary-strong: #A9542F;
 
-  /* Semântica estatística (escurecida p/ fundo claro) */
-  --color-significant: #059669;
-  --color-significant-soft: #10b981;
-  --color-significant-strong: #047857;
-  --color-significant-border: #a7f3d0;
-  --color-significant-surface: #ecfdf5;
+  /* Semântica estatística (verde do hub p/ significância; alerta/erro intactos) */
+  --color-significant: #5F9A42;
+  --color-significant-soft: #8FBF6F;
+  --color-significant-strong: #4A7C33;
+  --color-significant-border: rgba(143, 191, 111, 0.45);
+  --color-significant-surface: #F2F7EC;
   --color-warning: #d97706;
   --color-warning-soft: #f59e0b;
   --color-warning-strong: #b45309;
   --color-warning-border: #fde68a;
-  --color-warning-surface: #fffbeb;
+  --color-warning-surface: #FDF7EC;
   --color-danger: #dc2626;
   --color-danger-soft: #ef4444;
   --color-danger-strong: #b91c1c;
   --color-danger-border: #fecaca;
-  --color-danger-surface: #fef2f2;
+  --color-danger-surface: #FCF0EE;
 
-  /* Informativo/especial (azul-índigo, discreto) */
-  --color-info: #4f46e5;
-  --color-info-soft: #c7d2fe;
+  /* Informativo/especial (índigo dessaturado, discreto) */
+  --color-info: #5B54A6;
+  --color-info-soft: #4A4390;
 
   /* Texto sobre superfícies coloridas */
   --color-on-accent: #ffffff;

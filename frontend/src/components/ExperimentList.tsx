@@ -50,7 +50,7 @@ export function ExperimentList({
                   {experiment.description}
                 </p>
               ) : null}
-              <p className="mt-2 font-mono text-xs text-accent-mid/70">
+              <p className="mt-2 font-mono text-xs text-muted">
                 {new Date(experiment.created_at).toLocaleString("pt-BR")}
               </p>
             </Link>

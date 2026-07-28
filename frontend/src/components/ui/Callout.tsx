@@ -13,7 +13,7 @@ export function Callout({ label = "Guia", children, className = "" }: CalloutPro
     <div
       className={`flex items-start gap-3 rounded-lg border border-primary/35 bg-primary/10 px-5 py-4 ${className}`}
     >
-      <span className="mt-px shrink-0 rounded-sm border border-primary/40 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary-soft">
+      <span className="mt-px shrink-0 rounded-sm border border-primary/40 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary-strong">
         {label}
       </span>
       <p className="m-0 text-sm leading-normal text-foreground-soft">{children}</p>

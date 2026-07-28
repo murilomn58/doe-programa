@@ -47,7 +47,7 @@ export function PageHeader({
         <div>
           <div className="flex items-center gap-3">
             {logo ?? null}
-            <h1 className="text-3xl font-bold tracking-tight text-accent-mid">
+            <h1 className="font-display text-3xl font-bold tracking-tight text-accent-mid">
               {title}
             </h1>
             {badge ?? null}

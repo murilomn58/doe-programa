@@ -7,7 +7,7 @@
  * (Next 15 would throw "window is not defined"). We load the prebuilt
  * ``plotly.js-dist-min`` bundle + the react-plotly factory lazily, client-side
  * only (``ssr: false``). A shared light "scientific" theme keeps every chart on
- * the same white/blue palette as the rest of the app, with a closed frame
+ * the same paper/clay palette as the rest of the app, with a closed frame
  * (SciencePlots-style mirror axes), outside ticks and PT-BR separators.
  */
 
@@ -43,17 +43,17 @@ export const Plot = dynamic(
   },
 ) as ComponentType<PlotParams>;
 
-/** Scientific light palette (aligned with the Tailwind white/blue theme). */
+/** Scientific light palette (aligned with the Tailwind paper/clay theme). */
 export const PLOT_COLORS = {
-  cyan: "#0ea5e9",
-  blue: "#2563eb",
-  emerald: "#059669",
+  cyan: "#1793B5",
+  blue: "#C2673F",
+  emerald: "#5F9A42",
   amber: "#d97706",
   rose: "#dc2626",
   violet: "#4f46e5",
-  grid: "#e2e8f0",
-  axis: "#94a3b8",
-  text: "#1e293b",
+  grid: "rgba(28,26,23,.10)",
+  axis: "rgba(28,26,23,.45)",
+  text: "#2A2723",
   /** Light edge for markers (white) — shared by every scatter marker. */
   markerEdge: "#ffffff",
 };
@@ -92,8 +92,9 @@ export function plotConfig(filename: string): Partial<Config> {
 export const PLOT_CONFIG: Partial<Config> = plotConfig("grafico-doe");
 
 /**
- * Base layout: transparent background, slate grid, Inter font, PT-BR number
- * separators ("," decimal / "." thousands) applied to ticks and hovers.
+ * Base layout: transparent background (charts inherit the white card), ink
+ * grid, IBM Plex Sans, PT-BR number separators ("," decimal / "." thousands)
+ * applied to ticks and hovers.
  */
 export function darkLayout(overrides: Partial<Layout> = {}): Partial<Layout> {
   return {
@@ -101,7 +102,7 @@ export function darkLayout(overrides: Partial<Layout> = {}): Partial<Layout> {
     plot_bgcolor: "rgba(0,0,0,0)",
     font: {
       color: PLOT_COLORS.text,
-      family: "Inter, system-ui, sans-serif",
+      family: "IBM Plex Sans, system-ui, sans-serif",
       size: 13,
     },
     margin: { l: 64, r: 24, t: 24, b: 56 },
@@ -170,7 +171,7 @@ export function sciMarker(color: string = PLOT_COLORS.cyan) {
 }
 
 /**
- * Shared 3D scene: styled axes with translucent slate walls, no spikes,
+ * Shared 3D scene: styled axes with translucent paper walls, no spikes,
  * fixed manual aspect and a publication-friendly default camera.
  */
 export function scene3d(
@@ -188,7 +189,7 @@ export function scene3d(
     color: PLOT_COLORS.text,
     tickfont: { color: PLOT_COLORS.text, size: 11 },
     showbackground: true,
-    backgroundcolor: "rgba(248,250,252,0.5)",
+    backgroundcolor: "rgba(247,245,241,0.6)",
     showspikes: false,
   });
   return {
