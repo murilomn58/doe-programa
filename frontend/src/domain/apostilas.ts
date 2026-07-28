@@ -1,10 +1,10 @@
 /**
- * Cadernos de planejamento de experimentos. Os PDFs sao compilados por
+ * Cadernos de planejamento de experimentos. Os PDFs são compilados por
  * `apostilas/build.ps1` e copiados para `public/conteudo/pdf/`.
  *
- * O campo `pdf` e o unico ponto que conhece a hospedagem: enquanto os arquivos
- * moram em `public/`, sao cinco caminhos relativos; se o total passar de 25 MB
- * e a migracao para o Vercel Blob acontecer, sao cinco URLs absolutas e nada
+ * O campo `pdf` é o único ponto que conhece a hospedagem: enquanto os arquivos
+ * moram em `public/`, são cinco caminhos relativos; se o total passar de 25 MB
+ * e a migração para o Vercel Blob acontecer, são cinco URLs absolutas e nada
  * mais muda no frontend.
  */
 export interface Apostila {
@@ -13,7 +13,7 @@ export interface Apostila {
   titulo: string;
   resumo: string;
   topicos: string[];
-  paginas: number; // preenchido apos a primeira compilacao
+  paginas: number; // preenchido após a primeira compilação
   pdf: string;
 }
 
@@ -70,5 +70,5 @@ export const APOSTILAS: Apostila[] = [
   },
 ];
 
-/** PDFs originais das aulas de referencia, oferecidos como leitura de apoio. */
+/** PDFs originais das aulas de referência, oferecidos como leitura de apoio. */
 export const MATERIAL_APOIO: { titulo: string; arquivo: string; fonte: string }[] = [];
