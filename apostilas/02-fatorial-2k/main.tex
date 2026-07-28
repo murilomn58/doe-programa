@@ -553,6 +553,34 @@ sem que nenhum número esteja, isoladamente, incorreto.
   $\hat{y} = 67{,}75 + 11{,}25\,x_{1} - 6{,}75\,x_{2} - 4{,}25\,x_{1}x_{2}$.
 \end{aplicacao}
 
+O painel do conjunto aula-statistica ilustra a situação em que o próprio
+programa evita o engano, ao imprimir as duas colunas lado a lado. A
+Tabela~\ref{tab:aula-statistica-painel} reproduz os valores de efeito e de
+coeficiente do painel para o planejamento $2^{2}$ de tensão desvio e
+umidade, com réplicas genuínas.
+
+\begin{table}[H]
+  \centering
+  \caption{Efeito e coeficiente impressos lado a lado no painel do conjunto
+    aula-statistica, para o planejamento $2^{2}$ de tensão desvio e umidade.}
+  \label{tab:aula-statistica-painel}
+  \begin{tabular}{l S[table-format=1.4] S[table-format=1.4]}
+    \toprule
+    {Termo}                          & {Efeito} & {Coeficiente} \\
+    \midrule
+    Tensão desvio                    & 4.334000 & 2.167000 \\
+    Umidade                          & 2.641500 & 1.320750 \\
+    Tensão desvio $\times$ umidade   & 0.732500 & 0.366250 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Também aqui a razão entre as duas colunas vale $2$ em cada linha, e o painel
+poupa o leitor de ter de recuperar essa relação por conta própria. É essa
+diferença de convenção entre um relatório e outro, e não qualquer
+inconsistência de cálculo, que explica por que a mesma quantidade física
+aparece, conforme o programa, ora como \num{22.5}, ora como \num{11.25}.
+
 \section{O erro do efeito}
 \label{sec:erro-efeito}
 
@@ -574,6 +602,31 @@ Equação~\eqref{eq:variancia-efeito}:
   \mathrm{Var}(\efeito{j}) = \frac{S^{2}\sum_{j=1}^{m}(1/N_{j})}{m^{2}/4} .
   \label{eq:variancia-efeito}
 \end{equation}
+
+A Equação~\eqref{eq:variancia-efeito} decorre diretamente da definição do
+efeito como diferença de médias, apresentada na
+Seção~\ref{sec:efeitos-principais}. Sendo $\overline{y}_{j}$ a média das
+$N_{j}$ réplicas do ponto $j$, sua variância vale $S^{2}/N_{j}$, porque a
+variância da média de $N_{j}$ observações independentes de variância comum
+$S^{2}$ é o próprio $S^{2}$ dividido por $N_{j}$. O efeito de um fator é a
+diferença entre a média das $m/2$ médias de ponto no nível alto e a média
+das $m/2$ médias de ponto no nível baixo, o que equivale a escrever
+$\efeito{j} = (2/m)\sum_{j=1}^{m} x_{ij}\,\overline{y}_{j}$, com $x_{ij}$ o
+sinal, $+1$ ou $-1$, do ponto $j$ na coluna do fator $i$. Como os $m$ pontos
+são independentes entre si e $x_{ij}^{2} = 1$ para todo $j$, a variância
+dessa soma é
+\[
+  \mathrm{Var}(\efeito{j})
+    = \left(\frac{2}{m}\right)^{2} \sum_{j=1}^{m} x_{ij}^{2}\,\mathrm{Var}(\overline{y}_{j})
+    = \frac{4}{m^{2}} \sum_{j=1}^{m} \frac{S^{2}}{N_{j}}
+    = \frac{S^{2}\sum_{j=1}^{m}(1/N_{j})}{m^{2}/4} ,
+\]
+que é exatamente a Equação~\eqref{eq:variancia-efeito}. A mesma conta,
+aplicada à média global, dá $\mathrm{Var}(\overline{y}) = S^{2}/N_{E}$, com
+$N_{E}$ o número total de ensaios da Equação~\eqref{eq:numero-ensaios}, o
+que confirma por que o erro-padrão de um efeito não é, em geral, igual ao
+erro-padrão da média: os dois dividem a mesma variância combinada $S^{2}$
+por normalizações diferentes.
 
 O critério de significância compara o efeito estimado à sua incerteza por
 meio de um intervalo de confiança: se
@@ -628,6 +681,20 @@ Seção~\ref{sec:erro-efeito} exclui o zero exatamente quando $t_{j}$ excede o
 valor crítico $t^{*}$ da distribuição $t$ de Student, com os mesmos graus de
 liberdade do erro combinado. O gráfico de Pareto e o intervalo de confiança
 são, portanto, duas leituras do mesmo teste: uma numérica, outra visual.
+
+A comparação direta entre as barras só é legítima porque os termos foram
+estimados de forma independente, propriedade estabelecida pela
+ortogonalidade da Seção~\ref{sec:ortogonalidade}: o efeito padronizado de um
+termo não muda conforme outro termo é incluído ou excluído do modelo, de
+modo que colocar todos os termos lado a lado em uma única escala não mistura
+efeitos que dependeriam uns dos outros. Essa condição deixa de valer nos
+planejamentos fracionados do Caderno~5, em que dois ou mais termos podem
+estar confundidos e a leitura do gráfico exige antes desfazer essa
+ambiguidade. Vale ainda notar que, para um termo com um grau de liberdade, o
+valor $F$ da tabela ANOVA é o quadrado do efeito padronizado,
+$F_{j} = t_{j}^{2}$: ordenar por $|t_{j}|$ ou por $F_{j}$ produz exatamente
+a mesma ordem, porque elevar ao quadrado não altera o ordenamento de valores
+não negativos.
 
 Os termos são ordenados por magnitude, e não pela ordem em que os fatores
 foram listados, porque a pergunta que o gráfico responde é qual termo importa
@@ -704,6 +771,11 @@ par e ajustar uma reta de referência apenas pelos pontos centrais, que se
 comportam como ruído, para não distorcer a reta com a presença dos efeitos
 grandes.
 
+O conjunto peixoto-2a4 identifica os quatro fatores apenas por número, sem
+nome físico associado no material de origem, o que não impede o uso do
+procedimento: o gráfico normal depende apenas dos valores estimados dos
+efeitos, não do significado de cada fator.
+
 A Figura~\ref{fig:normal-efeitos} aplica o procedimento ao planejamento
 $2^{4}$ completo, sem réplica, do conjunto peixoto-2a4.
 
@@ -718,27 +790,45 @@ $2^{4}$ completo, sem réplica, do conjunto peixoto-2a4.
 \end{figure}
 
 \begin{aplicacao}{Separação de efeitos reais e ruído no planejamento $2^{4}$}
-  A Tabela~\ref{tab:normal-efeitos} lista os cinco efeitos destacados na
-  Figura~\ref{fig:normal-efeitos}, todos claramente afastados dos dez efeitos
-  restantes, cujo módulo não ultrapassa \num{9.875}.
+  A Tabela~\ref{tab:normal-efeitos} ordena os quinze efeitos do planejamento
+  $2^{4}$ e associa a cada posição $i$ o quantil normal
+  $z_{i} = \Phi^{-1}\!\left[(i - 0{,}5)/15\right]$ empregado na
+  Figura~\ref{fig:normal-efeitos}.
 
   \begin{table}[H]
     \centering
-    \caption{Efeitos que se afastam da reta de referência no gráfico normal
-      do planejamento $2^{4}$ sem réplica.}
+    \caption{Os quinze efeitos do planejamento $2^{4}$ sem réplica,
+      ordenados, com o quantil normal de cada posição. Os cinco últimos,
+      destacados, afastam-se da reta ajustada pelos dez primeiros.}
     \label{tab:normal-efeitos}
-    \begin{tabular}{l S[table-format=3.3]}
+    \begin{tabular}{c l S[table-format=3.3] S[table-format=1.4]}
       \toprule
-      {Termo} & {Efeito} \\
+      {$i$} & {Termo} & {Efeito} & {$z_{i}$} \\
       \midrule
-      Catalisador (2)               & 109.375 \\
-      Concentração (3)              & 54.375  \\
-      Temperatura (4)               & 67.125  \\
-      Catalisador$\cdot$Concentração (23) & 25.625  \\
-      Catalisador$\cdot$Temperatura (24)  & 21.875  \\
+      1  & $\efeito{1234}$ & -8.875  & -1.8339 \\
+      2  & $\efeito{124}$  & -2.625  & -1.2816 \\
+      3  & $\efeito{1}$    & -2.375  & -0.9674 \\
+      4  & $\efeito{12}$   & -1.125  & -0.7279 \\
+      5  & $\efeito{234}$  & 0.125   & -0.5244 \\
+      6  & $\efeito{14}$   & 1.125   & -0.3406 \\
+      7  & $\efeito{123}$  & 2.625   & -0.1683 \\
+      8  & $\efeito{13}$   & 2.875   & 0.0000  \\
+      9  & $\efeito{134}$  & 5.375   & 0.1683  \\
+      10 & $\efeito{34}$   & 9.875   & 0.3406  \\
+      \addlinespace
+      11 & $\efeito{24}$   & 21.875  & 0.5244  \\
+      12 & $\efeito{23}$   & 25.625  & 0.7279  \\
+      13 & $\efeito{3}$    & 54.375  & 0.9674  \\
+      14 & $\efeito{4}$    & 67.125  & 1.2816  \\
+      15 & $\efeito{2}$    & 109.375 & 1.8339  \\
       \bottomrule
     \end{tabular}
   \end{table}
+
+  As dez primeiras posições, de módulo no máximo \num{9.875}, ajustam a reta
+  de referência da Figura~\ref{fig:normal-efeitos}; as cinco últimas,
+  destacadas na tabela, correspondem aos pontos que se afastam claramente
+  dessa reta.
 
   Sem qualquer réplica disponível para estimar o erro puro por outra via, o
   gráfico normal permite declarar esses cinco termos como efeitos reais e
