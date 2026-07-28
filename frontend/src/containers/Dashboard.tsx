@@ -10,10 +10,16 @@ import { Badge } from "@/components/ui/Badge";
 import { Callout } from "@/components/ui/Callout";
 import { LogoDoE } from "@/components/ui/LogoDoE";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { RodapeApp } from "@/components/ui/RodapeApp";
 import { seedDemoExperiment } from "@/engine/demo";
 import { EXPERIMENTS_KEY, useExperiments } from "@/hooks/useExperiments";
 
-export function Dashboard() {
+interface DashboardProps {
+  /** Vem do `HomeGate` (rota `/`): reabre a capa sem navegar. */
+  onVoltarCapa?: () => void;
+}
+
+export function Dashboard({ onVoltarCapa }: DashboardProps) {
   const { data: experiments, isLoading, isError, error } = useExperiments();
   const router = useRouter();
   const qc = useQueryClient();
@@ -119,12 +125,9 @@ export function Dashboard() {
           isLoading={isLoading}
           errorMessage={isError && error ? error.message : null}
         />
-        <p className="mt-4 text-xs text-muted">
-          Grátis na versão beta. Seus projetos ficam salvos neste navegador
-          (nada sai do seu computador); se você deixou seu email, avisamos
-          quando a sincronização entre dispositivos chegar.
-        </p>
       </section>
+
+      <RodapeApp onVoltarCapa={onVoltarCapa} />
     </main>
   );
 }

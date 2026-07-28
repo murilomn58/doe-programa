@@ -57,3 +57,29 @@ export function devePedirEmail(): boolean {
   const conta = getConta();
   return !conta?.email && !conta?.perguntadoEm;
 }
+
+/** Marcador de URL que força a capa (usado pelos CTAs do hub). */
+export const PARAM_CAPA = "capa";
+
+/** A URL atual pede a capa? Ex.: /?capa=1 vindo de iacommurilo.com.br/research */
+export function capaPedidaNaUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get(PARAM_CAPA) === "1";
+}
+
+/**
+ * Remove só o ?capa=1 (preserva utm_*), sem recarregar nem navegar.
+ *
+ * Não limpa o localStorage de propósito: a capa é um momento de marca, não um
+ * logout. Zerar `doe-conta` derrubaria o email salvo e rearmaria o pedido de
+ * email, punindo quem só queria rever a apresentação.
+ */
+export function limparParamCapa(): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(PARAM_CAPA)) return;
+  url.searchParams.delete(PARAM_CAPA);
+  // `null` no primeiro argumento: o App Router do Next mescla o próprio estado
+  // a partir da versão 14.1.
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}

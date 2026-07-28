@@ -4,6 +4,7 @@ export { Card } from "./Card";
 export { Badge, type BadgeTone } from "./Badge";
 export { Callout } from "./Callout";
 export { PageHeader } from "./PageHeader";
+export { RodapeApp } from "./RodapeApp";
 export { StepNav } from "./StepNav";
 export { Field } from "./Field";
 export { Input } from "./Input";
