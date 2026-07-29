@@ -82,6 +82,18 @@ export interface FactorInput {
   levels?: number[];
 }
 
+/** Quantos níveis o fator declara. Sem `levels`, são os dois extremos. */
+export function nNiveis(f: FactorInput): number {
+  return f.levels?.length ?? 2;
+}
+
+/** Níveis igualmente espaçados entre low e high, incluindo os extremos. */
+export function niveisEquiespacados(low: number, high: number, n: number): number[] {
+  if (n <= 2) return [low, high];
+  const passo = (high - low) / (n - 1);
+  return Array.from({ length: n }, (_, i) => low + i * passo);
+}
+
 export interface ResponseInput {
   name: string;
   unit?: string;

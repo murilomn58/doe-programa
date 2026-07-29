@@ -6,20 +6,50 @@
 
 import type { DesignConfig } from "@/components/DesignPicker";
 import { TAGUCHI_AUTO } from "@/components/DesignPicker";
-import type {
-  DesignGenerateRequest,
-  FactorInput,
-  ResponseInput,
+import {
+  niveisEquiespacados,
+  type DesignGenerateRequest,
+  type FactorInput,
+  type ResponseInput,
 } from "@/domain/design";
+
+/** Tolerância numérica para comparar extremos de `levels` com `low`/`high`. */
+const TOLERANCIA = 1e-9;
+
+/**
+ * `levels` declarados pelo usuário precisam ser uma lista com pelo menos 2
+ * valores, estritamente crescente, cujo primeiro e último elemento batem com
+ * `low`/`high` (com tolerância de ponto flutuante).
+ */
+function niveisDeclaradosSaoValidos(
+  levels: number[],
+  low: number,
+  high: number,
+): boolean {
+  if (levels.length < 2) return false;
+  for (let i = 1; i < levels.length; i++) {
+    if (levels[i] <= levels[i - 1]) return false;
+  }
+  return (
+    Math.abs(levels[0] - low) < TOLERANCIA &&
+    Math.abs(levels[levels.length - 1] - high) < TOLERANCIA
+  );
+}
 
 /** Um fator está completo o bastante para gerar o design? */
 export function factorIsValid(factor: FactorInput): boolean {
   if (!factor.name.trim()) return false;
   if (factor.factor_type === "quantitative") {
+    if (
+      factor.low === undefined ||
+      factor.high === undefined ||
+      factor.low === factor.high
+    ) {
+      return false;
+    }
     return (
-      factor.low !== undefined &&
-      factor.high !== undefined &&
-      factor.low !== factor.high
+      factor.levels === undefined ||
+      niveisDeclaradosSaoValidos(factor.levels, factor.low, factor.high)
     );
   }
   return Boolean(factor.low_label?.trim() && factor.high_label?.trim());
@@ -28,18 +58,17 @@ export function factorIsValid(factor: FactorInput): boolean {
 /**
  * Sintetiza níveis igualmente espaçados para fatores quantitativos em arranjos
  * Taguchi de 3+ níveis; fatores qualitativos (2 rótulos) ficam com 2 níveis.
+ * A declaração do usuário tem precedência: se o fator já traz `levels`,
+ * respeita exatamente o que foi declarado e não reinterpola por cima.
  */
 export function withTaguchiLevels(
   factor: FactorInput,
   nLevels: number,
 ): FactorInput {
+  if (factor.levels !== undefined) return factor;
   if (nLevels <= 2 || factor.factor_type !== "quantitative") return factor;
   if (factor.low === undefined || factor.high === undefined) return factor;
-  const step = (factor.high - factor.low) / (nLevels - 1);
-  const levels = Array.from(
-    { length: nLevels },
-    (_, i) => factor.low! + step * i,
-  );
+  const levels = niveisEquiespacados(factor.low, factor.high, nLevels);
   return { ...factor, levels };
 }
 
