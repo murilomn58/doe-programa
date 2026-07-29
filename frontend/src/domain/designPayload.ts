@@ -7,6 +7,8 @@
 import type { DesignConfig } from "@/components/DesignPicker";
 import { TAGUCHI_AUTO } from "@/components/DesignPicker";
 import {
+  apenasFatores,
+  blocoDeclarado,
   niveisEquiespacados,
   type DesignGenerateRequest,
   type FactorInput,
@@ -88,19 +90,35 @@ export function buildDesignRequest({
   factors,
   responses,
 }: BuildDesignRequestArgs): DesignGenerateRequest {
+  // Uma entrada marcada como bloco NÃO é fator: ela sai da lista enviada ao
+  // motor e vira a estrutura de blocagem. É o que permite o pesquisador
+  // declarar "tipo de solo" com sete categorias, que como fator qualitativo
+  // seria impossível (o motor aceita duas), e ainda assim ter os sete nomes
+  // registrados no experimento.
+  const bloco = blocoDeclarado(factors);
+  const nomesDosBlocos = bloco?.categorias?.map((c) => c.trim()).filter(Boolean);
+  const entradasQueSaoFator = apenasFatores(factors);
+
   const factorsPayload =
     designConfig.designType === "taguchi"
-      ? factors.map((f) => withTaguchiLevels(f, designConfig.taguchiLevels))
-      : factors;
+      ? entradasQueSaoFator.map((f) => withTaguchiLevels(f, designConfig.taguchiLevels))
+      : entradasQueSaoFator;
 
   const payload: DesignGenerateRequest = {
     name: name.trim() || undefined,
     design_type: designConfig.designType,
     replicates,
-    blocks: designConfig.blocks,
+    // O bloco declarado no passo de fatores tem precedência sobre o campo
+    // numérico do catálogo avançado, para não haver duas fontes de verdade.
+    blocks: nomesDosBlocos?.length ?? designConfig.blocks,
     factors: factorsPayload,
     responses: responses.filter((r) => r.name.trim()),
   };
+
+  if (nomesDosBlocos && nomesDosBlocos.length >= 2) {
+    payload.block_labels = nomesDosBlocos;
+    if (bloco?.name.trim()) payload.block_name = bloco.name.trim();
+  }
 
   if (designConfig.designType === "full_factorial_2k") {
     payload.center_points = designConfig.centerPoints;
