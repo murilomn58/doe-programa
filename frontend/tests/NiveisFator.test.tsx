@@ -190,34 +190,89 @@ describe("NiveisFator — orientação de blocagem (ramo qualitativo)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("o botão de ação chama onIrParaBlocos quando clicado", async () => {
+  it("o botão Transformar em bloco muda o papel do próprio fator para bloco, com duas categorias vazias", async () => {
     const user = userEvent.setup();
-    const onIrParaBlocos = vi.fn();
+    const onChange = vi.fn();
+    render(<NiveisFator factor={fatorQualitativo()} onChange={onChange} />);
+
+    await user.click(
+      screen.getByRole("button", { name: /transformar em bloco/i }),
+    );
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const ultimo = onChange.mock.calls.at(-1)?.[0] as FactorInput;
+    expect(ultimo.papel).toBe("bloco");
+    expect(ultimo.categorias).toEqual(["", ""]);
+  });
+});
+
+describe("NiveisFator — papel bloco", () => {
+  function fatorBloco(overrides: Partial<FactorInput> = {}): FactorInput {
+    return {
+      name: "Tipo de solo",
+      factor_type: "qualitative",
+      papel: "bloco",
+      categorias: ["Residual", "Laterita"],
+      ...overrides,
+    };
+  }
+
+  it("revela a lista de categorias com duas entradas e não mostra o segmentado de níveis", () => {
     render(
       <NiveisFator
-        factor={fatorQualitativo()}
+        factor={fatorBloco({ categorias: ["", ""] })}
         onChange={vi.fn()}
-        onIrParaBlocos={onIrParaBlocos}
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /declarar blocos/i }));
-
-    expect(onIrParaBlocos).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Bloco 1")).toHaveValue("");
+    expect(screen.getByLabelText("Bloco 2")).toHaveValue("");
+    expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
   });
 
-  it("sem a prop onIrParaBlocos, o botão não é renderizado, e o resto da orientação continua aparecendo", () => {
-    render(<NiveisFator factor={fatorQualitativo()} onChange={vi.fn()} />);
+  it("acrescentar categoria aumenta a contagem de blocos", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<NiveisFator factor={fatorBloco()} onChange={onChange} />);
+
+    await user.click(screen.getByRole("button", { name: /acrescentar/i }));
+
+    const ultimo = onChange.mock.calls.at(-1)?.[0] as FactorInput;
+    expect(ultimo.categorias).toEqual(["Residual", "Laterita", ""]);
+  });
+
+  it("categoria em branco invalida o bloco, com mensagem clara", () => {
+    render(
+      <NiveisFator
+        factor={fatorBloco({ categorias: ["Residual", ""] })}
+        onChange={vi.fn()}
+      />,
+    );
 
     expect(
-      screen.queryByRole("button", { name: /declarar blocos/i }),
+      screen.getByText(/precisa de ao menos 2 categorias nomeadas/i),
+    ).toBeInTheDocument();
+  });
+
+  it("com as duas categorias válidas, mostra a contagem de blocos", () => {
+    render(<NiveisFator factor={fatorBloco()} onChange={vi.fn()} />);
+
+    expect(screen.getByText(/2 blocos\./i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/precisa de ao menos 2 categorias nomeadas/i),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/tem mais de duas categorias/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /caderno 1, seção 9/i }),
-    ).toBeInTheDocument();
+  });
+
+  it("mostra a contagem ao vivo quando contagemBloco é passado", () => {
+    render(
+      <NiveisFator
+        factor={fatorBloco()}
+        onChange={vi.fn()}
+        contagemBloco={{ nBlocos: 2, porBloco: 9, total: 18 }}
+      />,
+    );
+
+    expect(screen.getByText(/9 x 2 = 18 ensaios/i)).toBeInTheDocument();
   });
 });
 
