@@ -95,7 +95,8 @@ O app deve oferecer um fluxo de setup tão bom quanto o do OriginPro (referênci
 - Abas: Factors · Settings · Miscellaneous · Output · Dialog Theme
 - **Number of Factors**: dropdown (ex: 2)
 - Tabela de fatores: `Factor (A/B) | Name | Type (Numeric/Text) | Low | High`
-  - Ex: A = Condicao de Compactação, Numeric, Low=18, High=19
+  - Ex: A = Condicao de Compactação, Numeric, Low=18, High=19 <!-- acentuacao-ok: transcrição literal do nome do fator na tela do OriginPro -->
+
   - Ex: B = Par de Tensão, **Text** (qualitativo), Low=(70,70), High=(210,70)
 
 ## Dialog "Factorial Design" — aba Settings (página 22)

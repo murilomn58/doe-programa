@@ -319,7 +319,7 @@ function CodingSection({ factors }: { factors: FactorScaleRead[] }) {
                   <div className="flex items-center gap-1.5">
                     <span>{f.name}</span>
                     {f.factor_type === "qualitative" ? (
-                      <span className="rounded bg-info/15 px-1 py-0.5 text-[9px] font-medium text-info-soft">
+                      <span className="rounded bg-info/15 px-1 py-0.5 text-[9px] font-medium text-info">
                         qual
                         {f.labels && f.labels.length >= 2
                           ? `: ${f.labels[0]}→−1, ${f.labels[f.labels.length - 1]}→+1`

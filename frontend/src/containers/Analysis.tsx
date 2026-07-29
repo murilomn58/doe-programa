@@ -11,7 +11,9 @@ import { exportPlot } from "@/api/exportPlots";
 import { fetchAdvice } from "@/api/advisor";
 import { AdvisorPanel } from "@/components/AdvisorPanel";
 import { ExportAllBar } from "@/components/ExportAllBar";
+import { PedirEmailModal } from "@/components/PedirEmailModal";
 import { useAugmentDesign } from "@/hooks/useEditExperiment";
+import { devePedirEmail } from "@/lib/conta";
 import { AnovaTable } from "@/components/AnovaTable";
 import { CoefTable } from "@/components/CoefTable";
 import { ContourPlot } from "@/components/ContourPlot";
@@ -115,6 +117,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
     done: number;
     total: number;
   } | null>(null);
+  const [pedirEmailExport, setPedirEmailExport] = useState(false);
 
   const router = useRouter();
   const augment = useAugmentDesign(experimentId);
@@ -220,6 +223,16 @@ export function Analysis({ experimentId }: AnalysisProps) {
     }
   }, [response, presentPlots, experimentId, model, activePair]);
 
+  // Soft gate: quem entrou sem conta vê o pedido de email uma única vez,
+  // na hora de exportar; ao resolver (com ou sem email) a exportação roda.
+  const handleExportAll = useCallback(async () => {
+    if (devePedirEmail()) {
+      setPedirEmailExport(true);
+      return;
+    }
+    await exportAll();
+  }, [exportAll]);
+
   if (runsQuery.isLoading) {
     return (
       <div className="rounded-xl border border-border bg-surface-1 p-6 text-sm text-muted">
@@ -309,7 +322,7 @@ export function Analysis({ experimentId }: AnalysisProps) {
           {presentPlots.length > 0 && response ? (
             <ExportAllBar
               plots={presentPlots}
-              onExportAll={exportAll}
+              onExportAll={handleExportAll}
               reportHref={`/report/${experimentId}?response=${encodeURIComponent(response)}&model=${model}`}
               busy={exportAllProgress !== null}
               progress={exportAllProgress}
@@ -321,6 +334,15 @@ export function Analysis({ experimentId }: AnalysisProps) {
               {exportError}
             </div>
           ) : null}
+
+          <PedirEmailModal
+            aberto={pedirEmailExport}
+            contexto="exportar"
+            onFechar={() => {
+              setPedirEmailExport(false);
+              void exportAll();
+            }}
+          />
 
           {plots ? (
             <div className="grid gap-6 lg:grid-cols-2">

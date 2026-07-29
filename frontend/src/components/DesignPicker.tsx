@@ -1,19 +1,40 @@
 "use client";
 
-import type {
-  CCDVariant,
-  DesignType,
-  OptimalCriterion,
-  RSMModel,
-  SNObjective,
-  TaguchiArray,
+import {
+  nNiveis,
+  type CCDVariant,
+  type DesignType,
+  type FactorInput,
+  type OptimalCriterion,
+  type RSMModel,
+  type SNObjective,
 } from "@/domain/design";
+import { TAGUCHI_AUTO, type DesignConfig } from "@/domain/designConfig";
+import {
+  contarEnsaios,
+  dsdRuns,
+  fractionalBaseFactors,
+  plackettBurmanRuns,
+  resolveTaguchiArray,
+} from "@/domain/runCount";
 import { useTaguchiCatalog } from "@/hooks/useTaguchiCatalog";
 
-export type FractionalMode = "resolution" | "generators";
-
-/** Sentinela do seletor de arranjo Taguchi: deixa o backend escolher. */
-export const TAGUCHI_AUTO = "" as const;
+// Re-exports: `DesignConfig`/`defaultDesignConfig` (estado do formulário) e a
+// contagem de ensaios (`designBaseRuns` + auxiliares) agora moram no domínio
+// — ver domain/designConfig.ts e domain/runCount.ts — porque designPayload.ts
+// e o motor de recomendação (recommend.ts) precisam delas sem depender de um
+// componente React. Mantidos aqui só para não quebrar quem já importava
+// destes símbolos a partir de "@/components/DesignPicker".
+export type { DesignConfig, FractionalMode } from "@/domain/designConfig";
+export { defaultDesignConfig, TAGUCHI_AUTO } from "@/domain/designConfig";
+export {
+  designBaseRuns,
+  dsdRuns,
+  fractionalBaseFactors,
+  generatorsBaseFactors,
+  plackettBurmanRuns,
+  resolveTaguchiArray,
+} from "@/domain/runCount";
 
 /**
  * Nota didática de 1 frase por família, exibida sob o seletor (e reutilizada
@@ -35,51 +56,9 @@ export const DESIGN_FAMILY_NOTE: Record<DesignType, string> = {
   optimal:
     "Desenho construído sob medida quando há restrições ou orçamento fixo de ensaios.",
   dsd: "Triagem definitiva: efeitos principais limpos de confusão com interações de 2 fatores.",
+  full_factorial_general:
+    "Testa todas as combinações dos níveis declarados em cada fator; com três níveis já estima curvatura, mas o número de ensaios cresce depressa.",
 };
-
-/** UI state of the design picker (mapped to the request payload on generate). */
-export interface DesignConfig {
-  designType: DesignType;
-  fractionalMode: FractionalMode;
-  fractionalResolution: number;
-  fractionalGenerators: string;
-  ccdVariant: CCDVariant;
-  ccdCenterFactorial: number;
-  ccdCenterAxial: number;
-  bbdCenter: number;
-  centerPoints: number;
-  // Taguchi
-  taguchiArray: string; // "" → automático
-  taguchiSN: SNObjective;
-  taguchiLevels: number; // níveis por fator (2, 3, 4…) quando o arranjo comporta
-  // D/I-ótimo
-  optimalCriterion: OptimalCriterion;
-  optimalNRuns: number;
-  optimalModel: RSMModel;
-  // DSD
-  dsdExtraRuns: number;
-}
-
-export function defaultDesignConfig(): DesignConfig {
-  return {
-    designType: "full_factorial_2k",
-    fractionalMode: "resolution",
-    fractionalResolution: 3,
-    fractionalGenerators: "",
-    ccdVariant: "rotatable",
-    ccdCenterFactorial: 4,
-    ccdCenterAxial: 4,
-    bbdCenter: 3,
-    centerPoints: 0,
-    taguchiArray: TAGUCHI_AUTO,
-    taguchiSN: "larger_is_better",
-    taguchiLevels: 2,
-    optimalCriterion: "D",
-    optimalNRuns: 0,
-    optimalModel: "linear_interactions",
-    dsdExtraRuns: 0,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Contagem de parâmetros do modelo RSM (para o default/guard de n_runs no ótimo).
@@ -99,132 +78,6 @@ export function optimalParamCount(k: number, model: RSMModel): number {
     params += k; // quadráticos (assumindo quantitativos)
   }
   return params;
-}
-
-/** Próximo múltiplo de 4 estritamente maior que `k` (construção de Hadamard). */
-export function plackettBurmanRuns(k: number): number {
-  if (k < 1) return 0;
-  return Math.floor(k / 4) * 4 + 4;
-}
-
-/** Ensaios de um DSD: 2·(fatores) + 1 (+ 2 por corrida extra). */
-export function dsdRuns(k: number, extraRuns: number): number {
-  if (k < 1) return 0;
-  return 2 * k + 1 + 2 * extraRuns;
-}
-
-// ---------------------------------------------------------------------------
-// Run-count previews (contagem combinatória para UX; o design em si — matriz,
-// α exato, aliasing — é SEMPRE gerado pelo backend).
-// ---------------------------------------------------------------------------
-
-function comb(n: number, r: number): number {
-  if (r < 0 || r > n) return 0;
-  let result = 1;
-  for (let i = 0; i < r; i += 1) {
-    result = (result * (n - i)) / (i + 1);
-  }
-  return Math.round(result);
-}
-
-/**
- * Espelha `pyDOE3.fracfact_by_res`: menor nº de fatores-base que comporta
- * `k` fatores na resolução pedida. `null` = fração inexistente (o backend
- * devolveria 422).
- */
-export function fractionalBaseFactors(
-  k: number,
-  resolution: number,
-): number | null {
-  for (let base = resolution - 1; base < k; base += 1) {
-    let capacity = base;
-    for (let r = resolution - 1; r <= base; r += 1) {
-      capacity += comb(base, r);
-    }
-    if (capacity >= k) return base;
-  }
-  return null;
-}
-
-/**
- * Nº de fatores-base declarados numa string de geradores pyDOE3 ("a b ab"),
- * ou `null` quando a string não define um design válido para `k` fatores.
- */
-export function generatorsBaseFactors(
-  generators: string,
-  k: number,
-): number | null {
-  const words = generators.trim().split(/\s+/).filter(Boolean);
-  if (words.length !== k) return null;
-  if (!words.every((word) => /^-?[a-zA-Z]+$/.test(word))) return null;
-
-  const letters = words.map((word) => word.replace("-", "").toLowerCase());
-  const baseLetters = letters.filter((word) => word.length === 1);
-  const baseSet = new Set(baseLetters);
-  if (baseSet.size === 0 || baseSet.size !== baseLetters.length) return null;
-  const allComposedOfBase = letters.every((word) =>
-    [...word].every((ch) => baseSet.has(ch)),
-  );
-  return allComposedOfBase ? baseSet.size : null;
-}
-
-/**
- * Menor arranjo Taguchi (do catálogo) que comporta `k` fatores no nº de
- * `levels` níveis pedido; `null` quando nenhum arranjo do catálogo cabe (ou o
- * catálogo ainda não carregou). Espelha `_auto_select_oa` do backend para o par
- * (níveis→demanda) uniforme usado na UI.
- */
-export function resolveTaguchiArray(
-  arrays: readonly TaguchiArray[] | undefined,
-  k: number,
-  levels: number,
-): TaguchiArray | null {
-  if (!arrays || k < 1) return null;
-  const fitting = arrays.filter(
-    (a) => (a.level_capacity[levels] ?? 0) >= k,
-  );
-  if (fitting.length === 0) return null;
-  // catálogo já vem ordenado por runs; garante menor por segurança
-  return fitting.reduce((best, a) => (a.runs < best.runs ? a : best));
-}
-
-/** Ensaios de UMA réplica (inclui pontos centrais); `null` = indeterminado. */
-export function designBaseRuns(
-  config: DesignConfig,
-  factorCount: number,
-  taguchiArrays?: readonly TaguchiArray[],
-): number | null {
-  const k = factorCount;
-  if (k < 1) return null;
-  switch (config.designType) {
-    case "full_factorial_2k":
-      return 2 ** k + config.centerPoints;
-    case "fractional_factorial_2kp": {
-      const base =
-        config.fractionalMode === "resolution"
-          ? fractionalBaseFactors(k, config.fractionalResolution)
-          : generatorsBaseFactors(config.fractionalGenerators, k);
-      return base === null ? null : 2 ** base + config.centerPoints;
-    }
-    case "central_composite":
-      return 2 ** k + 2 * k + config.ccdCenterFactorial + config.ccdCenterAxial;
-    case "box_behnken":
-      return k >= 3 ? 2 * k * (k - 1) + config.bbdCenter : null;
-    case "taguchi": {
-      const array =
-        config.taguchiArray === TAGUCHI_AUTO
-          ? resolveTaguchiArray(taguchiArrays, k, config.taguchiLevels)
-          : (taguchiArrays?.find((a) => a.name === config.taguchiArray) ??
-            null);
-      return array === null ? null : array.runs;
-    }
-    case "plackett_burman":
-      return k >= 2 ? plackettBurmanRuns(k) : null;
-    case "optimal":
-      return config.optimalNRuns >= 1 ? config.optimalNRuns : null;
-    case "dsd":
-      return k >= 2 ? dsdRuns(k, config.dsdExtraRuns) : null;
-  }
 }
 
 function toRoman(resolution: number): string {
@@ -309,8 +162,158 @@ interface DesignPickerProps {
   onConfigChange: (config: DesignConfig) => void;
   replicates: number;
   onReplicatesChange: (replicates: number) => void;
-  factorCount: number;
-  hasQualitativeFactor: boolean;
+  /** Fatores declarados (com os níveis); a contagem e os avisos vêm daqui. */
+  factors: FactorInput[];
+}
+
+// ---------------------------------------------------------------------------
+// Avisos contextuais calculados a partir dos fatores declarados. Puros — sem
+// UI — para poderem ser testados isoladamente se um dia saírem daqui.
+// ---------------------------------------------------------------------------
+
+/** Ponto axial (valor natural) de um fator, dado o α do CCD. */
+function pontoAxialNatural(
+  low: number,
+  high: number,
+  alpha: number,
+  ladoAlto: boolean,
+): number {
+  const centro = (low + high) / 2;
+  const meiaAmplitude = (high - low) / 2;
+  return ladoAlto ? centro + alpha * meiaAmplitude : centro - alpha * meiaAmplitude;
+}
+
+/**
+ * α exato do CCD para as duas variantes que podem extrapolar a faixa
+ * declarada (rotável e ortogonal). Espelha `pyDOE3.doe_star.star()`:
+ * rotável = (2^k)^(1/4); ortogonal = sqrt(k·(1+nao/na) / (1+nco/nc)), com
+ * nc = 2^k (pontos do cubo), na = 2·k (pontos axiais), nco/nao os pontos
+ * centrais de cada bloco. Face centrada usa α = 1 e nunca extrapola, por
+ * isso não entra aqui (o chamador já filtra essa variante fora).
+ */
+function alphaCcd(
+  variant: CCDVariant,
+  k: number,
+  centerFactorial: number,
+  centerAxial: number,
+): number | null {
+  if (k < 1) return null;
+  if (variant === "rotatable") return (2 ** k) ** 0.25;
+  if (variant === "orthogonal") {
+    const nc = 2 ** k;
+    const na = 2 * k;
+    return Math.sqrt((k * (1 + centerAxial / na)) / (1 + centerFactorial / nc));
+  }
+  return null;
+}
+
+/** Número em pt-BR (vírgula decimal), até 2 casas, sem zeros à toa. */
+function formatarNatural(valor: number): string {
+  return (Math.round(valor * 100) / 100).toLocaleString("pt-BR", {
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * Aviso 1: pontos axiais do CCD rotável/ortogonal que ultrapassam o mínimo ou
+ * o máximo declarado de algum fator. A recomendação (domain/recommend.ts)
+ * só propõe face centrada exatamente para nunca cair aqui — a faixa
+ * declarada costuma ser limite físico do laboratório (ex.: fibra vegetal
+ * trazida por avião, material contado). Rotável/ortogonal seguem no
+ * catálogo, mas avisados.
+ */
+function avisoAxialForaDaFaixa(
+  config: DesignConfig,
+  factors: FactorInput[],
+): string | null {
+  if (config.designType !== "central_composite") return null;
+  if (config.ccdVariant === "face_centered") return null;
+  const alpha = alphaCcd(
+    config.ccdVariant,
+    factors.length,
+    config.ccdCenterFactorial,
+    config.ccdCenterAxial,
+  );
+  if (alpha === null) return null;
+
+  const linhas: string[] = [];
+  for (const f of factors) {
+    if (f.factor_type !== "quantitative") continue;
+    if (f.low === undefined || f.high === undefined) continue;
+    const unidade = f.unit ? ` ${f.unit}` : "";
+    const nome = f.name || "fator";
+    const alto = pontoAxialNatural(f.low, f.high, alpha, true);
+    const baixo = pontoAxialNatural(f.low, f.high, alpha, false);
+    if (alto > f.high) {
+      linhas.push(
+        `${nome}: o ponto axial pede ${formatarNatural(alto)}${unidade}, acima do máximo declarado de ${formatarNatural(f.high)}${unidade}`,
+      );
+    }
+    if (baixo < f.low) {
+      linhas.push(
+        `${nome}: o ponto axial pede ${formatarNatural(baixo)}${unidade}, abaixo do mínimo declarado de ${formatarNatural(f.low)}${unidade}`,
+      );
+    }
+  }
+  return linhas.length > 0 ? linhas.join("; ") : null;
+}
+
+/** Famílias que só ensaiam os dois extremos (−1/+1) de cada fator. */
+const FAMILIAS_SO_EXTREMOS = new Set<DesignType>([
+  "full_factorial_2k",
+  "fractional_factorial_2kp",
+  "plackett_burman",
+  "dsd",
+]);
+
+/**
+ * Aviso 2a: a família selecionada só ensaia os extremos, mas algum fator
+ * declarou 3+ níveis — os intermediários declarados não entram na matriz.
+ */
+function avisoNiveisSoExtremos(
+  config: DesignConfig,
+  factors: FactorInput[],
+): string | null {
+  if (!FAMILIAS_SO_EXTREMOS.has(config.designType)) return null;
+  const algumTemNiveisExtras = factors.some((f) => nNiveis(f) >= 3);
+  if (!algumTemNiveisExtras) return null;
+  return "Este arranjo ensaia apenas o mínimo e o máximo; os níveis intermediários declarados não são usados.";
+}
+
+const TOLERANCIA_CENTRO = 1e-9;
+
+/**
+ * Aviso 2b: CCD e Box-Behnken sempre usam o ponto médio da faixa como
+ * centro. Se o aluno editou o nível central à mão (o NiveisFator permite
+ * isso) para um valor diferente da média de low/high, o arranjo ignora essa
+ * edição e ensaia o ponto médio mesmo assim.
+ */
+function avisoCentroEditado(
+  config: DesignConfig,
+  factors: FactorInput[],
+): string | null {
+  if (config.designType !== "central_composite" && config.designType !== "box_behnken") {
+    return null;
+  }
+  const linhas: string[] = [];
+  for (const f of factors) {
+    if (f.factor_type !== "quantitative" || !f.levels) continue;
+    const n = f.levels.length;
+    // Só há um "centro" único e nomeável quando a contagem é ímpar (o caso
+    // mais comum, 3 níveis, tem exatamente um ponto médio).
+    if (n < 3 || n % 2 === 0) continue;
+    if (f.low === undefined || f.high === undefined) continue;
+    const media = (f.low + f.high) / 2;
+    const centroDeclarado = f.levels[Math.floor(n / 2)];
+    if (Math.abs(centroDeclarado - media) > TOLERANCIA_CENTRO) {
+      const unidade = f.unit ? ` ${f.unit}` : "";
+      const nome = f.name || "fator";
+      linhas.push(
+        `${nome}: o arranjo ensaia o ponto médio (${formatarNatural(media)}${unidade}), não o valor editado (${formatarNatural(centroDeclarado)}${unidade})`,
+      );
+    }
+  }
+  return linhas.length > 0 ? linhas.join("; ") : null;
 }
 
 const inputClass =
@@ -324,18 +327,23 @@ export function DesignPicker({
   onConfigChange,
   replicates,
   onReplicatesChange,
-  factorCount,
-  hasQualitativeFactor,
+  factors,
 }: DesignPickerProps) {
-  const k = factorCount;
+  const k = factors.length;
+  const hasQualitativeFactor = factors.some((f) => f.factor_type === "qualitative");
   const set = (patch: Partial<DesignConfig>) =>
     onConfigChange({ ...config, ...patch });
 
   const catalogQuery = useTaguchiCatalog();
   const taguchiArrays = catalogQuery.data?.arrays;
 
-  const baseRuns = designBaseRuns(config, k, taguchiArrays);
-  const totalRuns = baseRuns === null ? null : baseRuns * replicates;
+  // `baseRuns` é o tamanho de UM bloco, UMA réplica (a combinatória pura da
+  // família, que as legendas de `RunFormula` explicam); força `blocks: 1`
+  // aqui para não confundir essa legenda com a expansão de blocos. O total
+  // exibido ao usuário vem direto de `contarEnsaios` com blocks e réplicas
+  // reais, a mesma fonte única que a vitrine de planos usa.
+  const baseRuns = contarEnsaios({ ...config, blocks: 1 }, factors, 1, taguchiArrays);
+  const totalRuns = contarEnsaios(config, factors, replicates, taguchiArrays);
   const requiresQuantitative =
     config.designType === "central_composite" ||
     config.designType === "box_behnken";
@@ -349,11 +357,13 @@ export function DesignPicker({
     fractionalBaseFactors(k, config.fractionalResolution) === null;
 
   const alphaPreview =
-    config.ccdVariant === "rotatable"
-      ? (2 ** k) ** 0.25
-      : config.ccdVariant === "face_centered"
-        ? 1
-        : null;
+    config.ccdVariant === "face_centered"
+      ? 1
+      : alphaCcd(config.ccdVariant, k, config.ccdCenterFactorial, config.ccdCenterAxial);
+
+  const avisoAxial = avisoAxialForaDaFaixa(config, factors);
+  const avisoNiveis = avisoNiveisSoExtremos(config, factors);
+  const avisoCentro = avisoCentroEditado(config, factors);
 
   // --- Taguchi derived state ---
   const taguchiSelected =
@@ -395,6 +405,9 @@ export function DesignPicker({
             className={inputClass}
           >
             <option value="full_factorial_2k">Fatorial completo 2^k</option>
+            <option value="full_factorial_general">
+              Fatorial completo (níveis múltiplos)
+            </option>
             <option value="fractional_factorial_2kp">
               Fatorial fracionado 2^(k-p)
             </option>
@@ -409,6 +422,23 @@ export function DesignPicker({
             {DESIGN_FAMILY_NOTE[config.designType]}
           </span>
         </label>
+
+        {avisoNiveis ? (
+          <p className="text-xs text-warning">{avisoNiveis}</p>
+        ) : null}
+
+        {config.designType === "full_factorial_general" ? (
+          <fieldset className={panelClass}>
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
+              Fatorial completo (níveis múltiplos)
+            </legend>
+            <p className="text-xs text-faint">
+              Testa todas as combinações dos níveis declarados em cada fator;
+              os níveis vêm do formulário de fatores, não há controle
+              adicional aqui.
+            </p>
+          </fieldset>
+        ) : null}
 
         {config.designType === "fractional_factorial_2kp" ? (
           <fieldset className={panelClass}>
@@ -553,6 +583,12 @@ export function DesignPicker({
                 "α calculado pelo backend para garantir a ortogonalidade."
               )}
             </p>
+            {avisoAxial ? (
+              <p className="text-xs text-warning">{avisoAxial}</p>
+            ) : null}
+            {avisoCentro ? (
+              <p className="text-xs text-warning">{avisoCentro}</p>
+            ) : null}
           </fieldset>
         ) : null}
 
@@ -561,6 +597,9 @@ export function DesignPicker({
             <legend className="px-1 text-sm font-medium text-foreground-soft">
               Box-Behnken
             </legend>
+            {avisoCentro ? (
+              <p className="text-xs text-warning">{avisoCentro}</p>
+            ) : null}
             {k < 3 ? (
               <p className="text-sm text-danger">
                 Box-Behnken exige pelo menos 3 fatores (há {k}).
@@ -855,19 +894,37 @@ export function DesignPicker({
           </label>
         ) : null}
 
-        <label className="flex w-40 flex-col gap-1 text-sm">
-          <span className="text-foreground-soft">Réplicas</span>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={replicates}
-            onChange={(e) =>
-              onReplicatesChange(Math.max(1, Number(e.target.value) || 1))
-            }
-            className={inputClass}
-          />
-        </label>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex w-40 flex-col gap-1 text-sm">
+            <span className="text-foreground-soft">Blocos</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={config.blocks}
+              onChange={(e) => set({ blocks: clampInt(e.target.value, 1, 20) })}
+              className={inputClass}
+            />
+          </label>
+
+          <label className="flex w-40 flex-col gap-1 text-sm">
+            <span className="text-foreground-soft">Réplicas</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={replicates}
+              onChange={(e) =>
+                onReplicatesChange(Math.max(1, Number(e.target.value) || 1))
+              }
+              className={inputClass}
+            />
+          </label>
+        </div>
+        <p className="text-xs text-faint">
+          Bloco é uma fonte de variação conhecida que não é objeto do estudo,
+          como lote de material, dia de moldagem ou tipo de solo.
+        </p>
 
         {qualitativeBlocked ? (
           <p className="rounded-md border border-warning-strong/40 bg-warning-strong/10 px-3 py-2 text-sm text-warning">
@@ -879,7 +936,12 @@ export function DesignPicker({
         <div className="rounded-lg border border-accent-strong/30 bg-accent-strong/5 p-4">
           <p className="text-sm text-foreground-soft">
             <RunFormula config={config} k={k} baseRuns={baseRuns} />
-            {baseRuns !== null ? <> × {replicates} réplica(s)</> : null}
+            {baseRuns !== null ? (
+              <>
+                {" "}
+                × {config.blocks} bloco(s) × {replicates} réplica(s)
+              </>
+            ) : null}
           </p>
           <p className="mt-1 text-sm text-foreground">
             Número de ensaios:{" "}
@@ -912,6 +974,16 @@ function RunFormula({
           </span>{" "}
           combinações + {config.centerPoints} ponto(s) central(is)
         </>
+      );
+    case "full_factorial_general":
+      return k >= 1 ? (
+        <>
+          Produto dos níveis declarados em cada fator ={" "}
+          <span className="font-mono text-accent-mid">{baseRuns ?? "…"}</span>{" "}
+          combinações
+        </>
+      ) : (
+        <>Declare ao menos 1 fator para calcular as combinações</>
       );
     case "fractional_factorial_2kp": {
       if (baseRuns === null) {

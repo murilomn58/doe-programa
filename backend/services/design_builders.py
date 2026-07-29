@@ -12,7 +12,7 @@ from dataclasses import replace
 from itertools import combinations
 
 import numpy as np
-from pyDOE3 import bbdesign, ccdesign, fracfact, fracfact_by_res
+from pyDOE3 import bbdesign, ccdesign, fracfact, fracfact_by_res, fullfact
 from pyDOE3.doe_factorial import fracfact_aliasing
 
 from domain.design import (
@@ -30,6 +30,10 @@ from domain.schemas import (
     ResponseSpec,
 )
 from domain.types import CCDVariant, DesignType, FactorType, PointType
+from services.design_builders_screening import (
+    _multilevel_cell,
+    _multilevel_factor_meta,
+)
 from services.design_service import (
     MAX_FACTORS,
     _cell,
@@ -290,6 +294,90 @@ def _aliasing_readable(
 # --- center points (2^k / fractional augmentation) ----------------------------
 
 
+def expandir_blocos_e_replicas(
+    base: GeneratedDesign,
+    blocks: int,
+    replicates: int,
+    seed: int | None = None,
+) -> GeneratedDesign:
+    """Repete o arranjo inteiro em ``blocks × replicates`` cópias.
+
+    Generaliza a antiga ``replicar_runs`` (mantida abaixo como caso particular):
+    bloco e réplica são a MESMA operação mecânica — repetir o arranjo inteiro —,
+    o que muda é só o rótulo e o que ele significa pra análise. Um **bloco** é
+    uma repetição sob uma condição conhecida DIFERENTE (lote de material, dia de
+    moldagem, tipo de solo): uma fonte de variação que o estudo isola, mas não
+    investiga. Uma **réplica** é repetição sob a MESMA condição (o erro puro).
+    O total de ensaios é ``len(base.runs) * blocks * replicates``.
+
+    Cada eixo só é RELOTULADO quando de fato se expande por ele (``> 1``); com
+    eixo de tamanho 1 o campo do ensaio original é preservado tal como veio de
+    ``base``. Essa regra é o que permite este mesmo expansor cobrir as duas
+    famílias que já numeram réplica internamente (2^k e fracionado): chamando
+    aqui com ``replicates=1`` e ``blocks=N``, o campo ``replicate`` (já correto,
+    1..R do laço interno) não é tocado — só ``block`` passa a variar 1..N. Do
+    lado oposto, ``blocks=1`` preserva o ``block=1`` que todo construtor de
+    bloco único já usa, e só ``replicate`` passa a variar — reproduzindo
+    exatamente o comportamento da antiga ``replicar_runs``.
+
+    Ordem de montagem: bloco maior (todos os ensaios do bloco 1, depois do
+    bloco 2, ...) e, dentro de um bloco, réplica maior. ``std_order`` sai único
+    de 1 a N somando todos os blocos e réplicas; ``run_order`` é sorteado sobre
+    o conjunto COMPLETO, para que blocos e réplicas fiquem intercalados na
+    bancada — executar um bloco inteiro em sequência confundiria a condição do
+    bloco com qualquer deriva do laboratório ao longo do tempo, que é
+    justamente o que a aleatorização existe para evitar. ``point_type`` de cada
+    ensaio é preservado, porque descreve a posição geométrica no arranjo, não a
+    repetição.
+    """
+    if blocks < 1:
+        raise DesignConfigError("O número de blocos deve ser >= 1.")
+    if replicates < 1:
+        raise DesignConfigError("O número de réplicas deve ser >= 1.")
+    if blocks == 1 and replicates == 1:
+        return base
+
+    ordenados = sorted(base.runs, key=lambda r: r.std_order)
+    expandidos: list[RunData] = []
+    std_order = 0
+    for b in range(1, blocks + 1):
+        for r in range(1, replicates + 1):
+            for run in ordenados:
+                std_order += 1
+                expandidos.append(
+                    replace(
+                        run,
+                        std_order=std_order,
+                        block=b if blocks > 1 else run.block,
+                        replicate=r if replicates > 1 else run.replicate,
+                        run_order=0,  # provisório; sorteado abaixo
+                    )
+                )
+
+    rng = np.random.default_rng(seed)
+    run_order = rng.permutation(len(expandidos)) + 1
+    runs = [
+        replace(run, run_order=int(run_order[i])) for i, run in enumerate(expandidos)
+    ]
+    return replace(base, runs=runs)
+
+
+def replicar_runs(
+    base: GeneratedDesign,
+    replicates: int,
+    seed: int | None = None,
+) -> GeneratedDesign:
+    """Repete o bloco inteiro de ensaios ``replicates`` vezes.
+
+    Caso particular de ``expandir_blocos_e_replicas`` com um único bloco;
+    mantida para não quebrar quem já chamava esta função diretamente. Existe
+    desde a entrega anterior porque só ``build_2k_design`` e
+    ``build_fractional_design`` expandiam réplicas por conta própria; as
+    demais famílias devolviam sempre um único bloco com ``replicate=1``.
+    """
+    return expandir_blocos_e_replicas(base, blocks=1, replicates=replicates, seed=seed)
+
+
 def add_center_points(
     base: GeneratedDesign,
     factors: list[FactorSpec],
@@ -382,4 +470,142 @@ def build_bbd_design(
         factors=_factor_meta(factors),
         responses=_response_meta(responses),
         runs=_runs_from_matrix(matrix, factors, req.seed),
+    )
+
+
+# --- Fatorial completo com n níveis (3^k e níveis mistos) ---------------------
+
+_GENERAL_FACTORIAL_WARN_RUNS = 81  # acima disto: aviso (custo experimental alto)
+_GENERAL_FACTORIAL_MAX_RUNS = 243  # acima disto: recusa (use CCD/Box-Behnken)
+
+
+def _general_factorial_nlevels(factor: FactorSpec) -> int:
+    """Nº de níveis de um fator: ``len(factor.levels)`` quando declarado, senão 2.
+
+    Reimplementado aqui (em vez de reusar ``design_builders_screening._factor_nlevels``
+    puro) porque aquela função *absorve* silenciosamente uma lista ``levels`` com
+    menos de 2 elementos de volta para 2 níveis — bom o suficiente para os
+    chamadores existentes (Taguchi/PB/DSD sempre validam a lista antes), mas aqui
+    precisamos recusar explicitamente o caso degenerado (n=1), como pede o ADR
+    desta família: um fator com um único nível não varia e não pode entrar no
+    fatorial completo.
+    """
+    if factor.levels is not None:
+        if len(factor.levels) < 2:
+            raise DesignConfigError(
+                f"Fator '{factor.name}': declare pelo menos 2 níveis "
+                f"(recebi {len(factor.levels)})."
+            )
+        return len(factor.levels)
+    return 2
+
+
+def _classify_general_factorial_point(coded_row: list[float]) -> int:
+    """Tipo de ponto de uma linha do fatorial completo com n níveis.
+
+    NÃO reutiliza ``_classify_point``: aquela função lê "exatamente um valor
+    codificado não-nulo" como ponto axial — regra correta para CCD/Box-Behnken,
+    cujos únicos pontos fora dos vértices SÃO braços axiais. Aqui a geometria é
+    outra: um fator de 4 níveis tem códigos intermediários em ±1/3, e uma linha
+    como (±1/3, 0) de um fatorial misto 4×3 seria lida por ``_classify_point``
+    como ponto axial — contaminando o agrupamento de erro puro e a linha de
+    curvatura da ANOVA com pontos que são, na verdade, vértices do reticulado
+    (grid) do fatorial. Regra própria: só a linha com TODOS os códigos em zero
+    (o centro exato, alcançável apenas quando todo fator tem nº ímpar de
+    níveis) é CENTER; qualquer outra linha é um vértice FACTORIAL do grid.
+    """
+    if all(abs(c) <= _TOL for c in coded_row):
+        return PointType.CENTER
+    return PointType.FACTORIAL
+
+
+def _runs_from_general_factorial(
+    index_matrix: np.ndarray, factors: list[FactorSpec], seed: int | None
+) -> list[RunData]:
+    """RunData a partir da matriz de índices (0..n-1) devolvida por ``fullfact``."""
+    rng = np.random.default_rng(seed)
+    run_order = rng.permutation(len(index_matrix)) + 1
+    runs: list[RunData] = []
+    for i, row in enumerate(index_matrix):
+        cells = {
+            f.name: _multilevel_cell(f, int(row[pos])) for pos, f in enumerate(factors)
+        }
+        coded_row = [cells[f.name].coded for f in factors]
+        runs.append(
+            RunData(
+                run_order=int(run_order[i]),
+                std_order=i + 1,
+                point_type=_classify_general_factorial_point(coded_row),
+                block=1,
+                replicate=1,
+                cells=cells,
+            )
+        )
+    return runs
+
+
+def build_general_factorial_design(
+    factors: list[FactorSpec],
+    responses: list[ResponseSpec],
+    req: DesignGenerateRequest,
+) -> GeneratedDesign:
+    """Build a fatorial completo com n níveis por fator (3^k / níveis mistos).
+
+    Usa pyDOE3 ``fullfact``, que devolve uma matriz de ÍNDICES inteiros por
+    coluna (0..n-1) — diferente de ``ff2n``/``ccdesign``, que já devolvem a
+    posição codificada. O nº de níveis de cada fator vem de ``len(f.levels)``
+    quando declarado, senão 2 (fator quantitativo low/high clássico). Valor
+    natural e código ±1 seguem a mesma convenção multi-nível já usada pelos
+    construtores Taguchi/PB/DSD (``_multilevel_cell``/``_factor_level_values``):
+    código = -1 + 2*índice/(n-1), natural = ``f.levels[índice]`` (ou low/high).
+    Fator qualitativo segue restrito a 2 rótulos nesta entrega (multinível
+    qualitativo é fase 2, fora de escopo).
+    """
+    k = len(factors)
+    if k < 2:
+        raise DesignConfigError(
+            "Um fatorial completo com níveis precisa de pelo menos 2 fatores."
+        )
+    _validate_names(factors)
+
+    for f in factors:
+        if (
+            f.factor_type is FactorType.QUALITATIVE
+            and f.levels is not None
+            and len(f.levels) > 2
+        ):
+            raise DesignConfigError(
+                f"Fator qualitativo '{f.name}' com mais de 2 níveis ainda não é "
+                "suportado nesta versão (multinível qualitativo é uma fase futura); "
+                "use no máximo os 2 rótulos baixo/alto."
+            )
+
+    n_levels = [_general_factorial_nlevels(f) for f in factors]
+    n_runs = int(np.prod(n_levels))
+    resumo = "×".join(str(n) for n in n_levels)
+
+    if n_runs > _GENERAL_FACTORIAL_MAX_RUNS:
+        raise DesignConfigError(
+            f"Fatorial completo com {n_runs} ensaios ({resumo} níveis) é grande "
+            f"demais para esta família (limite {_GENERAL_FACTORIAL_MAX_RUNS}). "
+            "Considere um composto central (CCD) ou um Box-Behnken para explorar "
+            "a região com bem menos ensaios."
+        )
+
+    notes: list[str] | None = None
+    if n_runs > _GENERAL_FACTORIAL_WARN_RUNS:
+        notes = [
+            f"Este fatorial completo tem {n_runs} ensaios ({resumo} níveis): "
+            "considere um composto central (CCD) ou um Box-Behnken se o custo "
+            "experimental for uma restrição."
+        ]
+
+    index_matrix = fullfact(n_levels).astype(int)  # (n_runs, k) índices 0..n-1
+
+    return GeneratedDesign(
+        design_type=DesignType.FULL_FACTORIAL_GENERAL.value,
+        factors=_multilevel_factor_meta(factors),
+        responses=_response_meta(responses),
+        runs=_runs_from_general_factorial(index_matrix, factors, req.seed),
+        notes=notes,
     )

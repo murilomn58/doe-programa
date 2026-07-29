@@ -102,7 +102,7 @@ COEF_HEADERS = [
     "Termo",
     "Coef. (codificado)",
     "Coef. (natural)",
-    "Erro padrao",
+    "Erro padrão",
     "t",
     "p-valor",
     "IC inferior",
@@ -211,7 +211,7 @@ def table_for(
     if kind == "design_matrix":
         return design_matrix_table(factors, responses, runs)
     raise TableExportError(
-        f"Tabela '{kind}' desconhecida. Opcoes: {sorted(TABLE_KINDS)}."
+        f"Tabela '{kind}' desconhecida. Opções: {sorted(TABLE_KINDS)}."
     )
 
 
@@ -366,7 +366,7 @@ async def build_report_pdf(
         )
     except Exception as exc:  # noqa: BLE001 — wrap any Playwright failure
         raise ReportRenderError(
-            f"Falha ao gerar o relatorio PDF a partir de {url}: {exc!r}"
+            f"Falha ao gerar o relatório PDF a partir de {url}: {exc!r}"
         ) from exc
 
 
@@ -415,7 +415,7 @@ class ExportService:
         """
         if table not in TABLE_KINDS:
             raise TableExportError(
-                f"Tabela '{table}' desconhecida. Opcoes: {sorted(TABLE_KINDS)}."
+                f"Tabela '{table}' desconhecida. Opções: {sorted(TABLE_KINDS)}."
             )
         result, factors, responses, runs = await self._load(
             experiment_id, response_name, model

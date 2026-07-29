@@ -1,0 +1,294 @@
+% ---------------------------------------------------------------------------
+% teste-visual.tex — prova visual da classe doeapostila.
+% Exercita todos os elementos previstos para os cinco cadernos: hierarquia de
+% títulos, equações numeradas com as macros de notação, tabela booktabs com
+% siunitx em vírgula decimal, figuras TikZ e PGFPlots com legenda abaixo,
+% o ambiente \begin{aplicacao}, listas do enumitem, acentuação plena e a
+% página de direitos autorais.
+%
+% Compilação (MiKTeX fora do PATH):
+%   $env:PATH = "C:\Users\Narcísius\AppData\Local\Programs\MiKTeX\miktex\bin\x64;" + $env:PATH
+%   pdflatex -interaction=nonstopmode teste-visual.tex   (duas vezes)
+% ---------------------------------------------------------------------------
+\documentclass{doeapostila}
+
+\input{macros}
+
+\definecaderno{0}{Prova visual da classe}
+
+\begin{document}
+
+\begin{center}
+  {\large\bfseries Prova visual da classe \texttt{doeapostila}}\par\smallskip
+  {\normalsize Murilo Miguel Narciso}\par\smallskip
+  {\footnotesize Instituto Militar de Engenharia \textbullet{} \today}
+\end{center}
+
+\vspace{0.6\baselineskip}
+
+\noindent
+Este documento não tem valor didático. Ele existe para que cada recurso da
+classe seja visto uma vez antes de os cadernos começarem a ser escritos, e
+para que qualquer regressão tipográfica introduzida depois seja detectada numa
+única compilação.
+
+\vspace{0.6\baselineskip}
+
+\tableofcontents
+
+\section{Fundamentos da variação}
+
+A afirmação de que uma alteração no processo produziu um ganho só se sustenta
+quando a variação observada excede aquela que o próprio procedimento
+experimental gera sem que nada seja mudado. É essa comparação, e não a
+magnitude absoluta da diferença, que fundamenta a inferência. A avaliação
+depende, portanto, de uma estimativa independente do erro experimental, obtida
+por réplicas genuínas e não por medições repetidas de uma mesma amostra.
+
+\subsection{Decomposição da soma de quadrados}
+
+A variabilidade total da resposta é separada em uma parcela explicada pelo
+modelo e outra atribuída ao resíduo, conforme a
+Equação~\eqref{eq:decomposicao}:
+
+\begin{equation}
+  \SQT = \SQR + \SQr .
+  \label{eq:decomposicao}
+\end{equation}
+
+O resíduo, por sua vez, admite subdivisão sempre que houver réplicas nos
+mesmos pontos experimentais. A parcela de erro puro mede a dispersão interna
+aos pontos replicados e independe do modelo adotado; a parcela de falta de
+ajuste mede o quanto o modelo se afasta das médias observadas:
+
+\begin{equation}
+  \SQr = \SQfaj + \SQep ,
+  \qquad
+  F_{\mathrm{faj}} = \frac{\MQ{faj}}{\MQ{ep}} .
+  \label{eq:faltadeajuste}
+\end{equation}
+
+\subsection{Coeficientes de determinação}
+
+O coeficiente de determinação e sua versão ajustada aos graus de liberdade são
+definidos na Equação~\eqref{eq:erredois}. A distinção é relevante porque o
+primeiro nunca decresce com a inclusão de termos, ainda que supérfluos, ao
+passo que o segundo penaliza a perda de graus de liberdade:
+
+\begin{equation}
+  \Rdois = 1 - \frac{\SQr}{\SQT} ,
+  \qquad
+  \Rajus = 1 - \frac{\MQ{r}}{\MQ{T}} .
+  \label{eq:erredois}
+\end{equation}
+
+\subsubsection{Estimativa dos coeficientes}
+
+Os coeficientes do modelo são obtidos por mínimos quadrados. Em notação
+matricial, com $\matX$ a matriz de planejamento e $\vety$ o vetor de respostas,
+a estimativa é dada pela Equação~\eqref{eq:minimosquadrados}:
+
+\begin{equation}
+  \hat{\vetbeta} = \left( \matX^{\top} \matX \right)^{-1} \matX^{\top} \vety .
+  \label{eq:minimosquadrados}
+\end{equation}
+
+\subsubsection{Efeito de um fator}
+
+No planejamento fatorial de dois níveis, o efeito principal do fator $i$ é a
+diferença entre a média das respostas no nível superior e a média no nível
+inferior, de modo que $\efeito{i}$ corresponde ao dobro do coeficiente
+homônimo do modelo de regressão nas variáveis codificadas. A interação de
+segunda ordem $\efeito{12}$ segue a mesma construção, com os sinais obtidos
+pelo produto das colunas correspondentes.
+
+\section{Apresentação de resultados}
+
+\subsection{Tabela de efeitos}
+
+A Tabela~\ref{tab:efeitos} reúne os efeitos estimados em um planejamento
+$2^{3}$ conduzido com duas réplicas. A vírgula é o separador decimal, conforme
+a norma brasileira, e o alinhamento pela casa decimal é obrigatório em todas as
+tabelas numéricas dos cadernos.
+
+\begin{table}[H]
+  \centering
+  \caption{Efeitos estimados no planejamento $2^{3}$ com duas réplicas.
+    Erro padrão comum de \num{1.80} unidades, calculado a partir da variância
+    combinada das réplicas.}
+  \label{tab:efeitos}
+  \begin{tabular}{l S[table-format=-2.2] S[table-format=1.2] S[table-format=-2.2]}
+    \toprule
+    {Termo} & {Efeito} & {Erro padrão} & {Razão $t$} \\
+    \midrule
+    Média                          & 67.30  & 0.90 & 74.78 \\
+    Temperatura                    & 22.90  & 1.80 & 12.72 \\
+    Catalisador                    & -13.90 & 1.80 & -7.72 \\
+    Concentração                   & 8.90   & 1.80 & 4.94  \\
+    Temperatura $\times$ catalisador & -8.60  & 1.80 & -4.78 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Números fora de tabela também seguem a convenção: a variância combinada vale
+\num{6.5}, o rendimento acumulado atingiu \num{12345.678} unidades e a
+resistência característica ficou em \qty{2.95}{\mega\pascal} aos vinte e oito
+dias.
+
+\subsection{Representação geométrica do planejamento}
+
+A Figura~\ref{fig:quadrado} representa o planejamento $2^{2}$ como um quadrado
+no espaço das variáveis codificadas. Cada vértice corresponde a uma combinação
+de níveis, e o contraste que define um efeito principal é a diferença entre as
+médias de dois lados opostos.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[scale=2.6, line width=0.5pt]
+    \draw (0,0) rectangle (1,1);
+    \draw[->, line width=0.4pt] (-0.28,0) -- (1.28,0) node[right, font=\footnotesize] {$x_{1}$};
+    \draw[->, line width=0.4pt] (0,-0.28) -- (0,1.28) node[above, font=\footnotesize] {$x_{2}$};
+    \foreach \x/\y/\rot in {0/0/below left, 1/0/below right, 0/1/above left, 1/1/above right}
+      \fill (\x,\y) circle (1.4pt);
+    \node[below left, font=\footnotesize]  at (0,0) {$(-,-)$};
+    \node[below right, font=\footnotesize] at (1,0) {$(+,-)$};
+    \node[above left, font=\footnotesize]  at (0,1) {$(-,+)$};
+    \node[above right, font=\footnotesize] at (1,1) {$(+,+)$};
+    \fill (0.5,0.5) circle (1.4pt);
+    \node[right, font=\footnotesize] at (0.54,0.5) {ponto central};
+  \end{tikzpicture}
+  \caption{Planejamento fatorial $2^{2}$ com ponto central, em variáveis
+    codificadas. O ponto central não altera as estimativas dos efeitos
+    principais e fornece o grau de liberdade necessário ao teste de curvatura.}
+  \label{fig:quadrado}
+\end{figure}
+
+\subsection{Ajuste linear e ajuste quadrático}
+
+A Figura~\ref{fig:ajustes} contrasta dois modelos ajustados ao mesmo conjunto
+de observações. A cor de apoio é reservada à série ajustada; os dados
+permanecem em preto.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[
+        width=\linewidth, height=4.6cm,
+        xlabel={$x$}, ylabel={$y$},
+        xmin=25, xmax=75, ymin=0, ymax=60,
+        tick label style={font=\scriptsize},
+        label style={font=\footnotesize},
+        grid=major, grid style={gray!25, line width=0.3pt},
+        axis line style={black, line width=0.4pt},
+      ]
+        \addplot[only marks, mark=*, mark size=1.3pt, black]
+          coordinates {(30,17) (30,21) (40,32) (40,36) (50,43) (50,47)
+                       (60,48) (60,52) (70,43) (70,47)};
+        \addplot[azulDoE, line width=0.9pt, domain=28:72, samples=2]
+          {13.6 + 0.51*x};
+      \end{axis}
+    \end{tikzpicture}
+    \caption{Modelo linear, $\Rdois = \num{0.777873}$.}
+    \label{fig:ajuste-linear}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \begin{axis}[
+        width=\linewidth, height=4.6cm,
+        xlabel={$x$}, ylabel={$y$},
+        xmin=25, xmax=75, ymin=0, ymax=60,
+        tick label style={font=\scriptsize},
+        label style={font=\footnotesize},
+        grid=major, grid style={gray!25, line width=0.3pt},
+        axis line style={black, line width=0.4pt},
+      ]
+        \addplot[only marks, mark=*, mark size=1.3pt, black]
+          coordinates {(30,17) (30,21) (40,32) (40,36) (50,43) (50,47)
+                       (60,48) (60,52) (70,43) (70,47)};
+        \addplot[azulDoE, line width=0.9pt, domain=28:72, samples=60]
+          {-40.9 + 2.66*x - 0.0215*x^2};
+      \end{axis}
+    \end{tikzpicture}
+    \caption{Modelo quadrático, $\Rdois = \num{0.993459}$.}
+    \label{fig:ajuste-quadratico}
+  \end{subfigure}
+  \caption{Comparação entre o ajuste linear e o ajuste quadrático de um mesmo
+    conjunto de dez observações. O erro puro é idêntico nos dois casos, porque
+    depende apenas das réplicas; o que muda é a falta de ajuste.}
+  \label{fig:ajustes}
+\end{figure}
+
+\begin{aplicacao}{Diluição de erros de laboratório}
+  Em um ensaio de compressão simples conduzido em duplicata, a leitura de um
+  dos corpos de prova foi comprometida por um posicionamento incorreto da
+  célula de carga. Como o planejamento previa réplicas genuínas, o desvio
+  ficou confinado à estimativa de erro puro e não contaminou os efeitos
+  estimados. A razão $F_{\mathrm{faj}} = \MQ{faj} / \MQ{ep}$ caiu de
+  \num{55.4} para \num{0.447} após a inclusão dos termos quadráticos, sem que
+  o erro puro se alterasse, o que confirma que a deficiência residia no
+  modelo e não nos dados.
+\end{aplicacao}
+
+\section{Procedimento recomendado}
+
+\subsection{Sequência de execução}
+
+A ordem abaixo é a que reduz o número de ensaios necessários quando o material
+disponível é escasso:
+
+\begin{enumerate}[label=\arabic*., itemsep=2pt, topsep=4pt, leftmargin=*]
+  \item Definir a resposta de interesse e a precisão exigida na sua medição.
+  \item Levantar os fatores candidatos e distinguir os controláveis dos
+    ruídos, registrando as razões de cada classificação.
+  \item Executar uma triagem fracionada, aceitando confundimento entre
+    interações de ordem elevada.
+  \item Acrescentar réplicas apenas nos pontos que sustentam a estimativa de
+    erro puro.
+  \item Ampliar para composição central somente se o teste de curvatura
+    indicar que o modelo de primeira ordem é insuficiente.
+\end{enumerate}
+
+\subsection{Condições que invalidam a análise}
+
+\begin{itemize}[label=\textbullet, itemsep=2pt, topsep=4pt, leftmargin=*]
+  \item Ausência de aleatorização na ordem de execução dos ensaios.
+  \item Repetição de medição tomada como réplica, o que subestima o erro
+    experimental e infla artificialmente a significância dos efeitos.
+  \item Extrapolação da superfície ajustada para além da região experimental.
+\end{itemize}
+
+\subsection{Vocabulário e acentuação}
+
+O texto dos cadernos é escrito em português brasileiro com acentuação plena.
+Esta seção existe para que a codificação seja verificada de fato:
+ação, avaliação, execução, precisão, confundimento, coeficiente, variância,
+influência, análise, ângulo, três, é, ê, á, à, ó, ú, í, â, ç, ã, õ.
+Composição central rotacionável, réplicas genuínas, região experimental,
+não-aditividade, mínimos quadrados, propagação de incerteza, hipótese nula.
+Não há sinônimos em inglês no corpo do texto, e as unidades seguem o Sistema
+Internacional.
+
+A plataforma que acompanha estas apostilas está em
+\url{https://research.iacommurilo.com.br}, e o índice de todo o material pode
+ser consultado a partir da Seção~\ref{sec:encerramento}.
+
+\section{Encerramento}
+\label{sec:encerramento}
+
+\begin{description}[style=nextline, leftmargin=1.4em, itemsep=3pt, topsep=4pt]
+  \item[Erro puro] Estimativa da variabilidade obtida exclusivamente de
+    réplicas genuínas nos mesmos pontos experimentais.
+  \item[Falta de ajuste] Parcela do resíduo atribuída à inadequação da forma
+    funcional do modelo, disponível apenas quando existe erro puro.
+\end{description}
+
+Encerrada a verificação, a página seguinte reproduz a nota de direitos
+autorais que fecha cada um dos cinco cadernos.
+
+\paginadireitos
+
+\end{document}

@@ -146,6 +146,12 @@ class DesignGenerateRequest(BaseModel):
     experiment_id: int | None = None
     design_type: DesignType = DesignType.FULL_FACTORIAL_2K
     replicates: int = Field(default=1, ge=1, le=20)
+    # Bloco = repetição completa do arranjo sob uma condição conhecida
+    # diferente (lote de material, dia de moldagem, tipo de solo), separada do
+    # que o estudo investiga. Réplica = repetição sob a MESMA condição. Total
+    # de ensaios = base × blocks × replicates (ver `expandir_blocos_e_replicas`
+    # em design_builders.py).
+    blocks: int = Field(default=1, ge=1, le=20)
     factors: list[FactorSpec] = Field(min_length=1)
     responses: list[ResponseSpec] = Field(default_factory=list)
     seed: int | None = None  # optional: deterministic run-order randomization
@@ -216,6 +222,9 @@ class DesignRead(BaseModel):
     # Taguchi/optimal only; None for every other family
     array_name: str | None = None
     optimal_efficiency: float | None = None
+    # Avisos não-bloqueantes (ex.: fatorial completo com n níveis grande);
+    # vazio para as demais famílias.
+    notes: list[str] = Field(default_factory=list)
 
 
 class TaguchiArrayRead(BaseModel):

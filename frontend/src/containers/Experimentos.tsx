@@ -1,17 +1,31 @@
 "use client";
 
+/**
+ * O programa em si (rota `/experiments`): criar do zero, retomar um
+ * planejamento antigo ou continuar um experimento salvo.
+ *
+ * Nasceu do antigo `Dashboard.tsx` (Task 1.5 o desmembra): a porta "Aprender
+ * DoE" saiu para `/conteudo` e o portal de entrada virou `Inicio`, deixando
+ * esta tela livre para crescer só do lado de quem já está trabalhando.
+ */
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ExperimentList } from "@/components/ExperimentList";
+import { MetodoQuatroEstacoes } from "@/components/MetodoQuatroEstacoes";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Callout } from "@/components/ui/Callout";
+import { LogoDoE } from "@/components/ui/LogoDoE";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { RodapeApp } from "@/components/ui/RodapeApp";
 import { seedDemoExperiment } from "@/engine/demo";
 import { EXPERIMENTS_KEY, useExperiments } from "@/hooks/useExperiments";
 
-export function Dashboard() {
+export function Experimentos() {
   const { data: experiments, isLoading, isError, error } = useExperiments();
   const router = useRouter();
   const qc = useQueryClient();
@@ -31,13 +45,25 @@ export function Dashboard() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
       <PageHeader
-        title="DoE Programa"
-        subtitle="Planejamento de Experimentos"
+        title="Design of Experiments"
+        subtitle="Planejamento de experimentos. Grátis na versão beta."
+        logo={<LogoDoE size={34} cor="#1793B5" corBorda="#084A5B" />}
+        badge={
+          <Badge tone="accent" pill>
+            beta
+          </Badge>
+        }
+        back={{ label: "Início", href: "/" }}
+        right={
+          <Button variant="accent" onClick={() => router.push("/setup")}>
+            Novo experimento
+          </Button>
+        }
       />
 
       <Callout label="Por onde começar">
         Vai <b>rodar</b> um experimento novo ou <b>já tem</b> os resultados? O
-        assistente guiado leva você do começo ao fim — define fatores,
+        assistente guiado leva você do começo ao fim: define fatores,
         recomenda o planejamento, gera a matriz e mostra os gráficos.
       </Callout>
 
@@ -55,6 +81,24 @@ export function Dashboard() {
           </span>
         </span>
         <span className="shrink-0 text-2xl text-accent" aria-hidden>
+          →
+        </span>
+      </Link>
+
+      <Link
+        href="/retrospective"
+        className="mt-3 flex items-center justify-between gap-4 rounded-xl border border-border bg-surface-1 px-6 py-4 transition hover:border-accent-strong/60"
+      >
+        <span>
+          <span className="block font-semibold text-foreground-strong">
+            Já tenho os dados de um experimento antigo
+          </span>
+          <span className="block text-sm text-foreground-soft">
+            Cole a tabela de ensaios e o programa descobre o planejamento por
+            trás dos dados e analisa.
+          </span>
+        </span>
+        <span className="shrink-0 text-xl text-accent" aria-hidden>
           →
         </span>
       </Link>
@@ -80,27 +124,7 @@ export function Dashboard() {
         </span>
       </button>
 
-      {/* O método em 4 estações — onboarding visual do pesquisador */}
-      <section aria-label="Como funciona" className="mt-8 rounded-xl border border-border bg-surface-1 px-6 py-5">
-        <svg viewBox="0 0 720 84" className="w-full" role="img" aria-label="Planejar, executar, analisar e otimizar">
-          {[
-            { x: 40, label: "Planejar", hint: "fatores e matriz" },
-            { x: 240, label: "Executar", hint: "ensaios no lab" },
-            { x: 440, label: "Analisar", hint: "ANOVA e efeitos" },
-            { x: 640, label: "Otimizar", hint: "ponto ótimo" },
-          ].map((s, i) => (
-            <g key={s.label}>
-              {i < 3 ? (
-                <line x1={s.x + 44} y1={30} x2={s.x + 156} y2={30} stroke="var(--color-border-strong)" strokeWidth={1.5} strokeDasharray="5 4" />
-              ) : null}
-              <circle cx={s.x} cy={30} r={17} fill={i === 3 ? "var(--color-primary)" : "var(--color-surface-0)"} stroke={i === 3 ? "var(--color-primary)" : "var(--color-accent-mid)"} strokeWidth={1.6} />
-              <text x={s.x} y={35} textAnchor="middle" fontSize={13} fontWeight={600} fill={i === 3 ? "#ffffff" : "var(--color-accent-strong)"}>{i + 1}</text>
-              <text x={s.x} y={64} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--color-foreground)">{s.label}</text>
-              <text x={s.x} y={79} textAnchor="middle" fontSize={11} fill="var(--color-muted)">{s.hint}</text>
-            </g>
-          ))}
-        </svg>
-      </section>
+      <MetodoQuatroEstacoes />
 
       <section className="mt-10">
         <h2 className="mb-4 text-lg font-medium text-foreground">
@@ -112,11 +136,13 @@ export function Dashboard() {
           errorMessage={isError && error ? error.message : null}
         />
         <p className="mt-4 text-xs text-muted">
-          Seus projetos ficam salvos neste navegador (nada sai do seu
-          computador). Conta e sincronização entre dispositivos chegam em
-          breve.
+          Seus experimentos ficam salvos neste navegador (nada sai do seu
+          computador); se você deixou seu email, avisamos quando a
+          sincronização entre dispositivos chegar.
         </p>
       </section>
+
+      <RodapeApp />
     </main>
   );
 }

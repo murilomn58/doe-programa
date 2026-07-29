@@ -1,0 +1,70 @@
+% Caderno 2 — cubo do 2^3 com as respostas nos vértices.
+% Dados: `peixoto-2x3` (numeros.md, conjunto 2), médias por ensaio.
+% A face direita (temperatura no nível +1) está em azul: é a leitura do
+% efeito principal como diferença entre as médias de duas faces opostas.
+\documentclass[border=3pt,11pt]{standalone}
+\input{preambulo}
+\begin{document}
+\begin{tikzpicture}[x=1cm, y=1cm]
+
+  % --- geometria do cubo -------------------------------------------------
+  % f1 = temperatura  -> direita
+  % f2 = catalisador  -> cima
+  % f3 = concentração -> fundo (deslocamento diagonal)
+  \def\lado{3.4}
+  \def\dx{1.5}
+  \def\dy{1.25}
+
+  \coordinate (fmm) at (0,0);              % frente: T-, Cat-
+  \coordinate (fpm) at (\lado,0);          % frente: T+, Cat-
+  \coordinate (fmp) at (0,\lado);          % frente: T-, Cat+
+  \coordinate (fpp) at (\lado,\lado);      % frente: T+, Cat+
+  \coordinate (tmm) at (\dx,\dy);          % fundo:  T-, Cat-
+  \coordinate (tpm) at (\lado+\dx,\dy);
+  \coordinate (tmp) at (\dx,\lado+\dy);
+  \coordinate (tpp) at (\lado+\dx,\lado+\dy);
+
+  % face de temperatura +1, destacada
+  \begin{scope}[on background layer]
+    \fill[azulDoE!7] (fpm) -- (tpm) -- (tpp) -- (fpp) -- cycle;
+  \end{scope}
+
+  % arestas do fundo, mais claras
+  \draw[arestafundo] (tmm) -- (tpm) -- (tpp) -- (tmp) -- cycle;
+  \draw[arestafundo] (fmm) -- (tmm);
+  % arestas da frente e laterais visíveis
+  \draw[aresta] (fmm) -- (fpm) -- (fpp) -- (fmp) -- cycle;
+  \draw[aresta] (fpm) -- (tpm);
+  \draw[aresta] (fmp) -- (tmp);
+  \draw[aresta] (fpp) -- (tpp);
+
+  % --- respostas nos vértices --------------------------------------------
+  \node[vertice]      at (fmm) {54,0};
+  \node[vertdestaque] at (fpm) {86,5};
+  \node[vertice]      at (fmp) {48,0};
+  \node[vertdestaque] at (fpp) {63,0};
+  \node[vertice]      at (tmm) {63,0};
+  \node[vertdestaque] at (tpm) {93,5};
+  \node[vertice]      at (tmp) {58,5};
+  \node[vertdestaque] at (tpp) {72,0};
+
+  % --- eixos, com os níveis nas pontas das setas -------------------------
+  % Postos bem afastados do cubo: rótulo encostado em vértice fica ilegível.
+  \coordinate (o) at (-3.15,-1.55);
+  \draw[eixo] (o) -- ++(1.25,0)
+       node[rotulinho, right, align=left] {temperatura\\ 313 $\to$ 333\,K};
+  \draw[eixo] (o) -- ++(0,1.25)
+       node[rotulinho, above, align=center] {catalisador\\ A $\to$ B};
+  \draw[eixo] (o) -- ++(0.79,0.66)
+       node[rotulinho, above right, align=left, xshift=-1mm]
+       {concentração\\ 1,0 $\to$ 1,5\,M};
+
+  % --- leitura do efeito principal ---------------------------------------
+  \node[nota, anchor=north west] at (-3.15,-2.35)
+    {Rendimento médio, em \%, das duas réplicas de cada ensaio.};
+  \node[notaazul, anchor=north west] at (-3.15,-2.95)
+    {$E_{\mathrm{T}} = \overline{y}_{\text{face }+} - \overline{y}_{\text{face }-}
+      = 78{,}750 - 55{,}875 = 22{,}875$};
+
+\end{tikzpicture}
+\end{document}

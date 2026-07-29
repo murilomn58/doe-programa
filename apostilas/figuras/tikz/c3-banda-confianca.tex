@@ -1,0 +1,66 @@
+% Caderno 3 — banda de confiança da resposta prevista, em ampulheta.
+% Figura conceitual, sem dado. O estrangulamento em x-barra está de propósito
+% mais pronunciado do que numa banda real: é ele que a figura precisa ensinar.
+\documentclass[border=3pt,11pt]{standalone}
+\input{preambulo}
+\begin{document}
+\begin{tikzpicture}[x=1.15cm, y=1.15cm,
+  declare function={
+    reta(\x)        = 0.32*\x;
+    semilargura(\x) = 0.95*sqrt(0.16 + (\x)*(\x)/3.2);
+    sup(\x) = reta(\x) + semilargura(\x);
+    inf(\x) = reta(\x) - semilargura(\x);
+  }]
+
+  \def\xa{-3.55}
+  \def\xb{3.55}
+  \def\ya{-3.62}
+  \def\yb{3.62}
+  \def\xexp{2.3}   % limite da faixa efetivamente ensaiada
+
+  % --- zonas de extrapolação ---------------------------------------------
+  \fill[cinzaFundo] (\xa,\ya) rectangle (-\xexp,\yb);
+  \fill[cinzaFundo] (\xexp,\ya) rectangle (\xb,\yb);
+  \node[rotulinho, text=cinzaDoE, align=center] at (-2.92,3.15)
+    {extra-\\polação};
+  \node[rotulinho, text=cinzaDoE, align=center] at (2.92,3.15)
+    {extra-\\polação};
+
+  % --- eixos --------------------------------------------------------------
+  \draw[eixo] (\xa,\ya) -- (\xb+0.35,\ya) node[rotulo, right] {$x$};
+  \draw[eixo] (\xa,\ya) -- (\xa,\yb+0.35) node[rotulo, above] {$\hat{y}$};
+
+  % --- banda --------------------------------------------------------------
+  \draw[azulDoE, line width=0.9pt, smooth, samples=140, domain=\xa:\xb]
+        plot (\x, {sup(\x)});
+  \draw[azulDoE, line width=0.9pt, smooth, samples=140, domain=\xa:\xb]
+        plot (\x, {inf(\x)});
+
+  % --- reta ajustada ------------------------------------------------------
+  \draw[black, line width=1pt, domain=\xa:\xb] plot (\x, {reta(\x)});
+  \node[rotulo, anchor=north west, rotate=23] at (1.35,{reta(1.35)-0.08})
+    {$\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 x$};
+
+  % --- média dos x --------------------------------------------------------
+  \draw[cinzaDoE, dashed, line width=0.5pt] (0,\ya) -- (0,{sup(0)});
+  \node[rotulinho, below] at (0,\ya-0.06) {$\bar{x}$};
+
+  % --- cota do estrangulamento -------------------------------------------
+  \draw[cota] (0,{inf(0)}) -- (0,{sup(0)});
+  \node[notaazul, anchor=south east, align=right] at (-0.55,1.55)
+    {a banda é mais estreita\\ em $\bar{x}$: é ali que a\\ previsão é mais firme};
+  \draw[setaazul] (-0.62,1.42) .. controls (-0.35,0.95) .. (-0.06,{sup(0)+0.05});
+
+  % --- cota da abertura na borda -----------------------------------------
+  \draw[cota] (\xb-0.10,{inf(\xb-0.10)}) -- (\xb-0.10,{sup(\xb-0.10)});
+  \node[notaazul, anchor=north west, align=left] at (0.55,-2.35)
+    {e se abre nas bordas: prever longe\\ do centro custa incerteza};
+  \draw[setaazul] (2.72,-2.30) -- (\xb-0.20,{inf(\xb-0.20)-0.12});
+
+  % --- faixa experimental -------------------------------------------------
+  \draw[decorate, decoration={brace, amplitude=4pt, mirror}, cinzaDoE,
+        line width=0.5pt] (-\xexp,\ya-0.42) -- (\xexp,\ya-0.42);
+  \node[rotulo, below] at (0,\ya-0.78) {faixa efetivamente ensaiada};
+
+\end{tikzpicture}
+\end{document}

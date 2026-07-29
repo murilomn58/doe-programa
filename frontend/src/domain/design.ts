@@ -9,7 +9,8 @@ export type DesignType =
   | "taguchi"
   | "plackett_burman"
   | "optimal"
-  | "dsd";
+  | "dsd"
+  | "full_factorial_general";
 
 export type CCDVariant = "rotatable" | "orthogonal" | "face_centered";
 
@@ -82,6 +83,18 @@ export interface FactorInput {
   levels?: number[];
 }
 
+/** Quantos níveis o fator declara. Sem `levels`, são os dois extremos. */
+export function nNiveis(f: FactorInput): number {
+  return f.levels?.length ?? 2;
+}
+
+/** Níveis igualmente espaçados entre low e high, incluindo os extremos. */
+export function niveisEquiespacados(low: number, high: number, n: number): number[] {
+  if (n <= 2) return [low, high];
+  const passo = (high - low) / (n - 1);
+  return Array.from({ length: n }, (_, i) => low + i * passo);
+}
+
 export interface ResponseInput {
   name: string;
   unit?: string;
@@ -92,6 +105,13 @@ export interface DesignGenerateRequest {
   experiment_id?: number;
   design_type?: DesignType;
   replicates: number;
+  /**
+   * Nº de blocos: repetições completas do arranjo sob uma condição conhecida
+   * diferente (lote de material, dia de moldagem, tipo de solo), separada do
+   * que o estudo investiga. Total de ensaios = base × blocks × replicates.
+   * Default backend 1 (comportamento anterior: um único bloco).
+   */
+  blocks?: number;
   factors: FactorInput[];
   responses: ResponseInput[];
   seed?: number;

@@ -22,7 +22,7 @@ export default function ExperimentRunsPage({
       <PageHeader
         title="Entrada de dados"
         subtitle={`Experimento #${experimentId} — preencha as respostas medidas de cada ensaio.`}
-        back={{ label: "Voltar ao dashboard", href: "/" }}
+        back={{ label: "Voltar aos experimentos", href: "/experiments" }}
         right={
           valid ? (
             <span className="flex items-center gap-2">

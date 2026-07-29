@@ -9,6 +9,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { PRIMARY_SURFACE } from "@/components/ui/Button";
+
 export interface ExportAllBarProps {
   /** Nomes das figuras disponíveis nesta análise (usado para contagem). */
   plots: string[];
@@ -53,7 +55,7 @@ export function ExportAllBar({
         type="button"
         disabled={busy || plots.length === 0}
         onClick={handleClick}
-        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-50"
+        className={`inline-flex items-center gap-2 rounded-md ${PRIMARY_SURFACE} px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50`}
       >
         {busy ? (
           <>

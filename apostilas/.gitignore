@@ -1,0 +1,16 @@
+# Auxiliares do pdflatex. O `main.pdf` de cada caderno e versionado de proposito:
+# ele e o entregavel, e o build.ps1 o copia para frontend/public/conteudo/pdf/.
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+run*.log
+texput.log
+
+# Saidas intermediarias do gerador de figuras.
+__pycache__/
+tikz/build/
+figuras/out/png/

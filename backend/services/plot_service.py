@@ -236,8 +236,8 @@ def _predict_rows(
     rows: list[dict[str, float]],
     alpha: float,
 ) -> tuple[list[float], list[float], list[float]]:
-    # Predict on the explicitly-built design matrix (bypass the formula's patsy
-    # re-eval by handing the fit the raw exog columns of X).
+    # Predict on the explicit design matrix (bypass patsy on formula  # acentuacao-ok: ingles
+    # re-eval), using the raw exog columns of X directly for prediction.
     x_new = _design_rows(factors, safe, terms, rows)
     pred = fit.get_prediction(exog=x_new)
     mean = np.asarray(pred.predicted_mean, dtype=float)

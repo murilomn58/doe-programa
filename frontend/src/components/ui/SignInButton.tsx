@@ -2,12 +2,13 @@
 
 import { signIn } from "next-auth/react";
 
+import { PRIMARY_SURFACE } from "./Button";
+
 export function SignInButton({ callbackUrl = "/" }: { callbackUrl?: string }) {
   return (
     <button
       onClick={() => signIn("google", { callbackUrl })}
-      className="inline-flex items-center gap-3 rounded-lg bg-primary px-5 py-3
-                 font-medium text-on-primary transition-colors hover:bg-primary-strong"
+      className={`inline-flex items-center gap-3 rounded-lg ${PRIMARY_SURFACE} px-5 py-3 font-medium transition-colors`}
     >
       <svg
         aria-hidden="true"

@@ -21,6 +21,7 @@ class DesignType(StrEnum):
     PLACKETT_BURMAN = "plackett_burman"  # 2-level screening (multiples of 4)
     OPTIMAL = "optimal"  # D/I-optimal exchange design
     DSD = "dsd"  # Definitive Screening Design (Jones-Nachtsheim)
+    FULL_FACTORIAL_GENERAL = "full_factorial_general"  # 3^k e níveis mistos (pyDOE3 fullfact)
     RETROSPECTIVE = "retrospective"  # materialized from a pasted (already-run) table
 
 
