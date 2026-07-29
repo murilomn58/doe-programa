@@ -166,7 +166,7 @@ def cor_permitida(rgb: tuple[float, float, float]) -> bool:
     if all(abs(c - a) < 0.02 for c, a in zip(rgb, AZUL_RGB)):
         return True
     # Tons de `azulDoE!N` usados pelo TikZ: mistura de branco com o azul.
-    # Em cada canal, c = 1 - t*(1 - azul). Os tres `t` precisam concordar.
+    # Em cada canal, c = 1 - t*(1 - azul). Os três `t` precisam concordar.
     ts = [(1.0 - c) / (1.0 - a) for c, a in zip(rgb, AZUL_RGB)]
     return max(ts) - min(ts) < 0.02 and 0.0 <= min(ts) <= 1.0
 
