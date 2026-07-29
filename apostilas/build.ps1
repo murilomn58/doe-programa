@@ -113,6 +113,14 @@ foreach ($caderno in $CADERNOS) {
         $overfull = @(Select-String -Path 'main.log' -Pattern 'Overfull \\hbox \((\d+(\.\d+)?)pt' |
                       Where-Object { [double] $_.Matches[0].Groups[1].Value -gt 10 })
 
+        # Overfull \vbox tambem conta, e por um motivo concreto: o ambiente
+        # `aplicacao` da classe e um minipage, que nao quebra entre paginas. Uma
+        # figura larga dentro dele estoura a caixa na vertical, o rodape com o
+        # numero da pagina desaparece e a regua de fechamento sangra ate a borda
+        # do papel. Contar so \hbox deixou isso passar uma vez.
+        $overfullV = @(Select-String -Path 'main.log' -Pattern 'Overfull \\vbox \((\d+(\.\d+)?)pt' |
+                       Where-Object { [double] $_.Matches[0].Groups[1].Value -gt 1 })
+
         $destinoPdf = Join-Path $DESTINO "$($caderno.Slug).pdf"
         Copy-Item 'main.pdf' $destinoPdf -Force
 
@@ -123,6 +131,7 @@ foreach ($caderno in $CADERNOS) {
             Paginas       = $paginas
             KB            = $tamanhoKB
             OverfullGrave = $overfull.Count
+            VboxEstourado = $overfullV.Count
         }
     }
     finally {
@@ -142,4 +151,11 @@ Write-Host 'Atualize o campo `paginas` em frontend\src\domain\apostilas.ts com e
 $graves = ($resumo | Measure-Object -Property OverfullGrave -Sum).Sum
 if ($graves -gt 0) {
     Write-Warning "$graves ocorrencia(s) de Overfull \hbox acima de 10 pt. Revise o texto."
+}
+
+$vbox = ($resumo | Measure-Object -Property VboxEstourado -Sum).Sum
+if ($vbox -gt 0) {
+    Write-Warning ("$vbox ocorrencia(s) de Overfull \vbox. Verifique se alguma caixa " +
+                   "`aplicacao` (minipage, nao quebra entre paginas) ficou maior que a " +
+                   "pagina: o numero de rodape desaparece. Reduza a largura da figura.")
 }
