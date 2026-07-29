@@ -26,7 +26,7 @@ def _quant_factors(factors: list[dict]) -> list[dict]:
     if len(quant) != len(factors):
         raise DesignConfigError(
             "Evoluir o planejamento exige fatores quantitativos "
-            "(pontos centrais/axiais nao existem para fatores qualitativos)."
+            "(pontos centrais/axiais não existem para fatores qualitativos)."
         )
     return quant
 
@@ -36,7 +36,7 @@ def _bounds(factor: dict) -> tuple[float, float]:
     highs = [lv for lv in factor.get("levels", []) if lv.get("coded_value") == 1]
     if not lows or not highs or lows[0].get("natural_value") is None:
         raise DesignConfigError(
-            f"Fator '{factor.get('name')}' sem niveis naturais definidos."
+            f"Fator '{factor.get('name')}' sem níveis naturais definidos."
         )
     return float(lows[0]["natural_value"]), float(highs[0]["natural_value"])
 
@@ -115,15 +115,15 @@ def augment_design(design: dict, option: dict) -> dict:
         note = (
             f"Bloco axial adicionado (alfa = {alpha:.5f}, {2 * k} pontos axiais + "
             f"{n_center} centrais, bloco {block}). Com as respostas medidas, o "
-            "modelo Linear + Quadratico (superficie de resposta) fica estimavel; "
-            "o bloco entra na analise automaticamente."
+            "modelo Linear + Quadrático (superfície de resposta) fica estimável; "
+            "o bloco entra na análise automaticamente."
         )
         return {"new_runs": new_runs, "note": note}
 
     if kind == "replicates":
         n = int(option.get("n", 1))
         if n < 1:
-            raise DesignConfigError("Informe quantas replicas extras adicionar (>= 1).")
+            raise DesignConfigError("Informe quantas réplicas extras adicionar (>= 1).")
         base = [r for r in runs if int(r.get("point_type", PointType.FACTORIAL)) == PointType.FACTORIAL]
         if not base:
             base = runs
@@ -143,9 +143,9 @@ def augment_design(design: dict, option: dict) -> dict:
                     )
                 )
         note = (
-            f"{len(new_runs)} ensaio(s) de replica adicionados. Replicas melhoram a "
+            f"{len(new_runs)} ensaio(s) de réplica adicionados. Réplicas melhoram a "
             "estimativa do erro puro e destravam o teste de falta de ajuste."
         )
         return {"new_runs": new_runs, "note": note}
 
-    raise DesignConfigError(f"Operacao de evolucao desconhecida: {kind!r}.")
+    raise DesignConfigError(f"Operação de evolução desconhecida: {kind!r}.")

@@ -20,7 +20,7 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 # --- Taguchi Signal-to-Noise ratios (per-run, dB) ----------------------------
 # ``responses`` are the replicated measurements of ONE trial (not a whole
-# column). Formulas match pyDOE3 ``compute_snr`` and Montgomery (2017).
+# column). Formulas match pyDOE3 ``compute_snr`` and Montgomery (2017).  # acentuacao-ok: ingles
 
 
 def snr_larger(responses: np.ndarray) -> float:
@@ -237,7 +237,7 @@ def curvature_test(
     if coded_points.ndim != 2 or coded_points.shape[0] != y.shape[0]:
         return None
     if not quantitative_mask.all():
-        # centrais so sao bem definidos quando todos os fatores sao quantitativos
+        # centrais só são bem definidos quando todos os fatores são quantitativos
         return None
 
     is_center = np.all(np.isclose(coded_points, 0.0), axis=1)

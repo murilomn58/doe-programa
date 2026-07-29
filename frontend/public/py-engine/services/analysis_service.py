@@ -192,7 +192,7 @@ def analyze(
     if n < n_params:
         result.estimable = False
         result.warnings.append(
-            f"Dados insuficientes: {n} ensaios medidos para {n_params} parametros "
+            f"Dados insuficientes: {n} ensaios medidos para {n_params} parâmetros "
             "do modelo. Preencha mais respostas ou reduza os termos."
         )
         return result
@@ -218,13 +218,13 @@ def analyze(
         result.estimable = False
         aliased = [t.label for t in terms if t.kind == QUADRATIC]
         detail = (
-            f" (termos quadraticos {', '.join(aliased)} sao confundidos com o "
+            f" (termos quadráticos {', '.join(aliased)} são confundidos com o "
             "intercepto num 2^k puro)"
             if aliased
             else ""
         )
         result.warnings.append(
-            f"Modelo nao estimavel: posto da matriz {rank} < {n_cols} parametros"
+            f"Modelo não estimável: posto da matriz {rank} < {n_cols} parâmetros"
             f"{detail}. Adicione pontos centrais ou use um CCD/Box-Behnken."
         )
         return result
@@ -573,7 +573,7 @@ class AnalysisService:
         experiment = await self._repo.get_experiment(experiment_id)
         if experiment is None:
             raise ExperimentNotFoundError(
-                f"Experimento {experiment_id} nao encontrado."
+                f"Experimento {experiment_id} não encontrado."
             )
         factors_orm = await self._repo.get_factors(experiment_id)
         responses = await self._repo.get_responses(experiment_id)
@@ -581,7 +581,7 @@ class AnalysisService:
 
         if response_name not in {r.name for r in responses}:
             raise InsufficientDataError(
-                f"Resposta '{response_name}' nao existe neste experimento."
+                f"Resposta '{response_name}' não existe neste experimento."
             )
 
         factors = [
@@ -694,8 +694,8 @@ class AnalysisService:
                 result.anova, block_term_labels, result.stats
             )
 
-        # --- Teste de curvatura via pontos centrais (aula Cap.4 p4): so quando o
-        # modelo ainda nao carrega termos quadraticos e todos os fatores sao
+        # --- Teste de curvatura via pontos centrais (aula Cap.4 p4): só quando o
+        # modelo ainda não carrega termos quadráticos e todos os fatores são
         # quantitativos, com >=2 centrais e >=1 ponto fatorial.
         if not any(t.kind == QUADRATIC for t in terms):
             from services import stats_service as _stats_service
@@ -715,8 +715,8 @@ class AnalysisService:
                 if p_c < 0.05:
                     result.warnings.append(
                         "Curvatura significativa (p = "
-                        f"{p_c:.4f}): a resposta nao e plana na regiao. "
-                        "Considere um modelo quadratico (CCD/Box-Behnken)."
+                        f"{p_c:.4f}): a resposta não é plana na região. "
+                        "Considere um modelo quadrático (CCD/Box-Behnken)."
                     )
 
         # Attach ready-to-draw plot arrays for an estimable, non-saturated fit.
@@ -757,7 +757,7 @@ class AnalysisService:
         if len(y) < n_params:
             raise InsufficientDataError(
                 f"Dados insuficientes: {len(y)} ensaios medidos para {n_params} "
-                "parametros do modelo. Preencha mais respostas ou reduza os termos."
+                "parâmetros do modelo. Preencha mais respostas ou reduza os termos."
             )
         safe = _safe_names(factors)
         coded_df = pd.DataFrame(
@@ -766,7 +766,7 @@ class AnalysisService:
         x_design = build_design_matrix(coded_df, terms, safe)
         if int(np.linalg.matrix_rank(x_design.values)) < x_design.shape[1]:
             raise InsufficientDataError(
-                "Modelo nao estimavel: posto da matriz insuficiente. Adicione "
+                "Modelo não estimável: posto da matriz insuficiente. Adicione "
                 "pontos centrais ou use um CCD/Box-Behnken."
             )
         unknown = set(point) - {f.name for f in factors}
@@ -792,7 +792,7 @@ class AnalysisService:
         experiment = await self._repo.get_experiment(experiment_id)
         if experiment is None:
             raise ExperimentNotFoundError(
-                f"Experimento {experiment_id} nao encontrado."
+                f"Experimento {experiment_id} não encontrado."
             )
         factors_orm = await self._repo.get_factors(experiment_id)
         responses = await self._repo.get_responses(experiment_id)
@@ -800,7 +800,7 @@ class AnalysisService:
 
         if response_name not in {r.name for r in responses}:
             raise InsufficientDataError(
-                f"Resposta '{response_name}' nao existe neste experimento."
+                f"Resposta '{response_name}' não existe neste experimento."
             )
         factors = [
             FactorInfo(

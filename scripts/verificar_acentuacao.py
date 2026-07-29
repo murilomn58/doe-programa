@@ -36,6 +36,10 @@ ALVOS_PADRAO = [
     "docs/adp",
     "frontend/src",
     "frontend/tests",
+    # O motor Python (services/, domain/) emite mensagens de erro e notas que
+    # aparecem na interface (o frontend roda o mesmo código via Pyodide) — ficou
+    # fora do portão por descuido até a auditoria 2026-07.
+    "backend",
 ]
 
 EXTENSOES_CONTEUDO = {".md", ".tex", ".cls", ".txt", ".bib"}
