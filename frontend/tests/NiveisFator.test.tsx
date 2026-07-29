@@ -157,6 +157,70 @@ describe("NiveisFator — fator qualitativo", () => {
   });
 });
 
+describe("NiveisFator — orientação de blocagem (ramo qualitativo)", () => {
+  it("aparece no ramo qualitativo, com link para o Caderno 1, seção 9", () => {
+    render(<NiveisFator factor={fatorQualitativo()} onChange={vi.fn()} />);
+
+    expect(
+      screen.getByText(/tem mais de duas categorias/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/deve entrar como bloco e não como fator/i),
+    ).toBeInTheDocument();
+
+    const link = screen.getByRole("link", { name: /caderno 1, seção 9/i });
+    expect(link).toHaveAttribute(
+      "href",
+      "/conteudo/pdf/por-que-planejar.pdf#page=10",
+    );
+    const rel = link.getAttribute("rel") ?? "";
+    expect(rel).toMatch(/noopener/);
+    expect(rel).toMatch(/noreferrer/);
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("NÃO aparece no ramo quantitativo", () => {
+    render(<NiveisFator factor={fatorQuantitativo()} onChange={vi.fn()} />);
+
+    expect(
+      screen.queryByText(/tem mais de duas categorias/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /caderno 1, seção 9/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("o botão de ação chama onIrParaBlocos quando clicado", async () => {
+    const user = userEvent.setup();
+    const onIrParaBlocos = vi.fn();
+    render(
+      <NiveisFator
+        factor={fatorQualitativo()}
+        onChange={vi.fn()}
+        onIrParaBlocos={onIrParaBlocos}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /declarar blocos/i }));
+
+    expect(onIrParaBlocos).toHaveBeenCalledTimes(1);
+  });
+
+  it("sem a prop onIrParaBlocos, o botão não é renderizado, e o resto da orientação continua aparecendo", () => {
+    render(<NiveisFator factor={fatorQualitativo()} onChange={vi.fn()} />);
+
+    expect(
+      screen.queryByRole("button", { name: /declarar blocos/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/tem mais de duas categorias/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /caderno 1, seção 9/i }),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("NiveisFator — acessibilidade do segmentado", () => {
   it("expõe radiogroup/radio com aria-checked e é navegável por teclado", async () => {
     const user = userEvent.setup();

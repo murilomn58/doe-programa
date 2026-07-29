@@ -10,6 +10,7 @@ import {
   type DesignConfig,
 } from "@/components/DesignPicker";
 import { FactorForm } from "@/components/FactorForm";
+import { IrParaBlocosProvider } from "@/components/NiveisFator";
 import { PedirEmailModal } from "@/components/PedirEmailModal";
 import { ResponsesForm } from "@/components/ResponsesForm";
 import { Badge } from "@/components/ui/Badge";
@@ -329,21 +330,24 @@ export function GuidedTour() {
             Vocabulário rápido: <b>fator</b> é o que você controla (ex.:
             temperatura), <b>nível</b> é o valor que o fator assume em cada
             ensaio, <b>resposta</b> é o que você mede e <b>réplica</b> é a
-            repetição do mesmo ensaio para estimar o erro experimental. Para
-            cada fator numérico, informe o menor e o maior valor a testar: eles
-            viram os níveis −1 e +1. Prefira faixas realistas do seu processo
-            (nem estreitas demais, nem além do que o equipamento alcança) e
-            informe a unidade, pois é ela que dá sentido físico aos
-            coeficientes do modelo.
+            repetição do mesmo ensaio para estimar o erro experimental. Uma
+            fonte de variação conhecida que não interessa ao estudo entra
+            como bloco, não como fator. Para cada fator numérico, informe o
+            menor e o maior valor a testar: eles viram os níveis −1 e +1.
+            Prefira faixas realistas do seu processo (nem estreitas demais,
+            nem além do que o equipamento alcança) e informe a unidade, pois
+            é ela que dá sentido físico aos coeficientes do modelo.
           </Callout>
-          <FactorForm
-            factors={factors}
-            onChange={updateFactor}
-            onAdd={() => setFactors((prev) => [...prev, emptyQuantFactor()])}
-            onRemove={(index) =>
-              setFactors((prev) => prev.filter((_, i) => i !== index))
-            }
-          />
+          <IrParaBlocosProvider value={goToDesign}>
+            <FactorForm
+              factors={factors}
+              onChange={updateFactor}
+              onAdd={() => setFactors((prev) => [...prev, emptyQuantFactor()])}
+              onRemove={(index) =>
+                setFactors((prev) => prev.filter((_, i) => i !== index))
+              }
+            />
+          </IrParaBlocosProvider>
           <ResponsesForm
             responses={responses}
             onChange={updateResponse}

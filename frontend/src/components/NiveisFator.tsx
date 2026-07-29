@@ -15,9 +15,29 @@
  * `levels` guarda a lista ordenada completa só quando há 3+ níveis.
  */
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 
 import { nNiveis, niveisEquiespacados, type FactorInput } from "@/domain/design";
+
+/**
+ * Ação "ir para o passo de blocos", entregue pelo wizard guiado (GuidedTour)
+ * até este card por Context, e não por prop repassada manualmente. O motivo:
+ * entre GuidedTour e NiveisFator existe o FactorForm, que não conhece o
+ * wizard e não deveria precisar repassar essa ação fator a fator. Fora de um
+ * `IrParaBlocosProvider` — caso do EditExperiment.tsx, que renderiza
+ * NiveisFator sem o wizard por perto — o valor é `undefined`, e o botão de
+ * blocos simplesmente não aparece. A prop `onIrParaBlocos` (abaixo) tem
+ * prioridade sobre o Context, para quem quiser injetar a ação diretamente
+ * (é o caminho usado nos testes deste componente).
+ */
+const IrParaBlocosContext = createContext<(() => void) | undefined>(undefined);
+export const IrParaBlocosProvider = IrParaBlocosContext.Provider;
 
 interface NiveisFatorProps {
   factor: FactorInput;
@@ -30,6 +50,13 @@ interface NiveisFatorProps {
    * não à edição dos níveis naturais. Default: true (fluxo de criação).
    */
   permitirEscolherQuantidade?: boolean;
+  /**
+   * Ação do botão "Declarar blocos", exibido junto da orientação de blocagem
+   * do ramo qualitativo (ver abaixo). Opcional: quando ausente (e sem
+   * `IrParaBlocosProvider` por perto), o botão não é renderizado, para não
+   * quebrar o uso deste componente fora do wizard guiado.
+   */
+  onIrParaBlocos?: () => void;
 }
 
 /** U+2212 (sinal de menos tipográfico) — mesmo caractere usado no restante da UI. */
@@ -86,6 +113,7 @@ export function NiveisFator({
   factor,
   onChange,
   permitirEscolherQuantidade = true,
+  onIrParaBlocos,
 }: NiveisFatorProps) {
   // Índices (dentro de `levels`) que o usuário editou manualmente. Sobrevive
   // a re-renders deste card (útil pro caso "editei o centro, depois mudei o
@@ -93,6 +121,8 @@ export function NiveisFator({
   const editadosRef = useRef<Set<number>>(new Set());
   const [personalizadoValor, setPersonalizadoValor] = useState(CUSTOM_PADRAO);
   const botoesRef = useRef<Array<HTMLButtonElement | null>>([]);
+  const irParaBlocosDoContexto = useContext(IrParaBlocosContext);
+  const irParaBlocos = onIrParaBlocos ?? irParaBlocosDoContexto;
 
   if (factor.factor_type !== "quantitative") {
     return (
@@ -127,6 +157,34 @@ export function NiveisFator({
           Fatores qualitativos aceitam duas categorias por enquanto. Múltiplos
           níveis para qualitativos chegam numa fase futura.
         </p>
+        <div className="rounded-md border-l-4 border-accent-strong/50 bg-accent-strong/5 py-3 pl-4 pr-3">
+          <p className="text-xs text-foreground-soft">
+            Tem mais de duas categorias? Se a categoria não é o objeto do
+            estudo, mas uma fonte de variação conhecida, ela deve entrar como
+            bloco e não como fator: os demais fatores são comparados dentro de
+            cada categoria.{" "}
+            <a
+              href="/conteudo/pdf/por-que-planejar.pdf#page=10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Abrir Caderno 1, seção 9, sobre blocagem, em PDF, numa nova aba"
+              className="underline decoration-dotted underline-offset-2 hover:text-accent-strong"
+            >
+              Caderno 1, seção 9<span aria-hidden> ↗</span>
+            </a>
+          </p>
+          {irParaBlocos ? (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={irParaBlocos}
+                className="rounded-md border border-accent-strong px-3 py-1.5 text-xs font-medium text-accent-strong transition hover:bg-accent-strong/10"
+              >
+                Declarar blocos
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   }
