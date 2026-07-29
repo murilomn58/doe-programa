@@ -97,6 +97,7 @@ export function buildDesignRequest({
     name: name.trim() || undefined,
     design_type: designConfig.designType,
     replicates,
+    blocks: designConfig.blocks,
     factors: factorsPayload,
     responses: responses.filter((r) => r.name.trim()),
   };

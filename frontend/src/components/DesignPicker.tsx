@@ -337,8 +337,13 @@ export function DesignPicker({
   const catalogQuery = useTaguchiCatalog();
   const taguchiArrays = catalogQuery.data?.arrays;
 
-  const baseRuns = contarEnsaios(config, factors, 1, taguchiArrays);
-  const totalRuns = baseRuns === null ? null : baseRuns * replicates;
+  // `baseRuns` é o tamanho de UM bloco, UMA réplica (a combinatória pura da
+  // família, que as legendas de `RunFormula` explicam); força `blocks: 1`
+  // aqui para não confundir essa legenda com a expansão de blocos. O total
+  // exibido ao usuário vem direto de `contarEnsaios` com blocks e réplicas
+  // reais, a mesma fonte única que a vitrine de planos usa.
+  const baseRuns = contarEnsaios({ ...config, blocks: 1 }, factors, 1, taguchiArrays);
+  const totalRuns = contarEnsaios(config, factors, replicates, taguchiArrays);
   const requiresQuantitative =
     config.designType === "central_composite" ||
     config.designType === "box_behnken";
@@ -889,19 +894,37 @@ export function DesignPicker({
           </label>
         ) : null}
 
-        <label className="flex w-40 flex-col gap-1 text-sm">
-          <span className="text-foreground-soft">Réplicas</span>
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={replicates}
-            onChange={(e) =>
-              onReplicatesChange(Math.max(1, Number(e.target.value) || 1))
-            }
-            className={inputClass}
-          />
-        </label>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex w-40 flex-col gap-1 text-sm">
+            <span className="text-foreground-soft">Blocos</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={config.blocks}
+              onChange={(e) => set({ blocks: clampInt(e.target.value, 1, 20) })}
+              className={inputClass}
+            />
+          </label>
+
+          <label className="flex w-40 flex-col gap-1 text-sm">
+            <span className="text-foreground-soft">Réplicas</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={replicates}
+              onChange={(e) =>
+                onReplicatesChange(Math.max(1, Number(e.target.value) || 1))
+              }
+              className={inputClass}
+            />
+          </label>
+        </div>
+        <p className="text-xs text-faint">
+          Bloco é uma fonte de variação conhecida que não é objeto do estudo,
+          como lote de material, dia de moldagem ou tipo de solo.
+        </p>
 
         {qualitativeBlocked ? (
           <p className="rounded-md border border-warning-strong/40 bg-warning-strong/10 px-3 py-2 text-sm text-warning">
@@ -913,7 +936,12 @@ export function DesignPicker({
         <div className="rounded-lg border border-accent-strong/30 bg-accent-strong/5 p-4">
           <p className="text-sm text-foreground-soft">
             <RunFormula config={config} k={k} baseRuns={baseRuns} />
-            {baseRuns !== null ? <> × {replicates} réplica(s)</> : null}
+            {baseRuns !== null ? (
+              <>
+                {" "}
+                × {config.blocks} bloco(s) × {replicates} réplica(s)
+              </>
+            ) : null}
           </p>
           <p className="mt-1 text-sm text-foreground">
             Número de ensaios:{" "}

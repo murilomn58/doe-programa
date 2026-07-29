@@ -294,44 +294,65 @@ def _aliasing_readable(
 # --- center points (2^k / fractional augmentation) ----------------------------
 
 
-def replicar_runs(
+def expandir_blocos_e_replicas(
     base: GeneratedDesign,
+    blocks: int,
     replicates: int,
     seed: int | None = None,
 ) -> GeneratedDesign:
-    """Repete o bloco inteiro de ensaios ``replicates`` vezes.
+    """Repete o arranjo inteiro em ``blocks × replicates`` cópias.
 
-    Existe porque só ``build_2k_design`` e ``build_fractional_design`` expandiam
-    réplicas por conta própria; as demais famílias devolviam sempre um único
-    bloco com ``replicate=1``, e a interface, que anuncia ``base * réplicas``,
-    exibia um total que a matriz gerada não cumpria. Aplicar a expansão uma vez
-    no despacho impede que uma família nova volte a esquecer.
+    Generaliza a antiga ``replicar_runs`` (mantida abaixo como caso particular):
+    bloco e réplica são a MESMA operação mecânica — repetir o arranjo inteiro —,
+    o que muda é só o rótulo e o que ele significa pra análise. Um **bloco** é
+    uma repetição sob uma condição conhecida DIFERENTE (lote de material, dia de
+    moldagem, tipo de solo): uma fonte de variação que o estudo isola, mas não
+    investiga. Uma **réplica** é repetição sob a MESMA condição (o erro puro).
+    O total de ensaios é ``len(base.runs) * blocks * replicates``.
 
-    Mantém a semântica já estabelecida pelo 2^k: ordem de réplica maior (o bloco
-    inteiro se repete), ``std_order`` único de 1 a N somando todas as réplicas, e
-    ``run_order`` sorteado sobre o conjunto completo, para que as réplicas fiquem
-    intercaladas na bancada e não em sequência. ``block`` e ``point_type`` de cada
-    ensaio são preservados, porque descrevem a posição no arranjo e não a repetição.
+    Cada eixo só é RELOTULADO quando de fato se expande por ele (``> 1``); com
+    eixo de tamanho 1 o campo do ensaio original é preservado tal como veio de
+    ``base``. Essa regra é o que permite este mesmo expansor cobrir as duas
+    famílias que já numeram réplica internamente (2^k e fracionado): chamando
+    aqui com ``replicates=1`` e ``blocks=N``, o campo ``replicate`` (já correto,
+    1..R do laço interno) não é tocado — só ``block`` passa a variar 1..N. Do
+    lado oposto, ``blocks=1`` preserva o ``block=1`` que todo construtor de
+    bloco único já usa, e só ``replicate`` passa a variar — reproduzindo
+    exatamente o comportamento da antiga ``replicar_runs``.
+
+    Ordem de montagem: bloco maior (todos os ensaios do bloco 1, depois do
+    bloco 2, ...) e, dentro de um bloco, réplica maior. ``std_order`` sai único
+    de 1 a N somando todos os blocos e réplicas; ``run_order`` é sorteado sobre
+    o conjunto COMPLETO, para que blocos e réplicas fiquem intercalados na
+    bancada — executar um bloco inteiro em sequência confundiria a condição do
+    bloco com qualquer deriva do laboratório ao longo do tempo, que é
+    justamente o que a aleatorização existe para evitar. ``point_type`` de cada
+    ensaio é preservado, porque descreve a posição geométrica no arranjo, não a
+    repetição.
     """
+    if blocks < 1:
+        raise DesignConfigError("O número de blocos deve ser >= 1.")
     if replicates < 1:
         raise DesignConfigError("O número de réplicas deve ser >= 1.")
-    if replicates == 1:
+    if blocks == 1 and replicates == 1:
         return base
 
-    por_bloco = len(base.runs)
     ordenados = sorted(base.runs, key=lambda r: r.std_order)
     expandidos: list[RunData] = []
-    for replicate in range(1, replicates + 1):
-        deslocamento = (replicate - 1) * por_bloco
-        for pos, run in enumerate(ordenados):
-            expandidos.append(
-                replace(
-                    run,
-                    std_order=deslocamento + pos + 1,
-                    replicate=replicate,
-                    run_order=0,  # provisório; sorteado abaixo
+    std_order = 0
+    for b in range(1, blocks + 1):
+        for r in range(1, replicates + 1):
+            for run in ordenados:
+                std_order += 1
+                expandidos.append(
+                    replace(
+                        run,
+                        std_order=std_order,
+                        block=b if blocks > 1 else run.block,
+                        replicate=r if replicates > 1 else run.replicate,
+                        run_order=0,  # provisório; sorteado abaixo
+                    )
                 )
-            )
 
     rng = np.random.default_rng(seed)
     run_order = rng.permutation(len(expandidos)) + 1
@@ -339,6 +360,22 @@ def replicar_runs(
         replace(run, run_order=int(run_order[i])) for i, run in enumerate(expandidos)
     ]
     return replace(base, runs=runs)
+
+
+def replicar_runs(
+    base: GeneratedDesign,
+    replicates: int,
+    seed: int | None = None,
+) -> GeneratedDesign:
+    """Repete o bloco inteiro de ensaios ``replicates`` vezes.
+
+    Caso particular de ``expandir_blocos_e_replicas`` com um único bloco;
+    mantida para não quebrar quem já chamava esta função diretamente. Existe
+    desde a entrega anterior porque só ``build_2k_design`` e
+    ``build_fractional_design`` expandiam réplicas por conta própria; as
+    demais famílias devolviam sempre um único bloco com ``replicate=1``.
+    """
+    return expandir_blocos_e_replicas(base, blocks=1, replicates=replicates, seed=seed)
 
 
 def add_center_points(

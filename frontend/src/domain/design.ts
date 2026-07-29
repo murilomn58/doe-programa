@@ -105,6 +105,13 @@ export interface DesignGenerateRequest {
   experiment_id?: number;
   design_type?: DesignType;
   replicates: number;
+  /**
+   * Nº de blocos: repetições completas do arranjo sob uma condição conhecida
+   * diferente (lote de material, dia de moldagem, tipo de solo), separada do
+   * que o estudo investiga. Total de ensaios = base × blocks × replicates.
+   * Default backend 1 (comportamento anterior: um único bloco).
+   */
+  blocks?: number;
   factors: FactorInput[];
   responses: ResponseInput[];
   seed?: number;

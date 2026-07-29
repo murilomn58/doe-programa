@@ -203,10 +203,11 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
     """
     from services import design_builders, design_builders_screening
 
-    # Famílias cujo construtor devolve UM bloco de ensaios, com replicate=1. A
-    # expansão de réplicas é aplicada aqui, num lugar só, por `replicar_runs`.
-    # O 2^k e o fracionado ficam de fora porque já expandem internamente, e
-    # mexer neles moveria os goldens da aula.
+    # Famílias cujo construtor devolve UM bloco de ensaios, com block=1 e
+    # replicate=1. A expansão de blocos E réplicas é aplicada aqui, num lugar
+    # só, por `expandir_blocos_e_replicas`. O 2^k e o fracionado ficam de fora
+    # porque já expandem réplicas internamente, e mexer neles moveria os
+    # goldens da aula — recebem só a expansão de blocos, mais abaixo.
     construtor_de_bloco_unico = {
         DesignType.CENTRAL_COMPOSITE: lambda: design_builders.build_ccd_design(
             req.factors, req.responses, req
@@ -234,8 +235,8 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
     }
     construtor = construtor_de_bloco_unico.get(req.design_type)
     if construtor is not None:
-        return design_builders.replicar_runs(
-            construtor(), req.replicates, req.seed
+        return design_builders.expandir_blocos_e_replicas(
+            construtor(), req.blocks, req.replicates, req.seed
         )
 
     if req.design_type is DesignType.FRACTIONAL_FACTORIAL_2KP:
@@ -253,7 +254,14 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
         design = design_builders.add_center_points(
             design, req.factors, req.center_points, req.seed
         )
-    return design
+    # Réplicas já foram expandidas internamente (laço acima / dentro de
+    # build_fractional_design); só falta a dimensão de BLOCO, aplicada por
+    # fora com replicates=1 para não as duplicar (ver docstring de
+    # `expandir_blocos_e_replicas`: eixo de tamanho 1 preserva o campo já
+    # atribuído, então `replicate` sai intocado e só `block` passa a variar).
+    return design_builders.expandir_blocos_e_replicas(
+        design, req.blocks, 1, req.seed
+    )
 
 
 def _to_design_read(

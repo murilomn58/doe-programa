@@ -189,3 +189,34 @@ describe("contarEnsaios", () => {
     expect(contarEnsaios(cfg, fatores, 1)).toBe(27);
   });
 });
+
+describe("contarEnsaios com blocos (Task 1)", () => {
+  it("blocks multiplica junto com réplicas: total = base × blocks × replicates", () => {
+    const cfg = config({
+      designType: "full_factorial_2k",
+      centerPoints: 0,
+      blocks: 7,
+    });
+    const fatores = fatoresQuantitativos(3);
+    // base 8, 1 réplica, 7 blocos → 56 (o RCBD dos 7 solos, em miniatura).
+    expect(contarEnsaios(cfg, fatores, 1)).toBe(56);
+    // base 8, 3 réplicas, 7 blocos → 168.
+    expect(contarEnsaios(cfg, fatores, 3)).toBe(168);
+  });
+
+  it("blocks: 1 (default) não altera a contagem anterior", () => {
+    const cfg = config({ designType: "box_behnken", blocks: 1 });
+    const fatores = fatoresQuantitativos(3);
+    expect(contarEnsaios(cfg, fatores, 2)).toBe(30); // 15 × 1 × 2
+  });
+
+  it("full_factorial_general também multiplica pelos blocos", () => {
+    const cfg = config({ designType: "full_factorial_general", blocks: 7 });
+    const fatores: FactorInput[] = fatoresQuantitativos(2).map((f) => ({
+      ...f,
+      levels: [1, 2, 3],
+    }));
+    // 3² = 9 combinações × 7 blocos × 1 réplica = 63 (caso motivador dos solos).
+    expect(contarEnsaios(cfg, fatores, 1)).toBe(63);
+  });
+});

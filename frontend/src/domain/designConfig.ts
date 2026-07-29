@@ -31,6 +31,12 @@ export interface DesignConfig {
   ccdCenterAxial: number;
   bbdCenter: number;
   centerPoints: number;
+  /**
+   * Nº de blocos: repetições completas do arranjo sob uma condição conhecida
+   * diferente do que o estudo investiga (lote de material, dia de moldagem,
+   * tipo de solo). Combina com `replicates` — ver `contarEnsaios`.
+   */
+  blocks: number;
   // Taguchi
   taguchiArray: string; // "" → automático
   taguchiSN: SNObjective;
@@ -54,6 +60,7 @@ export function defaultDesignConfig(): DesignConfig {
     ccdCenterAxial: 4,
     bbdCenter: 3,
     centerPoints: 0,
+    blocks: 1,
     taguchiArray: TAGUCHI_AUTO,
     taguchiSN: "larger_is_better",
     taguchiLevels: 2,

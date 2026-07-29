@@ -159,4 +159,32 @@ describe("buildDesignRequest", () => {
     });
     expect(payload.factors[0].levels).toEqual([2, 5, 8]);
   });
+
+  it("defaultDesignConfig() traz blocks: 1 (um único bloco, comportamento anterior à Task 1)", () => {
+    expect(defaultDesignConfig().blocks).toBe(1);
+  });
+
+  it("envia blocks do designConfig no request, mesmo quando != 1", () => {
+    const factors = [fatorQuantitativo()];
+    const payload = buildDesignRequest({
+      name: "Ensaio",
+      designConfig: { ...defaultDesignConfig(), blocks: 7 },
+      replicates: 1,
+      factors,
+      responses: [{ name: "Resistência" }],
+    });
+    expect(payload.blocks).toBe(7);
+  });
+
+  it("envia blocks: 1 quando o designConfig não foi alterado", () => {
+    const factors = [fatorQuantitativo()];
+    const payload = buildDesignRequest({
+      name: "Ensaio",
+      designConfig: defaultDesignConfig(),
+      replicates: 1,
+      factors,
+      responses: [{ name: "Resistência" }],
+    });
+    expect(payload.blocks).toBe(1);
+  });
 });

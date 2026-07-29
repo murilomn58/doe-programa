@@ -150,6 +150,14 @@ export function designBaseRuns(
  * réplica". Ou seja, o total de ensaios é sempre `ensaiosDeUmaReplica *
  * replicates`, nunca "base + (replicates - 1) * base" nem outra variação.
  * Este arquivo segue essa mesma convenção.
+ *
+ * `config.blocks` entra na mesma multiplicação: total = base × blocks ×
+ * replicates (espelha `expandir_blocos_e_replicas` do backend). Bloco é
+ * repetição do arranjo inteiro sob uma condição conhecida diferente do que o
+ * estudo investiga (lote de material, dia de moldagem, tipo de solo);
+ * réplica é repetição sob a mesma condição. Esta função é a fonte única que
+ * a vitrine de planos e o picker avançado consomem, então a contagem exibida
+ * acompanha blocos e réplicas sozinha, sem duplicar a lógica em cada tela.
  */
 export function contarEnsaios(
   config: DesignConfig,
@@ -157,11 +165,12 @@ export function contarEnsaios(
   replicates: number,
   taguchiArrays?: readonly TaguchiArray[],
 ): number | null {
+  const blocks = config.blocks ?? 1;
   if (config.designType === "full_factorial_general") {
     if (fatores.length < 1) return null;
     const produtoDeNiveis = fatores.reduce((acc, f) => acc * nNiveis(f), 1);
-    return produtoDeNiveis * replicates;
+    return produtoDeNiveis * blocks * replicates;
   }
   const base = designBaseRuns(config, fatores.length, taguchiArrays);
-  return base === null ? null : base * replicates;
+  return base === null ? null : base * blocks * replicates;
 }
