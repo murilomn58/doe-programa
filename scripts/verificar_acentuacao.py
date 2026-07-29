@@ -36,6 +36,7 @@ ALVOS_PADRAO = [
     "docs/adp",
     "frontend/src",
     "frontend/tests",
+    "scripts",
     # O motor Python (services/, domain/) emite mensagens de erro e notas que
     # aparecem na interface (o frontend roda o mesmo código via Pyodide) — ficou
     # fora do portão por descuido até a auditoria 2026-07.
@@ -454,12 +455,27 @@ TRECHO_TEXTUAL = re.compile(
 )
 
 
+# Interpolação: `{pagina}` num f-string, `${total}` num template literal. O que
+# está dentro das chaves é EXPRESSÃO, com nome de variável, e nome de variável
+# em português vem sem acento por convenção de código. Só se aplica a código:
+# em `.tex` a chave carrega texto de verdade (`\textbf{...}`), e apagá-la
+# esconderia erro real.
+INTERPOLACAO = re.compile(r"\$?\{[^{}]*\}")
+
+
 def trechos_a_verificar(linha: str, e_codigo: bool) -> list[str]:
     if not e_codigo:
         return [RUIDO.sub(" ", linha)]
     brutos = [t for t in TRECHO_TEXTUAL.findall(linha)
               if not STRING_IDENTIFICADORA.match(t.strip())]
-    return [RUIDO.sub(" ", trecho) for trecho in brutos]
+    return [RUIDO.sub(" ", INTERPOLACAO.sub(" ", trecho)) for trecho in brutos]
+
+
+# Este arquivo não se verifica: ele CONTÉM, por necessidade, tudo o que procura.
+# O detector de mojibake carrega as próprias sequências corrompidas, e cada
+# entrada do dicionário tem a forma SEM acento como chave. Varrer-se produziria
+# só autorreferência. Pedido explicitamente na linha de comando, ainda roda.
+ESTE_ARQUIVO = Path(__file__).resolve()
 
 
 def arquivos_alvo(caminhos: list[Path]) -> list[Path]:
@@ -470,6 +486,8 @@ def arquivos_alvo(caminhos: list[Path]) -> list[Path]:
             continue
         for item in caminho.rglob("*"):
             if not item.is_file():
+                continue
+            if item.resolve() == ESTE_ARQUIVO:
                 continue
             if any(parte in IGNORAR_DIRETORIOS for parte in item.parts):
                 continue
