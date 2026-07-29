@@ -203,29 +203,39 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
     """
     from services import design_builders, design_builders_screening
 
-    if req.design_type is DesignType.CENTRAL_COMPOSITE:
-        return design_builders.build_ccd_design(req.factors, req.responses, req)
-    if req.design_type is DesignType.BOX_BEHNKEN:
-        return design_builders.build_bbd_design(req.factors, req.responses, req)
-    if req.design_type is DesignType.TAGUCHI:
-        return design_builders_screening.build_taguchi_design(
+    # Famílias cujo construtor devolve UM bloco de ensaios, com replicate=1. A
+    # expansão de réplicas é aplicada aqui, num lugar só, por `replicar_runs`.
+    # O 2^k e o fracionado ficam de fora porque já expandem internamente, e
+    # mexer neles moveria os goldens da aula.
+    construtor_de_bloco_unico = {
+        DesignType.CENTRAL_COMPOSITE: lambda: design_builders.build_ccd_design(
             req.factors, req.responses, req
-        )
-    if req.design_type is DesignType.PLACKETT_BURMAN:
-        return design_builders_screening.build_pb_design(
+        ),
+        DesignType.BOX_BEHNKEN: lambda: design_builders.build_bbd_design(
             req.factors, req.responses, req
-        )
-    if req.design_type is DesignType.OPTIMAL:
-        return design_builders_screening.build_optimal_design(
+        ),
+        DesignType.TAGUCHI: lambda: design_builders_screening.build_taguchi_design(
             req.factors, req.responses, req
-        )
-    if req.design_type is DesignType.DSD:
-        return design_builders_screening.build_dsd_design(
+        ),
+        DesignType.PLACKETT_BURMAN: lambda: design_builders_screening.build_pb_design(
             req.factors, req.responses, req
-        )
-    if req.design_type is DesignType.FULL_FACTORIAL_GENERAL:
-        return design_builders.build_general_factorial_design(
+        ),
+        DesignType.OPTIMAL: lambda: design_builders_screening.build_optimal_design(
             req.factors, req.responses, req
+        ),
+        DesignType.DSD: lambda: design_builders_screening.build_dsd_design(
+            req.factors, req.responses, req
+        ),
+        DesignType.FULL_FACTORIAL_GENERAL: (
+            lambda: design_builders.build_general_factorial_design(
+                req.factors, req.responses, req
+            )
+        ),
+    }
+    construtor = construtor_de_bloco_unico.get(req.design_type)
+    if construtor is not None:
+        return design_builders.replicar_runs(
+            construtor(), req.replicates, req.seed
         )
 
     if req.design_type is DesignType.FRACTIONAL_FACTORIAL_2KP:

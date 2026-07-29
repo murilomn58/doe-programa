@@ -294,6 +294,53 @@ def _aliasing_readable(
 # --- center points (2^k / fractional augmentation) ----------------------------
 
 
+def replicar_runs(
+    base: GeneratedDesign,
+    replicates: int,
+    seed: int | None = None,
+) -> GeneratedDesign:
+    """Repete o bloco inteiro de ensaios ``replicates`` vezes.
+
+    Existe porque só ``build_2k_design`` e ``build_fractional_design`` expandiam
+    réplicas por conta própria; as demais famílias devolviam sempre um único
+    bloco com ``replicate=1``, e a interface, que anuncia ``base * réplicas``,
+    exibia um total que a matriz gerada não cumpria. Aplicar a expansão uma vez
+    no despacho impede que uma família nova volte a esquecer.
+
+    Mantém a semântica já estabelecida pelo 2^k: ordem de réplica maior (o bloco
+    inteiro se repete), ``std_order`` único de 1 a N somando todas as réplicas, e
+    ``run_order`` sorteado sobre o conjunto completo, para que as réplicas fiquem
+    intercaladas na bancada e não em sequência. ``block`` e ``point_type`` de cada
+    ensaio são preservados, porque descrevem a posição no arranjo e não a repetição.
+    """
+    if replicates < 1:
+        raise DesignConfigError("O número de réplicas deve ser >= 1.")
+    if replicates == 1:
+        return base
+
+    por_bloco = len(base.runs)
+    ordenados = sorted(base.runs, key=lambda r: r.std_order)
+    expandidos: list[RunData] = []
+    for replicate in range(1, replicates + 1):
+        deslocamento = (replicate - 1) * por_bloco
+        for pos, run in enumerate(ordenados):
+            expandidos.append(
+                replace(
+                    run,
+                    std_order=deslocamento + pos + 1,
+                    replicate=replicate,
+                    run_order=0,  # provisório; sorteado abaixo
+                )
+            )
+
+    rng = np.random.default_rng(seed)
+    run_order = rng.permutation(len(expandidos)) + 1
+    runs = [
+        replace(run, run_order=int(run_order[i])) for i, run in enumerate(expandidos)
+    ]
+    return replace(base, runs=runs)
+
+
 def add_center_points(
     base: GeneratedDesign,
     factors: list[FactorSpec],
