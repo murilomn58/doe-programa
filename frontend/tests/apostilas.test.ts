@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APOSTILAS } from "@/domain/apostilas";
+import { APOSTILAS, totalDePaginas } from "@/domain/apostilas";
 
 describe("catálogo de apostilas", () => {
   it("tem os cinco cadernos, numerados de 1 a 5", () => {
@@ -19,5 +19,21 @@ describe("catálogo de apostilas", () => {
       expect(a.topicos.length).toBeGreaterThanOrEqual(3);
       expect(a.pdf).toBe(`/conteudo/pdf/${a.slug}.pdf`);
     });
+  });
+
+  it("declara páginas plausíveis, vindas da compilação real", () => {
+    // O campo é preenchido pela saída de apostilas/build.ps1. Um caderno com
+    // zero páginas, fração ou uma centena delas indica valor estimado a olho,
+    // que foi exatamente o defeito anterior: 102 declaradas contra 66 reais.
+    APOSTILAS.forEach((a) => {
+      expect(Number.isInteger(a.paginas)).toBe(true);
+      expect(a.paginas).toBeGreaterThanOrEqual(8);
+      expect(a.paginas).toBeLessThanOrEqual(40);
+    });
+  });
+
+  it("deriva o total de páginas do catálogo, sem literal em tela", () => {
+    const somaManual = APOSTILAS.reduce((soma, a) => soma + a.paginas, 0);
+    expect(totalDePaginas()).toBe(somaManual);
   });
 });

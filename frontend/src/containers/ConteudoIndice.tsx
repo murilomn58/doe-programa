@@ -11,10 +11,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Callout } from "@/components/ui/Callout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { RodapeApp } from "@/components/ui/RodapeApp";
-import { APOSTILAS } from "@/domain/apostilas";
+import { APOSTILAS, totalDePaginas } from "@/domain/apostilas";
 
 export function ConteudoIndice() {
-  const totalPaginas = APOSTILAS.reduce((soma, a) => soma + a.paginas, 0);
+  const totalPaginas = totalDePaginas();
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">

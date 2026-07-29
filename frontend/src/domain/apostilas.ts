@@ -13,7 +13,7 @@ export interface Apostila {
   titulo: string;
   resumo: string;
   topicos: string[];
-  paginas: number; // preenchido após a primeira compilação
+  paginas: number; // contagem real, impressa por apostilas/build.ps1
   pdf: string;
 }
 
@@ -25,7 +25,7 @@ export const APOSTILAS: Apostila[] = [
     resumo:
       "Fator, nível e resposta; a falha do método de um fator por vez; erro experimental; réplicas, aleatorização e blocagem; o custo de cada ensaio quando o material é escasso.",
     topicos: ["fator e nível", "erro experimental", "réplicas", "aleatorização", "blocagem"],
-    paginas: 20,
+    paginas: 14,
     pdf: "/conteudo/pdf/por-que-planejar.pdf",
   },
   {
@@ -35,7 +35,7 @@ export const APOSTILAS: Apostila[] = [
     resumo:
       "A matriz de ensaios e a codificação em ±1; efeitos principais e interações; o erro do efeito e o critério de significância; o gráfico de Pareto e a alternativa quando não há réplica.",
     topicos: ["codificação ±1", "ortogonalidade", "efeitos e interações", "Pareto dos efeitos", "gráfico normal"],
-    paginas: 20,
+    paginas: 15,
     pdf: "/conteudo/pdf/fatorial-2k.pdf",
   },
   {
@@ -45,7 +45,7 @@ export const APOSTILAS: Apostila[] = [
     resumo:
       "Mínimos quadrados e o modelo ajustado; a decomposição da variância; R² e R² ajustado; testes F e t; o valor-p; resíduos, falta de ajuste e erro puro.",
     topicos: ["mínimos quadrados", "R² e R² ajustado", "valor-p", "resíduos", "falta de ajuste", "PRESS"],
-    paginas: 22,
+    paginas: 13,
     pdf: "/conteudo/pdf/regressao-e-anova.pdf",
   },
   {
@@ -55,7 +55,7 @@ export const APOSTILAS: Apostila[] = [
     resumo:
       "Por que dois níveis não medem curvatura; pontos centrais e o teste de curvatura; modelo linear contra modelo quadrático; composição central, Box-Behnken e a leitura da superfície.",
     topicos: ["pontos centrais", "teste de curvatura", "modelo quadrático", "CCD", "Box-Behnken", "ponto ótimo"],
-    paginas: 20,
+    paginas: 10,
     pdf: "/conteudo/pdf/curvatura-e-superficie.pdf",
   },
   {
@@ -65,10 +65,19 @@ export const APOSTILAS: Apostila[] = [
     resumo:
       "Fatoriais fracionados, resolução e confundimento; triagem e dobramento; o orçamento de material como restrição de projeto; como relatar o planejamento de experimentos num artigo.",
     topicos: ["fracionado 2^(k−p)", "resolução III, IV e V", "triagem", "dobramento", "orçamento de material", "relato no artigo"],
-    paginas: 20,
+    paginas: 14,
     pdf: "/conteudo/pdf/economia-de-ensaios.pdf",
   },
 ];
+
+/**
+ * Total de páginas dos cinco cadernos, sempre derivado do catálogo.
+ * Existe para que nenhuma tela escreva o total como literal e ele volte a
+ * divergir dos PDFs quando um caderno mudar de tamanho.
+ */
+export function totalDePaginas(): number {
+  return APOSTILAS.reduce((soma, a) => soma + a.paginas, 0);
+}
 
 /** PDFs originais das aulas de referência, oferecidos como leitura de apoio. */
 export const MATERIAL_APOIO: { titulo: string; arquivo: string; fonte: string }[] = [];
