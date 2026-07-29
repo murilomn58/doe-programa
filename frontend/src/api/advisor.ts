@@ -36,7 +36,7 @@ export async function fetchAdvice(
     n_runs_measured: runsRead.runs.filter((r) =>
       Object.values(r.response_values ?? {}).some((v) => v != null),
     ).length,
-    /** Numero de blocos distintos (fix 3+ blocos): 1 quando o design nao foi blocado. */
+    /** Número de blocos distintos: 1 quando o planejamento não foi blocado. */
     n_blocks: new Set(runsRead.runs.map((r) => r.block)).size,
   };
   return callEngine<AdvisorReport>("advise", { result, design_meta: designMeta });
