@@ -226,4 +226,40 @@ describe("recommendPlans — invariantes gerais", () => {
     expect(legado.designType).toBe("central_composite");
     expect(legado.configPatch.ccdVariant).toBe("face_centered");
   });
+
+  it("usa três pontos centrais no CCD, não os 4 + 4 do formulário", () => {
+    // O padrão 4 + 4 é o de um CCD blocado. Sem blocagem ele infla o arranjo:
+    // em 2 fatores o CCD de face centrada tem a mesma geometria do fatorial 3²,
+    // então 16 ensaios entregariam o mesmo modelo que 9 entregam.
+    const [recomendado] = recommendPlans({
+      goal: "optimization",
+      factors: [fatorQuantNNiveis("A", 3), fatorQuantNNiveis("B", 3)],
+    });
+    expect(recomendado.designType).toBe("central_composite");
+    const centrais =
+      (recomendado.configPatch.ccdCenterFactorial ?? 0) +
+      (recomendado.configPatch.ccdCenterAxial ?? 0);
+    expect(centrais).toBe(3);
+  });
+
+  it("o plano recomendado não custa muito mais que o econômico", () => {
+    // Um mestrando que vê o recomendado custar quase o dobro do econômico, para
+    // o mesmo modelo, conclui com razão que a recomendação está errada. O CCD
+    // só se justifica pelos graus de liberdade de erro puro que os pontos
+    // centrais dão, e isso tem de caber em poucos ensaios a mais.
+    for (const k of [2, 3, 4]) {
+      const planos = recommendPlans({
+        goal: "optimization",
+        factors: Array.from({ length: k }, (_, i) =>
+          fatorQuantNNiveis(`F${i + 1}`, 3),
+        ),
+      });
+      const recomendado = planos.find((p) => p.rotulo === "recomendado");
+      const economico = planos.find((p) => p.rotulo === "economico");
+      if (!recomendado || !economico || economico.indisponivel) continue;
+      expect(recomendado.nEnsaios).toBeLessThanOrEqual(
+        economico.nEnsaios * 1.35,
+      );
+    }
+  });
 });

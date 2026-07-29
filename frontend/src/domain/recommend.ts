@@ -225,9 +225,21 @@ function recomendarSuperficie({
     ];
   }
 
+  // Três pontos centrais no total, e não os 4 + 4 do padrão do formulário.
+  // Aquele padrão é o de um CCD blocado, com quatro centrais no bloco do cubo e
+  // quatro no da estrela. Sem blocagem ele infla o arranjo sem contrapartida: em
+  // dois fatores, o CCD de face centrada tem exatamente a mesma geometria do
+  // fatorial 3² (os quatro vértices mais os quatro pontos de face são os mesmos
+  // pontos médios de aresta), de modo que 4 + 4 + 8 = 16 ensaios entregariam o
+  // mesmo modelo que 9 entregam, e a plataforma estaria mandando moldar 78 % mais
+  // corpos de prova à toa. Com 3 centrais sobram 2 graus de liberdade de erro
+  // puro, que é o suficiente para o teste de falta de ajuste, ao custo honesto de
+  // 2 ensaios acima do fatorial 3².
   const ccdPatch: Partial<DesignConfig> = {
     designType: "central_composite",
     ccdVariant: "face_centered",
+    ccdCenterFactorial: 2,
+    ccdCenterAxial: 1,
   };
   const nEnsaiosCcd = ensaiosDoPatch(ccdPatch, factors, 1);
 
