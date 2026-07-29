@@ -9,7 +9,8 @@ export type DesignType =
   | "taguchi"
   | "plackett_burman"
   | "optimal"
-  | "dsd";
+  | "dsd"
+  | "full_factorial_general";
 
 export type CCDVariant = "rotatable" | "orthogonal" | "face_centered";
 

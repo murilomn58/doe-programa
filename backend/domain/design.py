@@ -84,6 +84,10 @@ class GeneratedDesign:
     # Taguchi (chosen OA) / optimal (D- or I-efficiency); None for other families.
     array_name: str | None = None
     optimal_efficiency: float | None = None
+    # Avisos não-bloqueantes (ex.: fatorial completo com n níveis grande demais
+    # para ser confortável, mas ainda dentro do limite rígido). None quando não
+    # há nada a avisar; nenhuma outra família preenche este campo hoje.
+    notes: list[str] | None = None
 
 
 @dataclass

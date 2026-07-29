@@ -216,6 +216,9 @@ class DesignRead(BaseModel):
     # Taguchi/optimal only; None for every other family
     array_name: str | None = None
     optimal_efficiency: float | None = None
+    # Avisos não-bloqueantes (ex.: fatorial completo com n níveis grande);
+    # vazio para as demais famílias.
+    notes: list[str] = Field(default_factory=list)
 
 
 class TaguchiArrayRead(BaseModel):

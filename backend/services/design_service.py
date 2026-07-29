@@ -223,6 +223,10 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
         return design_builders_screening.build_dsd_design(
             req.factors, req.responses, req
         )
+    if req.design_type is DesignType.FULL_FACTORIAL_GENERAL:
+        return design_builders.build_general_factorial_design(
+            req.factors, req.responses, req
+        )
 
     if req.design_type is DesignType.FRACTIONAL_FACTORIAL_2KP:
         design = design_builders.build_fractional_design(
@@ -294,4 +298,5 @@ def _to_design_read(
         aliasing=design.aliasing,
         array_name=design.array_name,
         optimal_efficiency=design.optimal_efficiency,
+        notes=design.notes or [],
     )
