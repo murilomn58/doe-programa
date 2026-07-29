@@ -504,8 +504,9 @@ def _aggregate_block_anova_rows(
     anova_rows: list[AnovaRow],
     block_term_labels: set[str],
     stats_panel: StatsPanel | None,
+    block_name: str | None = None,
 ) -> list[AnovaRow]:
-    """Collapse the k-1 synthetic block-indicator ANOVA rows into one "Bloco" row.
+    """Collapse the k-1 synthetic block-indicator ANOVA rows into one row.
 
     With k blocks the model carries k-1 one-column deviation-coded indicator
     terms (see the injection above). ``anova_lm`` reports one SS/df/F/p per
@@ -516,6 +517,14 @@ def _aggregate_block_anova_rows(
     A no-op when there is 0 or 1 block row (still renames it to "Bloco" so the
     label is stable for k=2 and for the advisor's "source contains Bloco"
     lookup either way).
+
+    ``block_name`` (ex.: "Tipo de solo") é o nome que o pesquisador deu ao
+    agrupamento na geração do design. Quando presente, a linha sai como
+    "Bloco (Tipo de solo)" em vez de só "Bloco" -- a tabela fica
+    autoexplicativa meses depois. O "Bloco" continua sempre no começo da
+    string de propósito: é o que a regra do advisor (substring "Bloco" in
+    source) e o filtro de efeitos significativos continuam casando, com ou
+    sem nome.
     """
     block_rows = [row for row in anova_rows if row.source in block_term_labels]
     if not block_rows or stats_panel is None:
@@ -529,7 +538,8 @@ def _aggregate_block_anova_rows(
     )
     f = ms / ms_resid if np.isfinite(ms_resid) and ms_resid > 0 else float("nan")
     p = float(stats.f.sf(f, df, stats_panel.df_resid)) if np.isfinite(f) else None
-    aggregated = AnovaRow(source="Bloco", ss=ss, df=df, ms=ms, f=f, p=p)
+    source = f"Bloco ({block_name})" if block_name else "Bloco"
+    aggregated = AnovaRow(source=source, ss=ss, df=df, ms=ms, f=f, p=p)
 
     merged: list[AnovaRow] = []
     inserted = False
@@ -569,6 +579,7 @@ class AnalysisService:
         model: RSMModel,
         factor_x: str | None = None,
         factor_y: str | None = None,
+        block_name: str | None = None,
     ) -> AnalysisResultData:
         experiment = await self._repo.get_experiment(experiment_id)
         if experiment is None:
@@ -691,7 +702,7 @@ class AnalysisService:
         # procura a linha cuja fonte contém "Bloco" (advisor_service.py).
         if block_term_labels and result.anova:
             result.anova = _aggregate_block_anova_rows(
-                result.anova, block_term_labels, result.stats
+                result.anova, block_term_labels, result.stats, block_name
             )
 
         # --- Teste de curvatura via pontos centrais (aula Cap.4 p4): só quando o

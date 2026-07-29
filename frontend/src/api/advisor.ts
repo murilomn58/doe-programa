@@ -38,6 +38,10 @@ export async function fetchAdvice(
     ).length,
     /** Número de blocos distintos: 1 quando o planejamento não foi blocado. */
     n_blocks: new Set(runsRead.runs.map((r) => r.block)).size,
+    /** Nome do agrupamento (ex. "Tipo de solo"); null sem blocagem nomeada.
+     * A regra de comentário de blocos já casa pela linha "Bloco (<nome>)" da
+     * ANOVA (substring "Bloco"), então isto só viaja para uso futuro. */
+    block_name: runsRead.block_name ?? null,
   };
   return callEngine<AdvisorReport>("advise", { result, design_meta: designMeta });
 }
