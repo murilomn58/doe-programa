@@ -1,5 +1,6 @@
 "use client";
 
+import { NiveisFator } from "@/components/NiveisFator";
 import type { FactorInput, FactorType } from "@/domain/design";
 
 interface FactorFormProps {
@@ -13,10 +14,6 @@ const inputClass =
   "rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-foreground-strong outline-none transition focus:border-primary focus:ring-1 focus:ring-primary";
 
 const labelFor = (index: number) => String.fromCharCode(65 + index); // A, B, C…
-
-function numberOrUndefined(value: string): number | undefined {
-  return value === "" ? undefined : Number(value);
-}
 
 export function FactorForm({
   factors,
@@ -100,75 +97,10 @@ export function FactorForm({
               </label>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {factor.factor_type === "quantitative" ? (
-                <>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Nível baixo (−1)</span>
-                    <input
-                      type="number"
-                      value={factor.low ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          low: numberOrUndefined(e.target.value),
-                        })
-                      }
-                      placeholder="Ex.: 0"
-                      className={inputClass}
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Nível alto (+1)</span>
-                    <input
-                      type="number"
-                      value={factor.high ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          high: numberOrUndefined(e.target.value),
-                        })
-                      }
-                      placeholder="Ex.: 1.5"
-                      className={inputClass}
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Rótulo baixo (−1)</span>
-                    <input
-                      type="text"
-                      value={factor.low_label ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          low_label: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Ex.: Tucum"
-                      className={inputClass}
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Rótulo alto (+1)</span>
-                    <input
-                      type="text"
-                      value={factor.high_label ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          high_label: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Ex.: Piassava"
-                      className={inputClass}
-                    />
-                  </label>
-                </>
-              )}
-            </div>
+            <NiveisFator
+              factor={factor}
+              onChange={(next) => onChange(index, next)}
+            />
           </div>
         ))}
       </div>
