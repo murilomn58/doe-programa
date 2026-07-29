@@ -55,7 +55,7 @@ export const APOSTILAS: Apostila[] = [
     resumo:
       "Por que dois níveis não medem curvatura; pontos centrais e o teste de curvatura; modelo linear contra modelo quadrático; composição central, Box-Behnken e a leitura da superfície.",
     topicos: ["pontos centrais", "teste de curvatura", "modelo quadrático", "CCD", "Box-Behnken", "ponto ótimo"],
-    paginas: 10,
+    paginas: 15,
     pdf: "/conteudo/pdf/curvatura-e-superficie.pdf",
   },
   {
