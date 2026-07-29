@@ -6,14 +6,33 @@ import type {
   OptimalCriterion,
   RSMModel,
   SNObjective,
-  TaguchiArray,
 } from "@/domain/design";
+import { TAGUCHI_AUTO, type DesignConfig } from "@/domain/designConfig";
+import {
+  designBaseRuns,
+  dsdRuns,
+  fractionalBaseFactors,
+  plackettBurmanRuns,
+  resolveTaguchiArray,
+} from "@/domain/runCount";
 import { useTaguchiCatalog } from "@/hooks/useTaguchiCatalog";
 
-export type FractionalMode = "resolution" | "generators";
-
-/** Sentinela do seletor de arranjo Taguchi: deixa o backend escolher. */
-export const TAGUCHI_AUTO = "" as const;
+// Re-exports: `DesignConfig`/`defaultDesignConfig` (estado do formulário) e a
+// contagem de ensaios (`designBaseRuns` + auxiliares) agora moram no domínio
+// — ver domain/designConfig.ts e domain/runCount.ts — porque designPayload.ts
+// e o motor de recomendação (recommend.ts) precisam delas sem depender de um
+// componente React. Mantidos aqui só para não quebrar quem já importava
+// destes símbolos a partir de "@/components/DesignPicker".
+export type { DesignConfig, FractionalMode } from "@/domain/designConfig";
+export { defaultDesignConfig, TAGUCHI_AUTO } from "@/domain/designConfig";
+export {
+  designBaseRuns,
+  dsdRuns,
+  fractionalBaseFactors,
+  generatorsBaseFactors,
+  plackettBurmanRuns,
+  resolveTaguchiArray,
+} from "@/domain/runCount";
 
 /**
  * Nota didática de 1 frase por família, exibida sob o seletor (e reutilizada
@@ -39,50 +58,6 @@ export const DESIGN_FAMILY_NOTE: Record<DesignType, string> = {
     "Testa todas as combinações dos níveis declarados em cada fator; com três níveis já estima curvatura, mas o número de ensaios cresce depressa.",
 };
 
-/** UI state of the design picker (mapped to the request payload on generate). */
-export interface DesignConfig {
-  designType: DesignType;
-  fractionalMode: FractionalMode;
-  fractionalResolution: number;
-  fractionalGenerators: string;
-  ccdVariant: CCDVariant;
-  ccdCenterFactorial: number;
-  ccdCenterAxial: number;
-  bbdCenter: number;
-  centerPoints: number;
-  // Taguchi
-  taguchiArray: string; // "" → automático
-  taguchiSN: SNObjective;
-  taguchiLevels: number; // níveis por fator (2, 3, 4…) quando o arranjo comporta
-  // D/I-ótimo
-  optimalCriterion: OptimalCriterion;
-  optimalNRuns: number;
-  optimalModel: RSMModel;
-  // DSD
-  dsdExtraRuns: number;
-}
-
-export function defaultDesignConfig(): DesignConfig {
-  return {
-    designType: "full_factorial_2k",
-    fractionalMode: "resolution",
-    fractionalResolution: 3,
-    fractionalGenerators: "",
-    ccdVariant: "rotatable",
-    ccdCenterFactorial: 4,
-    ccdCenterAxial: 4,
-    bbdCenter: 3,
-    centerPoints: 0,
-    taguchiArray: TAGUCHI_AUTO,
-    taguchiSN: "larger_is_better",
-    taguchiLevels: 2,
-    optimalCriterion: "D",
-    optimalNRuns: 0,
-    optimalModel: "linear_interactions",
-    dsdExtraRuns: 0,
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Contagem de parâmetros do modelo RSM (para o default/guard de n_runs no ótimo).
 // Espelha `_model_matrix` do backend: intercepto + main effects + interações 2f
@@ -101,137 +76,6 @@ export function optimalParamCount(k: number, model: RSMModel): number {
     params += k; // quadráticos (assumindo quantitativos)
   }
   return params;
-}
-
-/** Próximo múltiplo de 4 estritamente maior que `k` (construção de Hadamard). */
-export function plackettBurmanRuns(k: number): number {
-  if (k < 1) return 0;
-  return Math.floor(k / 4) * 4 + 4;
-}
-
-/** Ensaios de um DSD: 2·(fatores) + 1 (+ 2 por corrida extra). */
-export function dsdRuns(k: number, extraRuns: number): number {
-  if (k < 1) return 0;
-  return 2 * k + 1 + 2 * extraRuns;
-}
-
-// ---------------------------------------------------------------------------
-// Run-count previews (contagem combinatória para UX; o design em si — matriz,
-// α exato, aliasing — é SEMPRE gerado pelo backend).
-// ---------------------------------------------------------------------------
-
-function comb(n: number, r: number): number {
-  if (r < 0 || r > n) return 0;
-  let result = 1;
-  for (let i = 0; i < r; i += 1) {
-    result = (result * (n - i)) / (i + 1);
-  }
-  return Math.round(result);
-}
-
-/**
- * Espelha `pyDOE3.fracfact_by_res`: menor nº de fatores-base que comporta
- * `k` fatores na resolução pedida. `null` = fração inexistente (o backend
- * devolveria 422).
- */
-export function fractionalBaseFactors(
-  k: number,
-  resolution: number,
-): number | null {
-  for (let base = resolution - 1; base < k; base += 1) {
-    let capacity = base;
-    for (let r = resolution - 1; r <= base; r += 1) {
-      capacity += comb(base, r);
-    }
-    if (capacity >= k) return base;
-  }
-  return null;
-}
-
-/**
- * Nº de fatores-base declarados numa string de geradores pyDOE3 ("a b ab"),
- * ou `null` quando a string não define um design válido para `k` fatores.
- */
-export function generatorsBaseFactors(
-  generators: string,
-  k: number,
-): number | null {
-  const words = generators.trim().split(/\s+/).filter(Boolean);
-  if (words.length !== k) return null;
-  if (!words.every((word) => /^-?[a-zA-Z]+$/.test(word))) return null;
-
-  const letters = words.map((word) => word.replace("-", "").toLowerCase());
-  const baseLetters = letters.filter((word) => word.length === 1);
-  const baseSet = new Set(baseLetters);
-  if (baseSet.size === 0 || baseSet.size !== baseLetters.length) return null;
-  const allComposedOfBase = letters.every((word) =>
-    [...word].every((ch) => baseSet.has(ch)),
-  );
-  return allComposedOfBase ? baseSet.size : null;
-}
-
-/**
- * Menor arranjo Taguchi (do catálogo) que comporta `k` fatores no nº de
- * `levels` níveis pedido; `null` quando nenhum arranjo do catálogo cabe (ou o
- * catálogo ainda não carregou). Espelha `_auto_select_oa` do backend para o par
- * (níveis→demanda) uniforme usado na UI.
- */
-export function resolveTaguchiArray(
-  arrays: readonly TaguchiArray[] | undefined,
-  k: number,
-  levels: number,
-): TaguchiArray | null {
-  if (!arrays || k < 1) return null;
-  const fitting = arrays.filter(
-    (a) => (a.level_capacity[levels] ?? 0) >= k,
-  );
-  if (fitting.length === 0) return null;
-  // catálogo já vem ordenado por runs; garante menor por segurança
-  return fitting.reduce((best, a) => (a.runs < best.runs ? a : best));
-}
-
-/** Ensaios de UMA réplica (inclui pontos centrais); `null` = indeterminado. */
-export function designBaseRuns(
-  config: DesignConfig,
-  factorCount: number,
-  taguchiArrays?: readonly TaguchiArray[],
-): number | null {
-  const k = factorCount;
-  if (k < 1) return null;
-  switch (config.designType) {
-    case "full_factorial_2k":
-      return 2 ** k + config.centerPoints;
-    case "full_factorial_general":
-      // O total é o produto dos níveis declarados em cada fator, e esta
-      // assinatura só recebe a contagem de fatores, não a lista de níveis.
-      // Indeterminado aqui; quem tem os fatores em mãos calcula o produto.
-      return null;
-    case "fractional_factorial_2kp": {
-      const base =
-        config.fractionalMode === "resolution"
-          ? fractionalBaseFactors(k, config.fractionalResolution)
-          : generatorsBaseFactors(config.fractionalGenerators, k);
-      return base === null ? null : 2 ** base + config.centerPoints;
-    }
-    case "central_composite":
-      return 2 ** k + 2 * k + config.ccdCenterFactorial + config.ccdCenterAxial;
-    case "box_behnken":
-      return k >= 3 ? 2 * k * (k - 1) + config.bbdCenter : null;
-    case "taguchi": {
-      const array =
-        config.taguchiArray === TAGUCHI_AUTO
-          ? resolveTaguchiArray(taguchiArrays, k, config.taguchiLevels)
-          : (taguchiArrays?.find((a) => a.name === config.taguchiArray) ??
-            null);
-      return array === null ? null : array.runs;
-    }
-    case "plackett_burman":
-      return k >= 2 ? plackettBurmanRuns(k) : null;
-    case "optimal":
-      return config.optimalNRuns >= 1 ? config.optimalNRuns : null;
-    case "dsd":
-      return k >= 2 ? dsdRuns(k, config.dsdExtraRuns) : null;
-  }
 }
 
 function toRoman(resolution: number): string {
