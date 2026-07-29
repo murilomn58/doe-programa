@@ -8,6 +8,12 @@ interface FactorFormProps {
   onChange: (index: number, factor: FactorInput) => void;
   onAdd: () => void;
   onRemove: (index: number) => void;
+  /**
+   * Repassada a cada `NiveisFator`, que a usa no botão "Declarar blocos" da
+   * orientação de blocagem do ramo qualitativo. Opcional: sem ela o botão não
+   * aparece, que é o caso de quem monta este formulário fora do wizard.
+   */
+  onIrParaBlocos?: () => void;
 }
 
 const inputClass =
@@ -20,6 +26,7 @@ export function FactorForm({
   onChange,
   onAdd,
   onRemove,
+  onIrParaBlocos,
 }: FactorFormProps) {
   return (
     <div className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
@@ -100,6 +107,7 @@ export function FactorForm({
             <NiveisFator
               factor={factor}
               onChange={(next) => onChange(index, next)}
+              onIrParaBlocos={onIrParaBlocos}
             />
           </div>
         ))}

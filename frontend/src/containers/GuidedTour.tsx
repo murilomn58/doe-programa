@@ -10,7 +10,7 @@ import {
   type DesignConfig,
 } from "@/components/DesignPicker";
 import { FactorForm } from "@/components/FactorForm";
-import { IrParaBlocosProvider } from "@/components/NiveisFator";
+
 import { PedirEmailModal } from "@/components/PedirEmailModal";
 import { ResponsesForm } from "@/components/ResponsesForm";
 import { Badge } from "@/components/ui/Badge";
@@ -338,16 +338,15 @@ export function GuidedTour() {
             nem além do que o equipamento alcança) e informe a unidade, pois
             é ela que dá sentido físico aos coeficientes do modelo.
           </Callout>
-          <IrParaBlocosProvider value={goToDesign}>
-            <FactorForm
-              factors={factors}
-              onChange={updateFactor}
-              onAdd={() => setFactors((prev) => [...prev, emptyQuantFactor()])}
-              onRemove={(index) =>
-                setFactors((prev) => prev.filter((_, i) => i !== index))
-              }
-            />
-          </IrParaBlocosProvider>
+          <FactorForm
+            factors={factors}
+            onChange={updateFactor}
+            onAdd={() => setFactors((prev) => [...prev, emptyQuantFactor()])}
+            onRemove={(index) =>
+              setFactors((prev) => prev.filter((_, i) => i !== index))
+            }
+            onIrParaBlocos={goToDesign}
+          />
           <ResponsesForm
             responses={responses}
             onChange={updateResponse}
