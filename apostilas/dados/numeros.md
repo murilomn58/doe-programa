@@ -45,6 +45,7 @@ para os valores poderem ser copiados direto para dentro de código Python.
 | [`aula-statistica`](#9-aula-statistica) | 2² com 2 réplicas + interação (painel Statistica) | `reference-outputs.md` |
 | [`aula-originpro`](#10-aula-originpro) | mesmos 8 ensaios, só efeitos principais, PRESS | `reference-outputs.md`, linhas 29–38 |
 | [`armaradar`](#11-armaradar) | 5 pares, com e sem blocagem | Peixoto cap. 1–2, p. 47–53 |
+| [`curvatura-catalisador`](#12-curvatura-catalisador) | teste de curvatura, 2² + centrais sintéticos | derivado de `peixoto-2x2` + geração sintética |
 
 Caminho dos PDFs: `DoE_programa/contexto aulas/`.
 
@@ -692,6 +693,79 @@ aula, 10,1055). Diferença de truncamento, sem consequência. **Escrever ± 10,1
 Mensagem didática: os mesmos 10 números levam a conclusões opostas conforme se reconheça ou não
 o fabricante como bloco. Sem blocagem, a variabilidade entre fabricantes (de 377 a 505 m/s)
 engole a diferença de 11,4 m/s entre os conjuntos. Com blocagem, ela aparece.
+
+---
+
+## 12. `curvatura-catalisador`
+
+**Fonte:** derivado do 2² de `peixoto-2x2` (fatores temperatura e catalisador, respostas
+57/61, 92/88, 55/53, 66/70), acrescido de pontos centrais **sintéticos**, gerados para este
+material porque nenhum documento do acervo traz pontos centrais associados a esse fatorial.
+Cálculo feito com `backend/.venv/Scripts/python.exe` (numpy 2.x, scipy.stats) em 28/07/2026,
+script `curvatura_exemplo.py` reproduzido abaixo.
+
+⚠ **Os três pontos centrais são dados sintéticos didáticos, não medidos.** Gerados com
+`numpy.random.default_rng(seed=42)`, distribuição normal de média 78,0 e desvio-padrão
+`sqrt(6,5)` (o mesmo nível de ruído do erro puro original de `peixoto-2x2`, cuja variância
+combinada é 6,5), arredondados a uma casa decimal. A média-alvo de 78,0, acima da média dos
+quatro pontos fatoriais (67,75), foi escolhida para simular um patamar de rendimento mais alto
+no centro da faixa de temperatura e catalisador, produzindo curvatura detectável. **Ao usar
+este conjunto na apostila, declarar sempre que os centrais são sintéticos e a semente usada.**
+
+**Dados de entrada (completos)**
+
+| Ponto | Origem | Valor(es) | Média |
+|---|---|---|---|
+| Fatorial 1 (313 K, cat. A) | `peixoto-2x2` | 57, 61 | 59,0 |
+| Fatorial 2 (333 K, cat. A) | `peixoto-2x2` | 92, 88 | 90,0 |
+| Fatorial 3 (313 K, cat. B) | `peixoto-2x2` | 55, 53 | 54,0 |
+| Fatorial 4 (333 K, cat. B) | `peixoto-2x2` | 66, 70 | 68,0 |
+| Central 1 | sintético, semente 42 | 78,8 | — |
+| Central 2 | sintético, semente 42 | 75,3 | — |
+| Central 3 | sintético, semente 42 | 79,9 | — |
+
+**Resultados**
+
+| Grandeza | Valor | Observação |
+|---|---|---|
+| `n_F` (pontos fatoriais) | 4 | médias de célula |
+| `ȳ_F` | 67,75 | idêntica à média global `M` de `peixoto-2x2` |
+| `n_C` (réplicas centrais) | 3 | sintéticas |
+| `ȳ_C` | 78,0 | exata, dado o arredondamento das 3 réplicas |
+| `ȳ_F − ȳ_C` | −10,25 | |
+| `MQ_ep` (erro puro dos centrais) | 5,77 | 2 GL |
+| `SQ_curv` | 180,107143 | Equação `n_F·n_C·(ȳ_F−ȳ_C)²/(n_F+n_C)` |
+| `F₀ = SQ_curv/MQ_ep` | 31,214410 | |
+| GL do teste | `F(1, 2)` | |
+| `p`-valor | 0,030575 | < 0,05: curvatura significativa |
+| `F` crítico 95 % `F(1,2)` | 18,512821 | `F₀ > F` crítico, confirma significância |
+
+Leitura didática: com apenas 3 réplicas centrais o erro puro fica com só 2 GL, o mínimo
+utilizável, e ainda assim o teste detecta a curvatura introduzida propositalmente na geração
+sintética (`p = 0,031`). É o exemplo que fecha a Seção 3 do Caderno 4 com números completos,
+em vez de deixar o teste apenas enunciado pela fórmula.
+
+**Script de reconferência**
+
+```python
+import numpy as np
+from scipy import stats
+
+medias_celula = [59.0, 90.0, 54.0, 68.0]  # peixoto-2x2
+n_F = len(medias_celula)
+media_F = np.mean(medias_celula)
+
+rng = np.random.default_rng(seed=42)
+centrais = np.round(78.0 + rng.normal(0.0, np.sqrt(6.5), size=3), 1)
+# centrais = [78.8, 75.3, 79.9]
+n_C = len(centrais)
+media_C = np.mean(centrais)
+
+MQ_ep = np.var(centrais, ddof=1)
+SQ_curv = n_F * n_C * (media_F - media_C) ** 2 / (n_F + n_C)
+F0 = SQ_curv / MQ_ep
+p_valor = 1 - stats.f.cdf(F0, 1, n_C - 1)
+```
 
 ---
 
