@@ -35,6 +35,8 @@ export const DESIGN_FAMILY_NOTE: Record<DesignType, string> = {
   optimal:
     "Desenho construído sob medida quando há restrições ou orçamento fixo de ensaios.",
   dsd: "Triagem definitiva: efeitos principais limpos de confusão com interações de 2 fatores.",
+  full_factorial_general:
+    "Testa todas as combinações dos níveis declarados em cada fator; com três níveis já estima curvatura, mas o número de ensaios cresce depressa.",
 };
 
 /** UI state of the design picker (mapped to the request payload on generate). */
@@ -199,6 +201,11 @@ export function designBaseRuns(
   switch (config.designType) {
     case "full_factorial_2k":
       return 2 ** k + config.centerPoints;
+    case "full_factorial_general":
+      // O total é o produto dos níveis declarados em cada fator, e esta
+      // assinatura só recebe a contagem de fatores, não a lista de níveis.
+      // Indeterminado aqui; quem tem os fatores em mãos calcula o produto.
+      return null;
     case "fractional_factorial_2kp": {
       const base =
         config.fractionalMode === "resolution"
