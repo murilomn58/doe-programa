@@ -1,0 +1,98 @@
+% Folha de prova das 20 figuras, na página A4 real das apostilas.
+%
+% Usa a própria classe `doeapostila`, e não um `article` qualquer, para que
+% a largura de texto, a fonte e o corpo sejam exatamente os do caderno final.
+% Cada figura entra na largura recomendada em CATALOGO.md: o que se lê aqui
+% é o que o aluno vai ler na página impressa.
+%
+% Compilar (a classe está em ../estilo, fora deste diretório):
+%   $env:PATH = "C:\Users\Narcísius\AppData\Local\Programs\MiKTeX\miktex\bin\x64;" + $env:PATH
+%   pdflatex -interaction=batchmode -include-directory=..\estilo contato-visual.tex
+\documentclass{doeapostila}
+\input{../estilo/macros}
+\definecaderno{--}{Figuras}
+
+\newcommand{\prova}[4]{%
+  % #1 caderno · #2 arquivo · #3 fração de \linewidth · #4 o que ensina
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=#3\linewidth]{out/#2}
+    \caption{\texttt{#2} \quad·\quad caderno #1 \quad·\quad
+             \texttt{width=#3\textbackslash linewidth}\\ #4}
+  \end{figure}}
+
+\begin{document}
+
+\begin{center}
+  {\large\bfseries Folha de prova das figuras}\par\smallskip
+  {\small Planejamento de Experimentos · 20 figuras · página A4 real}\par
+\end{center}
+
+\noindent
+Esta folha existe para uma única pergunta: cada figura continua legível no
+tamanho em que será impressa? Todas aparecem abaixo na largura recomendada em
+\texttt{CATALOGO.md}, sobre a mesma mancha de texto dos cinco cadernos.
+Rótulo de eixo, legenda e anotação devem ser lidos sem esforço a 100\,\% de
+zoom. Preto e branco, com uma única cor de apoio, o azul \texttt{\#1B4E79}.
+
+\section*{Caderno 1 — Por que planejar experimentos}
+
+\prova{1}{c1-um-fator-por-vez}{0.80}{%
+  A busca um fator de cada vez estaciona longe do ótimo quando há interação.}
+\prova{1}{c1-dispersao-20-medidas}{1.00}{%
+  Vinte medidas contra a especificação de projeto: a tabela não conclui, o
+  gráfico sim.}
+\prova{1}{c1-blocagem-intervalo}{1.00}{%
+  Os mesmos dez valores levam a conclusões opostas conforme se reconheça ou
+  não o fabricante como bloco.}
+\prova{1}{c1-variancia-da-media}{0.70}{%
+  $\mathrm{Var}(\bar{x}) = \sigma^{2}/N$: o retorno decrescente da réplica.}
+
+\section*{Caderno 2 — Planejamento fatorial $2^{k}$}
+
+\prova{2}{c2-cubo-2a3}{0.60}{%
+  O $2^{3}$ com as respostas nos vértices e o efeito principal lido como
+  diferença entre faces opostas.}
+\prova{2}{c2-interacao}{1.00}{%
+  Retas que se cruzam indicam interação; retas paralelas, ausência dela.}
+\prova{2}{c2-pareto-efeitos}{1.00}{%
+  Pareto dos efeitos padronizados e o que a linha crítica separa.}
+\prova{2}{c2-normal-efeitos}{0.75}{%
+  Sem réplica, os efeitos que fogem da reta normal são os reais.}
+
+\section*{Caderno 3 — Regressão e análise de variância}
+
+\prova{3}{c3-nuvem-reta-residuos}{1.00}{%
+  Nuvem, reta ajustada e os resíduos como segmentos verticais.}
+\prova{3}{c3-decomposicao-sq}{1.00}{%
+  $\SQT = \SQR + \SQr$, ponto a ponto e em proporção.}
+\prova{3}{c3-banda-confianca}{0.60}{%
+  A banda de previsão em ampulheta: mais estreita em $\bar{x}$, aberta nas
+  bordas.}
+\prova{3}{c3-diagnosticos-residuo}{1.00}{%
+  Os quatro diagnósticos de resíduo sobre um modelo com falta de ajuste.}
+
+\section*{Caderno 4 — Curvatura e superfície de resposta}
+
+\prova{4}{c4-grade-2a2-ponto-central}{0.95}{%
+  A grade $2^{2}$ com ponto central, em unidades naturais e codificadas.}
+\prova{4}{c4-linear-vs-quadratico}{0.80}{%
+  Os mesmos dezoito pontos sob o ajuste linear e sob o quadrático.}
+\prova{4}{c4-superficie-plana-vs-curva}{0.90}{%
+  Um modelo de primeira ordem não tem máximo interior; um com termos
+  quadráticos tem.}
+\prova{4}{c4-composicao-central}{0.60}{%
+  Geometria da composição central rotacionável de dois fatores.}
+\prova{4}{c4-contorno-otimo}{0.80}{%
+  O ponto ótimo da superfície não coincide com o melhor ensaio realizado.}
+
+\section*{Caderno 5 — Economia de ensaios}
+
+\prova{5}{c5-projecao-meia-fracao}{1.00}{%
+  Uma fração com fator inerte volta a ser fatorial completo, com réplicas.}
+\prova{5}{c5-ensaios-por-arranjo}{0.75}{%
+  Número de ensaios por arranjo, em escala logarítmica.}
+\prova{5}{c5-corpos-de-prova-vs-informacao}{1.00}{%
+  Com orçamento fixo de material, mais fatores custam graus de liberdade.}
+
+\end{document}

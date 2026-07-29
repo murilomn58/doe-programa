@@ -1,0 +1,467 @@
+% ---------------------------------------------------------------------------
+% Caderno 4 — Curvatura e superfície de resposta
+% Murilo Miguel Narciso, Instituto Militar de Engenharia.
+% Compilação (MiKTeX fora do PATH):
+%   $env:PATH = "C:\Users\Narcísius\AppData\Local\Programs\MiKTeX\miktex\bin\x64;" + $env:PATH
+%   pdflatex -interaction=nonstopmode -include-directory=..\estilo main.tex   (três vezes)
+% ---------------------------------------------------------------------------
+\documentclass{doeapostila}
+
+\input{../estilo/macros}
+
+\definecaderno{4}{Curvatura e superfície de resposta}
+
+\graphicspath{{../figuras/out/}}
+
+\begin{document}
+
+\begin{center}
+  {\large\bfseries Caderno 4\\Curvatura e superfície de resposta}\par\smallskip
+  {\normalsize Murilo Miguel Narciso}\par\smallskip
+  {\footnotesize Instituto Militar de Engenharia \textbullet{} \today}
+\end{center}
+
+\vspace{0.6\baselineskip}
+
+\noindent
+O Caderno 2 mostrou como estimar efeitos principais e interações a partir de
+um planejamento fatorial em dois níveis. Esse instrumento tem um limite
+estrutural: dois níveis por fator definem uma reta em cada direção, nunca uma
+curva, de modo que nenhum fatorial $2^{k}$ consegue, por si só, detectar que a
+resposta atinge um máximo, um mínimo ou um ponto de sela dentro da região
+experimental. Este caderno percorre a solução desse problema em três etapas
+que se encadeiam. O planejamento fatorial detecta a existência de curvatura,
+mas não a mede: o ponto central acrescenta essa capacidade, ao custo de
+confundir o efeito quadrático agregado sem dizer de qual fator ele vem. A
+composição central resolve essa ambiguidade, acrescentando pontos além dos
+vértices do cubo que permitem estimar cada termo quadrático individualmente.
+O fio condutor do caderno é justamente essa sequência: fatorial insuficiente,
+ponto central que detecta e confunde, composição central que separa.
+
+\vspace{0.4\baselineskip}
+
+\noindent\textbf{Sumário}
+
+\begingroup
+\parskip=2pt
+\noindent 1 \hspace{0.5em} O limite do planejamento em dois níveis\dotfill 1\\
+\noindent 2 \hspace{0.5em} Pontos centrais\dotfill 2\\
+\noindent 3 \hspace{0.5em} Teste de curvatura\dotfill 3\\
+\noindent 4 \hspace{0.5em} O efeito quadrático confundido\dotfill 4\\
+\noindent 5 \hspace{0.5em} Os quatro modelos de superfície de resposta\dotfill 5\\
+\noindent 6 \hspace{0.5em} Modelo linear contra modelo com termos quadráticos\dotfill 6\\
+\noindent 7 \hspace{0.5em} Planejamento composto central\dotfill 8\\
+\noindent 8 \hspace{0.5em} Planejamento de Box-Behnken\dotfill 10\\
+\noindent 9 \hspace{0.5em} Leitura da superfície\dotfill 11\\
+\noindent 10 \hspace{0.3em} Exemplo de aplicação: a composição central com dois blocos\dotfill 12
+\endgroup
+
+\section{O limite do planejamento em dois níveis}
+
+Um fator investigado em apenas dois níveis, codificados $z=-1$ e $z=+1$,
+fornece exatamente dois pontos por onde passar uma reta. Não há informação
+suficiente para distinguir uma relação linear de uma relação com curvatura,
+porque qualquer modelo de segunda ordem $y = a_{0} + a_{1}z + a_{2}z^{2}$
+avaliado só nesses dois pontos é indistinguível, para fins de ajuste, de um
+modelo puramente linear com intercepto ajustado. Formalmente, a coluna de
+$z^{2}$ no planejamento $2^{k}$ vale sempre $1$, em ambos os níveis, e por
+isso se confunde inteiramente com a coluna do intercepto: $\sum z^{2} = 2^{k}$
+mas essa soma não distingue nenhuma variação de $z^{2}$ em torno de sua
+própria média, porque não há variação, o valor é constante.
+
+A consequência prática é que o planejamento fatorial $2^{k}$, por mais
+réplicas que receba, nunca vai revelar se a resposta verdadeira se curva
+entre os dois níveis testados. Se o fenômeno físico tiver um ótimo interior,
+um máximo de resistência num teor intermediário de aditivo, por exemplo, o
+fatorial em dois níveis relata dois pontos da encosta dessa colina sem nunca
+enxergar o cume.
+
+\begin{aplicacao}{Um efeito principal que esconde um máximo}
+Considere um fator codificado entre $-1$ e $+1$ cuja resposta verdadeira siga
+$y = 3 + 0{,}5z - 2z^{2}$, com máximo em $z=0{,}125$. Um planejamento em dois
+níveis mede $y(-1) = 0{,}5$ e $y(+1) = 1{,}5$, produzindo um efeito estimado
+de $1{,}0$, positivo e aparentemente linear. Nenhuma das duas observações
+revela que o valor no centro, $y(0) = 3$, é maior que os dois extremos
+somados. O fatorial em dois níveis não está errado quanto ao que mede, apenas
+não mede o que seria preciso para localizar o máximo.
+\end{aplicacao}
+
+\section{Pontos centrais}
+
+A saída mais simples para detectar curvatura sem abandonar a estrutura do
+planejamento fatorial é acrescentar réplicas no ponto central, $z_{1} =
+z_{2} = \cdots = z_{k} = 0$, mantendo os $2^{k}$ vértices do cubo como estão.
+O planejamento resultante tem $N_{E} = 2^{k} + N_{R0}$ ensaios, em que
+$N_{R0}$ é o número de réplicas centrais, tipicamente entre três e cinco.
+
+O ponto central desempenha duas funções simultâneas. A primeira é fornecer
+uma estimativa de erro puro independente de qualquer suposição sobre a forma
+do modelo, porque todas as réplicas centrais compartilham exatamente as
+mesmas condições experimentais e qualquer diferença entre elas só pode vir de
+ruído. A segunda função, o assunto central deste caderno, é permitir comparar
+a média observada no centro com a média prevista pelo modelo linear ajustado
+aos vértices: se as duas médias coincidirem, dentro do erro experimental, o
+modelo linear é adequado; se divergirem, há curvatura na superfície.
+
+\begin{aplicacao}{Por que não replicar todos os vértices em vez de usar o centro}
+Replicar os $2^{k}$ vértices duplica o esforço experimental e melhora a
+precisão de cada efeito, mas não acrescenta nenhuma capacidade de detectar
+curvatura, pelo argumento da Seção 1: dois níveis continuam sendo dois
+níveis, por mais vezes que sejam repetidos. Um pequeno número de réplicas no
+centro, em contraste, custa poucos ensaios adicionais e abre uma porta que a
+réplica nos vértices nunca abriria.
+\end{aplicacao}
+
+\section{Teste de curvatura}
+
+Sejam $\bar{y}_{F}$ a média dos $n_{F} = 2^{k}$ pontos fatoriais e
+$\bar{y}_{C}$ a média dos $n_{C} = N_{R0}$ pontos centrais. Sob um modelo
+puramente linear, a previsão no centro é a própria média dos vértices, de
+modo que a diferença $\bar{y}_{F} - \bar{y}_{C}$ deveria ser nula a menos de
+ruído. O teste de curvatura converte essa diferença numa soma de quadrados
+com um único grau de liberdade,
+\begin{equation}
+  SQ_{\mathrm{curv}} = \frac{n_{F}\, n_{C}\, (\bar{y}_{F} - \bar{y}_{C})^{2}}
+                             {n_{F} + n_{C}} ,
+  \label{eq:sqcurv}
+\end{equation}
+que entra na tabela de análise de variância como mais uma linha, ao lado dos
+efeitos principais e interações, e é comparada ao erro puro estimado pela
+variância entre as réplicas centrais, $\MQ{ep} = \sum(y_{i}-\bar{y}_{C})^{2}
+/(n_{C}-1)$, por meio da razão $F = SQ_{\mathrm{curv}}/\MQ{ep}$, com
+distribuição $F(1,\,n_{C}-1)$ sob a hipótese de ausência de curvatura.
+
+A leitura do teste é direta: $p < 0{,}05$ indica que a superfície verdadeira
+se afasta de um plano dentro da região estudada, e que um modelo puramente
+linear vai subestimar ou superestimar sistematicamente a resposta em algum
+ponto interno. Este teste está implementado na plataforma que acompanha este
+material e aparece automaticamente como linha "Curvatura" na tabela de
+análise de variância sempre que o planejamento tiver pontos centrais e todos
+os fatores forem quantitativos.
+
+\begin{aplicacao}{Lendo o resultado de um teste de curvatura significativo}
+Um teste de curvatura com $p = 0{,}02$ não indica qual fator, entre vários
+investigados, é responsável pela curvatura, nem qual sinal ela tem. Indica
+apenas que existe, agregada sobre todos os fatores quantitativos do
+planejamento, curvatura suficiente para não ser atribuída ao ruído. A Seção 4
+mostra por que essa informação vem sempre agregada e nunca decomposta por
+fator, quando a única fonte de pontos além dos vértices é o centro.
+\end{aplicacao}
+
+\section{O efeito quadrático confundido}
+
+A razão pela qual o teste de curvatura não distingue entre fatores está na
+estrutura de colunas do modelo. Para $k=2$, com um ponto central
+acrescentado, a matriz de momentos que envolve os termos quadráticos deixa
+de ser diagonal: a coluna de $z_{1}^{2}$ e a coluna de $z_{2}^{2}$, que valem
+$1$ em todos os quatro vértices e $0$ no centro, são idênticas entre si em
+todo o planejamento, e ambas se correlacionam com a coluna do intercepto.
+Não é possível, com apenas um ponto adicional, separar quanto da curvatura
+observada vem de $z_{1}^{2}$ e quanto vem de $z_{2}^{2}$: o que se estima é
+uma combinação linear fixa dos dois, e não os dois coeficientes
+individualmente.
+
+Essa confusão é resolvida algebricamente por meio da diagonalização da
+matriz de momentos, que isola um único termo quadrático agregado,
+$\lambda = \sum z_{1i}^{2} / (2^{k} + N_{R0})$, cujo coeficiente é estimável
+mas cuja decomposição em $a_{11}$ e $a_{22}$ individuais permanece
+indeterminada. A Figura \ref{fig:grade-ponto-central} ilustra essa geometria
+no espaço natural e no espaço codificado para $k=2$: o ponto central ocupa
+uma posição privilegiada no meio do quadrado formado pelos quatro vértices,
+mas sozinho não distingue curvatura ao longo do eixo $z_{1}$ de curvatura ao
+longo do eixo $z_{2}$.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\linewidth]{c4-grade-2a2-ponto-central}
+  \caption{Grade fatorial $2^{2}$ com um ponto central, representada no
+    espaço natural das variáveis originais (painel a) e no espaço codificado
+    $z_{1}, z_{2} \in \{-1,0,+1\}$ (painel b). O ponto central ocupa o meio
+    da grade nos dois espaços, mas não fornece, por si só, informação
+    separada para cada eixo.}
+  \label{fig:grade-ponto-central}
+\end{figure}
+
+A saída para decompor a curvatura por fator é acrescentar mais pontos além
+dos vértices, ao longo de cada eixo individualmente, o que é exatamente a
+construção apresentada na Seção 7.
+
+\section{Os quatro modelos de superfície de resposta}
+
+Antes de introduzir a composição central, cabe situar os quatro modelos que
+um planejamento de superfície de resposta pode ajustar, em ordem crescente de
+complexidade. O primeiro é o modelo puramente linear nos efeitos principais,
+$y = a_{0} + \sum_{j} a_{j}z_{j}$, estimável já pelo fatorial em dois níveis.
+O segundo acrescenta as interações binárias, $y = a_{0} + \sum_{j} a_{j}z_{j}
++ \sum_{j<l} a_{jl}z_{j}z_{l}$, também estimável pelo fatorial completo, sem
+pontos adicionais. O terceiro acrescenta apenas os termos quadráticos puros
+sem interação, $y = a_{0} + \sum_{j} a_{j}z_{j} + \sum_{j} a_{jj}z_{j}^{2}$, e
+o quarto, o modelo completo de segunda ordem, reúne lineares, quadráticos e
+interações,
+\begin{equation}
+  y = a_{0} + \sum_{j} a_{j}z_{j} + \sum_{j<l} a_{jl}z_{j}z_{l}
+      + \sum_{j} a_{jj}z_{j}^{2} .
+  \label{eq:modelo-segunda-ordem}
+\end{equation}
+Os dois primeiros modelos são estimáveis por um fatorial $2^{k}$ comum; os
+dois últimos exigem pontos além dos dois níveis, porque envolvem os termos
+$z_{j}^{2}$ que a Seção 1 mostrou serem inestimáveis individualmente num
+fatorial em dois níveis. A composição central, apresentada na Seção 7, é o
+arranjo mais usado para estimar o modelo completo da Equação
+\eqref{eq:modelo-segunda-ordem}.
+
+\section{Modelo linear contra modelo com termos quadráticos}
+
+O efeito prático de acrescentar os termos quadráticos ao modelo é mais
+convincente quando visto sobre um único conjunto de dados ajustado das duas
+formas. Considere nove níveis de um fator quantitativo, de $30$ a $70$ em
+passos de $5$, com duas réplicas em cada nível, dezoito observações ao todo,
+identificado neste material pela chave \texttt{peixoto-lin-quad}. O ajuste
+linear simples e o ajuste com termo quadrático adicional produzem as
+análises de variância da Tabela~\ref{tab:linear-vs-quadratico}.
+
+\begin{table}[H]
+  \centering
+  \caption{Análise de variância comparada do modelo linear e do modelo com
+    termo quadrático, mesmos dezoito pontos, $n=18$. Fonte: Peixoto,
+    capítulo 5, p. 32 a 34.}
+  \label{tab:linear-vs-quadratico}
+  \begin{tabular}{l S[table-format=4.4] c S[table-format=4.4]
+                    S[table-format=4.4] c S[table-format=4.4]}
+    \toprule
+    & \multicolumn{3}{c}{Modelo linear} & \multicolumn{3}{c}{Modelo quadrático} \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    Fonte & {SQ} & GL & {MQ} & {SQ} & GL & {MQ} \\
+    \midrule
+    Regressão      & 6946.4083 & 1 & 6946.4083 & 8871.5924 & 2 & 4435.7962 \\
+    Falta de ajuste & 1938.5917 & 7 & 276.9417  & 13.3952   & 6 & 2.2325 \\
+    Erro puro       & 45.0000   & 9 & 5.0000    & 45.0000   & 9 & 5.0000 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent
+Duas leituras se impõem. A primeira é que $\Rdois$ salta de $0{,}777873$,
+no modelo linear, para $0{,}993459$, no modelo quadrático: quase toda a
+variação que o modelo linear deixava sem explicar era, na verdade,
+curvatura sistemática, não ruído. A segunda leitura, mais importante, é que
+o erro puro, $45{,}0000$ com $9$ graus de liberdade nos dois casos, é
+\emph{idêntico} entre os dois modelos. Isso não é coincidência: o erro puro
+é propriedade exclusiva das réplicas, ou seja, dos dados, e não muda quando
+se troca o modelo ajustado a eles. O que muda é a falta de ajuste, que cai de
+$MQ_{\mathrm{faj}} = 276{,}9417$ para $2{,}2325$, e com ela a razão
+$\MQ{faj}/\MQ{ep}$, de $55{,}39$ para $0{,}45$: o modelo linear apresenta
+falta de ajuste catastrófica, muitas vezes maior que o erro experimental, e o
+modelo quadrático não apresenta falta de ajuste alguma, sua razão fica bem
+abaixo do valor crítico de $F$.
+
+A Figura \ref{fig:linear-vs-quadratico} exibe as duas curvas ajustadas sobre
+os mesmos pontos, tornando visualmente óbvio o que a tabela já mostrava
+numericamente: a reta atravessa a nuvem de pontos sistematicamente abaixo no
+meio e acima nas pontas, enquanto a parábola acompanha a curvatura real dos
+dados.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\linewidth]{c4-linear-vs-quadratico}
+  \caption{Ajuste linear e ajuste quadrático sobre o mesmo conjunto de
+    dezoito observações. A reta deixa um padrão sistemático nos resíduos;
+    a parábola não.}
+  \label{fig:linear-vs-quadratico}
+\end{figure}
+
+\begin{aplicacao}{Por que o erro puro é o mesmo nos dois modelos}
+O erro puro mede quanto duas réplicas do mesmo ponto experimental diferem
+entre si. Essa quantidade depende exclusivamente de quantas vezes cada ponto
+foi repetido e de quanto ruído o processo físico ou de medição introduziu,
+nunca de qual equação foi ajustada aos dados depois. Trocar um modelo linear
+por um modelo quadrático muda a falta de ajuste, porque muda o quão bem a
+curva se aproxima da média de cada ponto, mas não pode mudar a dispersão
+entre réplicas do mesmo ponto, que já estava fixada antes de qualquer ajuste
+ser tentado.
+\end{aplicacao}
+
+\section{Planejamento composto central}
+
+A composição central, também chamada de planejamento composto central ou
+CCD, resolve o problema de estimabilidade individual dos termos quadráticos
+descrito na Seção 4, acrescentando ao fatorial em dois níveis, além dos
+pontos centrais, um par de pontos axiais por fator, situados a uma distância
+$\alpha$ do centro ao longo de cada eixo isoladamente, com os demais fatores
+mantidos no nível central. Para $k$ fatores, o planejamento reúne $2^{k}$
+pontos fatoriais, $2k$ pontos axiais e $N_{R0}$ pontos centrais,
+\begin{equation}
+  N_{E} = 2^{k} + 2k + N_{R0} .
+  \label{eq:ne-ccd}
+\end{equation}
+Para $k=2$ e três réplicas centrais, isso significa $4+4+3=11$ ensaios; para
+$k=3$, $8+6+N_{R0}$ ensaios.
+
+Cada ponto axial varia apenas um fator por vez, dos $2k$ pontos totais, o que
+permite estimar o coeficiente quadrático de cada fator de forma independente
+dos demais, resolvendo exatamente a confusão descrita na Seção 4: com pontos
+além do centro ao longo de cada eixo isolado, a matriz de momentos volta a
+ser suficientemente rica para separar $a_{11}$ de $a_{22}$.
+
+O valor de $\alpha$ é escolhido para que o planejamento tenha uma propriedade
+chamada rotabilidade, segundo a qual a variância da resposta prevista depende
+apenas da distância ao centro, não da direção. Essa escolha corresponde a
+\begin{equation}
+  \alpha = (2^{k})^{1/4} .
+  \label{eq:alpha-rotavel}
+\end{equation}
+Para $k=2$, $\alpha = 4^{1/4} = \sqrt{2} \approx 1{,}41421$; para $k=3$,
+$\alpha = 8^{1/4} \approx 1{,}68179$. A Figura \ref{fig:composicao-central}
+mostra a geometria resultante para $k=2$: um quadrado de vértices em
+$(\pm1,\pm1)$, quatro pontos axiais sobre os eixos a distância $\alpha$ do
+centro, e as réplicas centrais na origem.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.68\linewidth]{c4-composicao-central}
+  \caption{Geometria da composição central rotacionável para $k=2$: quatro
+    pontos fatoriais nos vértices do quadrado, quatro pontos axiais a
+    distância $\alpha=\sqrt{2}$ do centro ao longo de cada eixo, e réplicas
+    centrais na origem.}
+  \label{fig:composicao-central}
+\end{figure}
+
+Quando a execução do planejamento se estende por mais de uma sessão de
+laboratório, é comum blocar o CCD em duas etapas: o primeiro bloco reúne os
+pontos fatoriais e uma parte das réplicas centrais, o segundo bloco reúne os
+pontos axiais e o restante das réplicas centrais. Essa divisão, se orientada
+corretamente, mantém o bloco ortogonal aos efeitos de interesse, de modo que
+uma eventual diferença sistemática entre as duas sessões não contamine as
+estimativas dos coeficientes do fator. O exemplo da Seção 10 emprega
+exatamente essa estratégia.
+
+\begin{aplicacao}{Contagem de ensaios de uma composição central com dois fatores}
+Para $k=2$ e $N_{R0}=3$, a Equação \eqref{eq:ne-ccd} fornece $N_{E} = 4 + 4 +
+3 = 11$ ensaios, exatamente a estrutura empregada no estudo de caso de
+solo-fibra-cimento retomado no Caderno 5: quatro combinações de vértice entre
+teor de cimento e teor de fibra, quatro pontos axiais que testam cada fator
+isoladamente além da faixa fatorial, e três réplicas no centro que fornecem
+tanto o teste de curvatura quanto o erro puro do modelo final.
+\end{aplicacao}
+
+\section{Planejamento de Box-Behnken}
+
+O planejamento de Box-Behnken é uma alternativa à composição central para
+estimar o modelo completo de segunda ordem, distinta na geometria dos pontos
+escolhidos. Em vez de combinar os vértices do cubo com pontos axiais que se
+projetam para além da faixa fatorial original, o Box-Behnken posiciona seus
+pontos nos pontos médios das arestas do cubo, mais réplicas centrais, sem
+nunca visitar um vértice nem se afastar além dos limites $\pm1$ da faixa
+codificada original.
+
+Essa diferença geométrica tem uma consequência prática direta: nenhum ponto
+do Box-Behnken combina dois fatores simultaneamente em seus extremos, o que
+o torna preferível quando as combinações extremas de dois ou mais fatores
+são fisicamente inviáveis, perigosas ou destrutivas para o material sob
+ensaio. Um exemplo típico é um processo em que temperatura máxima e pressão
+máxima simultâneas excedem a capacidade do equipamento ou destroem a amostra
+antes de qualquer leitura ser possível: a composição central exigiria
+justamente esse ponto extremo, num de seus vértices fatoriais, enquanto o
+Box-Behnken jamais o solicita.
+
+Em contrapartida, por não incluir os vértices do cubo, o Box-Behnken
+investiga uma região ligeiramente menor que a composição central para o
+mesmo intervalo de fatores, e não é indicado quando a informação nos
+vértices, onde interações de segunda ordem costumam se manifestar com maior
+intensidade, é de particular interesse.
+
+\section{Leitura da superfície}
+
+Uma vez ajustado o modelo completo de segunda ordem da Equação
+\eqref{eq:modelo-segunda-ordem}, a superfície de resposta pode ser
+visualizada de duas formas complementares: como superfície tridimensional,
+que mostra a altura da resposta prevista sobre o plano dos dois fatores, e
+como gráfico de contorno, que representa a mesma informação por meio de
+curvas de nível, mais fácil de ler com precisão numérica e de sobrepor ao
+ponto ótimo localizado. A Figura \ref{fig:superficie-plana-vs-curva} contrasta
+uma superfície sem curvatura, um plano inclinado sem máximo nem mínimo
+interior, com uma superfície com curvatura suficiente para apresentar um
+ponto estacionário dentro da região experimental.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{c4-superficie-plana-vs-curva}
+  \caption{Superfície plana, ajustada por um modelo puramente linear (painel
+    a), contra superfície curva, ajustada por um modelo completo de segunda
+    ordem (painel b). Somente a segunda apresenta um ponto de máximo
+    interior à região experimental.}
+  \label{fig:superficie-plana-vs-curva}
+\end{figure}
+
+A natureza do ponto estacionário, seja ele máximo, mínimo ou ponto de sela,
+é determinada pelos autovalores da matriz de segundas derivadas do modelo
+ajustado em relação aos fatores codificados. Autovalores todos negativos
+indicam máximo; todos positivos indicam mínimo; sinais mistos indicam ponto
+de sela, uma direção de subida e outra de descida a partir do mesmo ponto
+estacionário, situação que exige inspeção cuidadosa antes de qualquer
+recomendação prática ser extraída do ajuste.
+
+\section{Exemplo de aplicação: a composição central com dois blocos}
+
+O conjunto identificado neste material como \texttt{origin-ccd} reúne uma
+composição central com $k=2$ fatores, teor de fibra e teor de cimento,
+distribuída em dois blocos de execução, quatorze ensaios ao todo. O modelo
+ajustado inclui um termo de bloco além dos dois fatores, e a
+Tabela~\ref{tab:ccd-blocos} sintetiza a análise de variância completa.
+
+\begin{table}[H]
+  \centering
+  \caption{Análise de variância da composição central com dois blocos.
+    Fonte: relatório OriginPro, \emph{Doe Analysis pra superfície de
+    resposta.pdf}.}
+  \label{tab:ccd-blocos}
+  \begin{tabular}{l S[table-format=3.5] c S[table-format=3.5]
+                    S[table-format=1.5] S[table-format=1.5]}
+    \toprule
+    Fonte & {SQ} & GL & {MQ} & {$F$} & {$p$} \\
+    \midrule
+    Blocos            & 8.64286   & 1 & 8.64286   & 0.21681 & 0.65146 \\
+    Teor de fibra      & 196.28731 & 1 & 196.28731 & 4.92385 & 0.05078 \\
+    Teor de cimento    & 123.92399 & 1 & 123.92399 & 3.10862 & 0.10835 \\
+    Falta de ajuste    & 361.31250 & 6 & 60.21875  & 6.45201 & 0.04628 \\
+    Erro puro          & 37.33333  & 4 & 9.33333   &         &         \\
+    \midrule
+    Total              & 727.50000 & 13 &          &         &         \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent
+O erro puro tem apenas quatro graus de liberdade, resultado de dois grupos de
+três réplicas centrais, um por bloco, $(3-1)+(3-1)=4$: a blocagem, embora
+necessária para acomodar a execução em duas sessões, reduz o número de
+réplicas centrais disponíveis para estimar o erro puro em cada bloco
+isoladamente. O resultado mais relevante desta tabela é a falta de ajuste,
+significativa a $p=0{,}046$, abaixo do limiar convencional de $0{,}05$. Essa
+significância indica que o modelo ajustado, que neste relatório inclui
+apenas termos lineares e o termo de bloco, não descreve adequadamente a
+resposta: existe curvatura sistemática que o modelo linear não captura, e o
+diagnóstico correto diante desse resultado é acrescentar os termos
+quadráticos ao modelo, exatamente o argumento desenvolvido na Seção 6 com o
+conjunto \texttt{peixoto-lin-quad}. A Figura \ref{fig:contorno-otimo}
+apresenta o contorno da superfície ajustada com os termos quadráticos
+completos sobre este mesmo tipo de dados, com o ponto ótimo destacado.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\linewidth]{c4-contorno-otimo}
+  \caption{Gráfico de contorno de uma superfície de resposta ajustada com
+    termos quadráticos completos, com o ponto ótimo assinalado.}
+  \label{fig:contorno-otimo}
+\end{figure}
+
+\noindent
+Um comentário final de reprodutibilidade numérica: o relatório de origem
+desta análise emprega $\alpha=1{,}414$, uma versão truncada de $\sqrt{2}$,
+enquanto a Equação \eqref{eq:alpha-rotavel} deste caderno emprega o valor
+exato. A diferença entre os dois é da ordem de $10^{-6}$ nas coordenadas
+axiais e não tem efeito prático sobre nenhuma conclusão deste exemplo.
+
+\paginadireitos
+
+\end{document}
