@@ -169,6 +169,7 @@ async def analyze(bundle: dict, req: dict) -> dict:
         request.model,
         factor_x=request.factor_x,
         factor_y=request.factor_y,
+        block_name=request.block_name,
     )
     read = _to_read(result)
     return _sanitize(read.model_dump(mode="json"))

@@ -321,6 +321,10 @@ class AnalysisRequest(BaseModel):
     model: RSMModel = RSMModel.LINEAR
     factor_x: str | None = None
     factor_y: str | None = None
+    # Nome do agrupamento ("Tipo de solo"), quando houve blocagem nomeada.
+    # Rotula a linha da ANOVA como "Bloco (Tipo de solo)"; sem ele a linha
+    # sai como "Bloco" puro, que era o comportamento anterior.
+    block_name: str | None = None
 
 
 class TermRead(BaseModel):
