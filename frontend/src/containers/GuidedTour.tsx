@@ -155,7 +155,7 @@ export function GuidedTour() {
         <PageHeader
           title="Criar experimento"
           subtitle="Vamos montar seu experimento passo a passo. Primeiro, a pergunta que muda tudo:"
-          back={{ label: "Voltar ao dashboard", href: "/" }}
+          back={{ label: "Voltar aos experimentos", href: "/experiments" }}
         />
         <Callout label="Por onde começar">
           Escolha abaixo de acordo com o momento da sua pesquisa. Não precisa

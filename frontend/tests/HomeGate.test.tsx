@@ -2,31 +2,11 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Dashboard ainda é o que o HomeGate renderiza nesta altura. A Task 1.5 troca
-// por Início e atualiza este mock junto.
-vi.mock("@/containers/Dashboard", () => ({ Dashboard: () => <div>portal</div> }));
+vi.mock("@/containers/Inicio", () => ({ Inicio: () => <div>portal</div> }));
 vi.mock("@/api/conta", () => ({ registrarConta: vi.fn().mockResolvedValue(undefined) }));
 
 import { HomeGate } from "@/containers/HomeGate";
 import { dispensarCapa } from "@/lib/conta";
-
-/**
- * Ponte para o @testing-library reconhecer os timers falsos do Vitest.
- *
- * `jestFakeTimersAreEnabled()` do @testing-library/dom exige o global `jest`
- * antes de olhar para o `setTimeout`; sem ele o `asyncWrapper` do RTL tenta
- * drenar as microtasks com um `setTimeout(…, 0)` real que nunca dispara sob
- * `vi.useFakeTimers()`, e todo `findBy*` trava até o teste estourar. O
- * `hasOwnProperty(setTimeout, "clock")` que ele checa em seguida só é
- * verdadeiro com os timers falsos instalados, então este shim fica inerte nos
- * testes de timer real.
- */
-const globalComJest = globalThis as typeof globalThis & {
-  jest?: { advanceTimersByTime: (ms: number) => void };
-};
-globalComJest.jest = {
-  advanceTimersByTime: (ms: number) => void vi.advanceTimersByTime(ms),
-};
 
 function irPara(busca: string) {
   window.history.replaceState(null, "", `/${busca}`);

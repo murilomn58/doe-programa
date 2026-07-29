@@ -19,18 +19,15 @@ interface ParetoPlotProps {
 /**
  * Cor das barras não significativas — recuam atrás do teal das significativas.
  *
- * Reusa ``PLOT_COLORS.axis`` em vez de uma cor literal: ele já carrega
- * exatamente ``rgba(28,26,23,.45)``, o mesmo valor do token ``--color-faint``.
- * Assim o gráfico acompanha a identidade papel/terracota por uma fonte única,
- * e não por uma cópia que envelhece sozinha. O ``#475569`` (slate-600) que
- * estava fixo aqui era um cinza azulado frio, deslocado numa paleta quente.
- *
- * Observação de contraste: sobre o painel branco este cinza morno dá 2,88:1,
- * abaixo dos 3:1 de objeto gráfico (WCAG 1.4.11). A leitura não depende da cor
- * — cada barra traz o valor numérico impresso ao lado (12,6:1) e a linha de t
- * crítico separa significativo de não significativo por posição.
+ * Mesmo tom morno de ``PLOT_COLORS.axis`` (``rgb(28,26,23)``), mas com alfa
+ * próprio (``.55``, não os ``.45`` do token): reusar o token puro deixava a
+ * barra em 2,88:1 sobre o painel branco, abaixo dos 3:1 de objeto gráfico
+ * exigidos pela WCAG 1.4.11. Subir só o alfa aqui, sem tocar em
+ * ``PLOT_COLORS.axis`` (compartilhado com eixos e grade, onde ``.45`` é
+ * correto), resolve a barra em 3,9:1 sem esfriar a paleta de volta para o
+ * ``#475569`` (slate-600) que havia antes.
  */
-const NON_SIG_COLOR = PLOT_COLORS.axis;
+const NON_SIG_COLOR = "rgba(28,26,23,.55)";
 
 export function ParetoPlot({ pareto }: ParetoPlotProps) {
   // Horizontal bars render bottom-up; reverse so the largest effect is on top.

@@ -10,6 +10,7 @@ import { ApostilaCard } from "@/components/ApostilaCard";
 import { Badge } from "@/components/ui/Badge";
 import { Callout } from "@/components/ui/Callout";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { RodapeApp } from "@/components/ui/RodapeApp";
 import { APOSTILAS } from "@/domain/apostilas";
 
 export function ConteudoIndice() {
@@ -44,6 +45,8 @@ export function ConteudoIndice() {
           <ApostilaCard key={apostila.slug} apostila={apostila} />
         ))}
       </div>
+
+      <RodapeApp />
     </main>
   );
 }

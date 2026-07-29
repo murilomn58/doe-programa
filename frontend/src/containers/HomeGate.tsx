@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Porta de entrada do app: capa imersiva na primeira visita, dashboard depois.
+ * Porta de entrada do app: capa imersiva na primeira visita, portal de duas
+ * portas (Início) depois.
  * O gate `montado` evita flash/hydration mismatch (localStorage só no client):
  * até montar, mostra um fundo navy neutro em vez de piscar a capa pra quem
  * já tem conta ou já dispensou.
@@ -16,7 +17,7 @@
 import { useEffect, useState } from "react";
 
 import { CapaEntrada } from "@/containers/CapaEntrada";
-import { Dashboard } from "@/containers/Dashboard";
+import { Inicio } from "@/containers/Inicio";
 import { capaPedidaNaUrl, getConta, limparParamCapa } from "@/lib/conta";
 
 export function HomeGate() {
@@ -49,6 +50,5 @@ export function HomeGate() {
     return <CapaEntrada onEntrar={entrar} jaTemConta={temConta} />;
   }
 
-  // Dashboard vira Início na Task 1.5; a prop onVoltarCapa continua a mesma.
-  return <Dashboard onVoltarCapa={() => setMostrarCapa(true)} />;
+  return <Inicio onVoltarCapa={() => setMostrarCapa(true)} />;
 }

@@ -378,7 +378,9 @@ export function EditExperiment({ experimentId }: EditExperimentProps) {
             <button
               type="button"
               onClick={() =>
-                deleteExp.mutate(experimentId, { onSuccess: () => router.push("/") })
+                deleteExp.mutate(experimentId, {
+                  onSuccess: () => router.push("/experiments"),
+                })
               }
               className="rounded-lg bg-danger px-3 py-1.5 font-semibold text-white"
             >

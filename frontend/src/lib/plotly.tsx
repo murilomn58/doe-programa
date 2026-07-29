@@ -23,14 +23,26 @@ import type {
 } from "plotly.js-dist-min";
 import type { PlotParams } from "react-plotly.js";
 import type { ComponentType } from "react";
+import { useEffect, useRef } from "react";
 
-export const Plot = dynamic(
+/**
+ * Referência de módulo ao Plotly carregado pelo import dinâmico abaixo,
+ * preenchida assim que a promise resolve. Só o guard de resize de `Plot` a
+ * usa — nenhum outro import do pacote é criado.
+ */
+interface PlotlyResizeAPI {
+  Plots: { resize(root: HTMLElement): void };
+}
+let plotlyResize: PlotlyResizeAPI | null = null;
+
+const LazyPlot = dynamic(
   async () => {
     const [{ default: Plotly }, { default: createPlotlyComponent }] =
       await Promise.all([
         import("plotly.js-dist-min"),
         import("react-plotly.js/factory"),
       ]);
+    plotlyResize = Plotly as unknown as PlotlyResizeAPI;
     return createPlotlyComponent(Plotly);
   },
   {
@@ -42,6 +54,60 @@ export const Plot = dynamic(
     ),
   },
 ) as ComponentType<PlotParams>;
+
+/**
+ * Wrapper fino sobre o `Plot` do react-plotly.js: substitui o
+ * `useResizeHandler` nativo da lib por um resize próprio, com o mesmo efeito
+ * mas dentro de um try/catch.
+ *
+ * Bug conhecido do plotly.js: redimensionar a viewport com um gráfico 3D em
+ * tela (`SurfacePlot`, com `contours.z.project.z = true`) às vezes lança
+ * `TypeError: Cannot read properties of undefined (reading 'z')` de dentro do
+ * próprio `Plotly.Plots.resize`, porque a cena WebGL ainda está recalculando
+ * a projeção do contorno do resize anterior quando o próximo chega. O
+ * listener padrão da lib (`react-plotly.js/dist/chunk-*.mjs`) chama
+ * `Plotly.Plots.resize(elRef.current)` direto no `window.addEventListener`,
+ * sem guarda nenhuma, e o erro sobe cru pro console. Aqui a mesma chamada
+ * roda dentro de um try/catch: o layout se corrige sozinho no resize
+ * seguinte, então nada quebra visualmente — só o console deixa de acumular
+ * um erro inofensivo.
+ */
+export function Plot(props: PlotParams) {
+  const graphDivRef = useRef<HTMLElement | null>(null);
+  const { useResizeHandler } = props;
+
+  useEffect(() => {
+    if (!useResizeHandler) return undefined;
+
+    function onResize() {
+      const el = graphDivRef.current;
+      if (!el || !plotlyResize) return;
+      try {
+        plotlyResize.Plots.resize(el);
+      } catch {
+        // Guard documentado acima: o próximo resize corrige a cena 3D.
+      }
+    }
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [useResizeHandler]);
+
+  return (
+    <LazyPlot
+      {...props}
+      useResizeHandler={false}
+      onInitialized={(figure, graphDiv) => {
+        graphDivRef.current = graphDiv;
+        props.onInitialized?.(figure, graphDiv);
+      }}
+      onUpdate={(figure, graphDiv) => {
+        graphDivRef.current = graphDiv;
+        props.onUpdate?.(figure, graphDiv);
+      }}
+    />
+  );
+}
 
 /** Scientific light palette (aligned with the Tailwind paper/clay theme). */
 export const PLOT_COLORS = {
