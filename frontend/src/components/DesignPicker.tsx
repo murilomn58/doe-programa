@@ -1,15 +1,17 @@
 "use client";
 
-import type {
-  CCDVariant,
-  DesignType,
-  OptimalCriterion,
-  RSMModel,
-  SNObjective,
+import {
+  nNiveis,
+  type CCDVariant,
+  type DesignType,
+  type FactorInput,
+  type OptimalCriterion,
+  type RSMModel,
+  type SNObjective,
 } from "@/domain/design";
 import { TAGUCHI_AUTO, type DesignConfig } from "@/domain/designConfig";
 import {
-  designBaseRuns,
+  contarEnsaios,
   dsdRuns,
   fractionalBaseFactors,
   plackettBurmanRuns,
@@ -160,8 +162,158 @@ interface DesignPickerProps {
   onConfigChange: (config: DesignConfig) => void;
   replicates: number;
   onReplicatesChange: (replicates: number) => void;
-  factorCount: number;
-  hasQualitativeFactor: boolean;
+  /** Fatores declarados (com os níveis); a contagem e os avisos vêm daqui. */
+  factors: FactorInput[];
+}
+
+// ---------------------------------------------------------------------------
+// Avisos contextuais calculados a partir dos fatores declarados. Puros — sem
+// UI — para poderem ser testados isoladamente se um dia saírem daqui.
+// ---------------------------------------------------------------------------
+
+/** Ponto axial (valor natural) de um fator, dado o α do CCD. */
+function pontoAxialNatural(
+  low: number,
+  high: number,
+  alpha: number,
+  ladoAlto: boolean,
+): number {
+  const centro = (low + high) / 2;
+  const meiaAmplitude = (high - low) / 2;
+  return ladoAlto ? centro + alpha * meiaAmplitude : centro - alpha * meiaAmplitude;
+}
+
+/**
+ * α exato do CCD para as duas variantes que podem extrapolar a faixa
+ * declarada (rotável e ortogonal). Espelha `pyDOE3.doe_star.star()`:
+ * rotável = (2^k)^(1/4); ortogonal = sqrt(k·(1+nao/na) / (1+nco/nc)), com
+ * nc = 2^k (pontos do cubo), na = 2·k (pontos axiais), nco/nao os pontos
+ * centrais de cada bloco. Face centrada usa α = 1 e nunca extrapola, por
+ * isso não entra aqui (o chamador já filtra essa variante fora).
+ */
+function alphaCcd(
+  variant: CCDVariant,
+  k: number,
+  centerFactorial: number,
+  centerAxial: number,
+): number | null {
+  if (k < 1) return null;
+  if (variant === "rotatable") return (2 ** k) ** 0.25;
+  if (variant === "orthogonal") {
+    const nc = 2 ** k;
+    const na = 2 * k;
+    return Math.sqrt((k * (1 + centerAxial / na)) / (1 + centerFactorial / nc));
+  }
+  return null;
+}
+
+/** Número em pt-BR (vírgula decimal), até 2 casas, sem zeros à toa. */
+function formatarNatural(valor: number): string {
+  return (Math.round(valor * 100) / 100).toLocaleString("pt-BR", {
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * Aviso 1: pontos axiais do CCD rotável/ortogonal que ultrapassam o mínimo ou
+ * o máximo declarado de algum fator. A recomendação (domain/recommend.ts)
+ * só propõe face centrada exatamente para nunca cair aqui — a faixa
+ * declarada costuma ser limite físico do laboratório (ex.: fibra vegetal
+ * trazida por avião, material contado). Rotável/ortogonal seguem no
+ * catálogo, mas avisados.
+ */
+function avisoAxialForaDaFaixa(
+  config: DesignConfig,
+  factors: FactorInput[],
+): string | null {
+  if (config.designType !== "central_composite") return null;
+  if (config.ccdVariant === "face_centered") return null;
+  const alpha = alphaCcd(
+    config.ccdVariant,
+    factors.length,
+    config.ccdCenterFactorial,
+    config.ccdCenterAxial,
+  );
+  if (alpha === null) return null;
+
+  const linhas: string[] = [];
+  for (const f of factors) {
+    if (f.factor_type !== "quantitative") continue;
+    if (f.low === undefined || f.high === undefined) continue;
+    const unidade = f.unit ? ` ${f.unit}` : "";
+    const nome = f.name || "fator";
+    const alto = pontoAxialNatural(f.low, f.high, alpha, true);
+    const baixo = pontoAxialNatural(f.low, f.high, alpha, false);
+    if (alto > f.high) {
+      linhas.push(
+        `${nome}: o ponto axial pede ${formatarNatural(alto)}${unidade}, acima do máximo declarado de ${formatarNatural(f.high)}${unidade}`,
+      );
+    }
+    if (baixo < f.low) {
+      linhas.push(
+        `${nome}: o ponto axial pede ${formatarNatural(baixo)}${unidade}, abaixo do mínimo declarado de ${formatarNatural(f.low)}${unidade}`,
+      );
+    }
+  }
+  return linhas.length > 0 ? linhas.join("; ") : null;
+}
+
+/** Famílias que só ensaiam os dois extremos (−1/+1) de cada fator. */
+const FAMILIAS_SO_EXTREMOS = new Set<DesignType>([
+  "full_factorial_2k",
+  "fractional_factorial_2kp",
+  "plackett_burman",
+  "dsd",
+]);
+
+/**
+ * Aviso 2a: a família selecionada só ensaia os extremos, mas algum fator
+ * declarou 3+ níveis — os intermediários declarados não entram na matriz.
+ */
+function avisoNiveisSoExtremos(
+  config: DesignConfig,
+  factors: FactorInput[],
+): string | null {
+  if (!FAMILIAS_SO_EXTREMOS.has(config.designType)) return null;
+  const algumTemNiveisExtras = factors.some((f) => nNiveis(f) >= 3);
+  if (!algumTemNiveisExtras) return null;
+  return "Este arranjo ensaia apenas o mínimo e o máximo; os níveis intermediários declarados não são usados.";
+}
+
+const TOLERANCIA_CENTRO = 1e-9;
+
+/**
+ * Aviso 2b: CCD e Box-Behnken sempre usam o ponto médio da faixa como
+ * centro. Se o aluno editou o nível central à mão (o NiveisFator permite
+ * isso) para um valor diferente da média de low/high, o arranjo ignora essa
+ * edição e ensaia o ponto médio mesmo assim.
+ */
+function avisoCentroEditado(
+  config: DesignConfig,
+  factors: FactorInput[],
+): string | null {
+  if (config.designType !== "central_composite" && config.designType !== "box_behnken") {
+    return null;
+  }
+  const linhas: string[] = [];
+  for (const f of factors) {
+    if (f.factor_type !== "quantitative" || !f.levels) continue;
+    const n = f.levels.length;
+    // Só há um "centro" único e nomeável quando a contagem é ímpar (o caso
+    // mais comum, 3 níveis, tem exatamente um ponto médio).
+    if (n < 3 || n % 2 === 0) continue;
+    if (f.low === undefined || f.high === undefined) continue;
+    const media = (f.low + f.high) / 2;
+    const centroDeclarado = f.levels[Math.floor(n / 2)];
+    if (Math.abs(centroDeclarado - media) > TOLERANCIA_CENTRO) {
+      const unidade = f.unit ? ` ${f.unit}` : "";
+      const nome = f.name || "fator";
+      linhas.push(
+        `${nome}: o arranjo ensaia o ponto médio (${formatarNatural(media)}${unidade}), não o valor editado (${formatarNatural(centroDeclarado)}${unidade})`,
+      );
+    }
+  }
+  return linhas.length > 0 ? linhas.join("; ") : null;
 }
 
 const inputClass =
@@ -175,17 +327,17 @@ export function DesignPicker({
   onConfigChange,
   replicates,
   onReplicatesChange,
-  factorCount,
-  hasQualitativeFactor,
+  factors,
 }: DesignPickerProps) {
-  const k = factorCount;
+  const k = factors.length;
+  const hasQualitativeFactor = factors.some((f) => f.factor_type === "qualitative");
   const set = (patch: Partial<DesignConfig>) =>
     onConfigChange({ ...config, ...patch });
 
   const catalogQuery = useTaguchiCatalog();
   const taguchiArrays = catalogQuery.data?.arrays;
 
-  const baseRuns = designBaseRuns(config, k, taguchiArrays);
+  const baseRuns = contarEnsaios(config, factors, 1, taguchiArrays);
   const totalRuns = baseRuns === null ? null : baseRuns * replicates;
   const requiresQuantitative =
     config.designType === "central_composite" ||
@@ -200,11 +352,13 @@ export function DesignPicker({
     fractionalBaseFactors(k, config.fractionalResolution) === null;
 
   const alphaPreview =
-    config.ccdVariant === "rotatable"
-      ? (2 ** k) ** 0.25
-      : config.ccdVariant === "face_centered"
-        ? 1
-        : null;
+    config.ccdVariant === "face_centered"
+      ? 1
+      : alphaCcd(config.ccdVariant, k, config.ccdCenterFactorial, config.ccdCenterAxial);
+
+  const avisoAxial = avisoAxialForaDaFaixa(config, factors);
+  const avisoNiveis = avisoNiveisSoExtremos(config, factors);
+  const avisoCentro = avisoCentroEditado(config, factors);
 
   // --- Taguchi derived state ---
   const taguchiSelected =
@@ -246,6 +400,9 @@ export function DesignPicker({
             className={inputClass}
           >
             <option value="full_factorial_2k">Fatorial completo 2^k</option>
+            <option value="full_factorial_general">
+              Fatorial completo (níveis múltiplos)
+            </option>
             <option value="fractional_factorial_2kp">
               Fatorial fracionado 2^(k-p)
             </option>
@@ -260,6 +417,23 @@ export function DesignPicker({
             {DESIGN_FAMILY_NOTE[config.designType]}
           </span>
         </label>
+
+        {avisoNiveis ? (
+          <p className="text-xs text-warning">{avisoNiveis}</p>
+        ) : null}
+
+        {config.designType === "full_factorial_general" ? (
+          <fieldset className={panelClass}>
+            <legend className="px-1 text-sm font-medium text-foreground-soft">
+              Fatorial completo (níveis múltiplos)
+            </legend>
+            <p className="text-xs text-faint">
+              Testa todas as combinações dos níveis declarados em cada fator;
+              os níveis vêm do formulário de fatores, não há controle
+              adicional aqui.
+            </p>
+          </fieldset>
+        ) : null}
 
         {config.designType === "fractional_factorial_2kp" ? (
           <fieldset className={panelClass}>
@@ -404,6 +578,12 @@ export function DesignPicker({
                 "α calculado pelo backend para garantir a ortogonalidade."
               )}
             </p>
+            {avisoAxial ? (
+              <p className="text-xs text-warning">{avisoAxial}</p>
+            ) : null}
+            {avisoCentro ? (
+              <p className="text-xs text-warning">{avisoCentro}</p>
+            ) : null}
           </fieldset>
         ) : null}
 
@@ -412,6 +592,9 @@ export function DesignPicker({
             <legend className="px-1 text-sm font-medium text-foreground-soft">
               Box-Behnken
             </legend>
+            {avisoCentro ? (
+              <p className="text-xs text-warning">{avisoCentro}</p>
+            ) : null}
             {k < 3 ? (
               <p className="text-sm text-danger">
                 Box-Behnken exige pelo menos 3 fatores (há {k}).
@@ -763,6 +946,16 @@ function RunFormula({
           </span>{" "}
           combinações + {config.centerPoints} ponto(s) central(is)
         </>
+      );
+    case "full_factorial_general":
+      return k >= 1 ? (
+        <>
+          Produto dos níveis declarados em cada fator ={" "}
+          <span className="font-mono text-accent-mid">{baseRuns ?? "…"}</span>{" "}
+          combinações
+        </>
+      ) : (
+        <>Declare ao menos 1 fator para calcular as combinações</>
       );
     case "fractional_factorial_2kp": {
       if (baseRuns === null) {

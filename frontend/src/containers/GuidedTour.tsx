@@ -5,10 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AliasingReport } from "@/components/AliasingReport";
 import {
-  DESIGN_FAMILY_NOTE,
-  DesignPicker,
   defaultDesignConfig,
-  designBaseRuns,
   optimalParamCount,
   type DesignConfig,
 } from "@/components/DesignPicker";
@@ -23,17 +20,66 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StepNav } from "@/components/ui/StepNav";
+import { VitrineDePlanos } from "@/components/VitrineDePlanos";
 import { DataEntry } from "@/containers/DataEntry";
 import type { FactorInput, ResponseInput } from "@/domain/design";
 import { buildDesignRequest, factorIsValid } from "@/domain/designPayload";
 import {
   GOAL_OPTIONS,
-  recommendDesign,
+  recommendPlans,
+  type PlanoSugerido,
   type ResearchGoal,
+  type RotuloPlano,
 } from "@/domain/recommend";
+import { contarEnsaios } from "@/domain/runCount";
 import { useGenerateDesign } from "@/hooks/useDesign";
 import { useTaguchiCatalog } from "@/hooks/useTaguchiCatalog";
 import { devePedirEmail } from "@/lib/conta";
+
+/**
+ * Explica por que a família de UM plano não pode gerar com os fatores atuais
+ * — a MESMA regra que já bloqueava o botão "Gerar matriz" (ver `familyBlocked`
+ * abaixo), reaproveitada para marcar um cartão da vitrine como indisponível,
+ * com o motivo, em vez de deixar o usuário escolher um plano que travaria lá
+ * na frente sem explicação.
+ */
+function motivoBloqueio(
+  config: DesignConfig,
+  factors: FactorInput[],
+  hasQualitativeFactor: boolean,
+): string | undefined {
+  const k = factors.length;
+  const requiresQuantitative =
+    config.designType === "central_composite" ||
+    config.designType === "box_behnken";
+  const optimalParams = optimalParamCount(k, config.optimalModel);
+  if (requiresQuantitative && hasQualitativeFactor) {
+    return "Este arranjo não aceita fator qualitativo; remova ou converta o fator antes de escolher este plano.";
+  }
+  if (config.designType === "box_behnken" && k < 3) {
+    return "Box-Behnken exige pelo menos 3 fatores quantitativos.";
+  }
+  if (
+    config.designType === "fractional_factorial_2kp" &&
+    config.fractionalMode === "generators" &&
+    config.fractionalGenerators.trim().length === 0
+  ) {
+    return "Defina os geradores da fração antes de escolher este plano.";
+  }
+  if (config.designType === "plackett_burman" && k < 2) {
+    return "Plackett-Burman exige pelo menos 2 fatores.";
+  }
+  if (config.designType === "dsd" && k < 2) {
+    return "O DSD exige pelo menos 2 fatores.";
+  }
+  if (
+    config.designType === "optimal" &&
+    (k < 2 || config.optimalNRuns < optimalParams)
+  ) {
+    return "Ajuste o nº de ensaios do planejamento ótimo antes de escolher este plano.";
+  }
+  return undefined;
+}
 
 const emptyQuantFactor = (): FactorInput => ({
   name: "",
@@ -64,7 +110,9 @@ export function GuidedTour() {
   const [replicates, setReplicates] = useState(1);
   const [designConfig, setDesignConfig] =
     useState<DesignConfig>(defaultDesignConfig);
-  const [advanced, setAdvanced] = useState(false);
+  const [catalogoAberto, setCatalogoAberto] = useState(false);
+  const [rotuloSelecionado, setRotuloSelecionado] =
+    useState<RotuloPlano>("recomendado");
   const [pedirEmail, setPedirEmail] = useState(false);
 
   const generateDesign = useGenerateDesign();
@@ -75,44 +123,40 @@ export function GuidedTour() {
   );
   const factorsReady = factors.length >= 2 && factors.every(factorIsValid);
 
-  const recommendation = useMemo(
+  // Vitrine de planos (passo 3): recomendado, mais econômico e mais completo,
+  // já com os níveis declarados por fator (recommendPlans "enxerga" curvatura
+  // declarada em 3+ níveis, não só a contagem de fatores).
+  const planos = useMemo<PlanoSugerido[]>(
+    () => (goal ? recommendPlans({ goal, factors }) : []),
+    [goal, factors],
+  );
+  // Decora cada plano com `indisponivel` quando a família dele, para os
+  // fatores atuais, cairia numa das guardas que bloqueiam "Gerar matriz" —
+  // ver ponto (e) do enunciado: a guarda passa a explicar o motivo no
+  // cartão, em vez de só travar o botão lá na frente sem dizer por quê.
+  const planosDecorados = useMemo<PlanoSugerido[]>(
     () =>
-      goal
-        ? recommendDesign({
-            goal,
-            nFactors: factors.length,
-            hasQualitative: hasQualitativeFactor,
-          })
-        : null,
-    [goal, factors.length, hasQualitativeFactor],
+      planos.map((p) => {
+        if (p.indisponivel) return p;
+        const config: DesignConfig = { ...defaultDesignConfig(), ...p.configPatch };
+        const motivo = motivoBloqueio(config, factors, hasQualitativeFactor);
+        return motivo ? { ...p, indisponivel: motivo } : p;
+      }),
+    [planos, factors, hasQualitativeFactor],
+  );
+  const planoSelecionado =
+    planosDecorados.find((p) => p.rotulo === rotuloSelecionado) ??
+    planosDecorados[0] ??
+    null;
+
+  const runCount = useMemo(
+    () =>
+      contarEnsaios(designConfig, factors, replicates, taguchiCatalog.data?.arrays),
+    [designConfig, factors, replicates, taguchiCatalog.data],
   );
 
-  const runCount = useMemo(() => {
-    const base = designBaseRuns(
-      designConfig,
-      factors.length,
-      taguchiCatalog.data?.arrays,
-    );
-    return base === null ? null : base * replicates;
-  }, [designConfig, factors.length, replicates, taguchiCatalog.data]);
-
-  const requiresQuantitative =
-    designConfig.designType === "central_composite" ||
-    designConfig.designType === "box_behnken";
-  const optimalParams = optimalParamCount(
-    factors.length,
-    designConfig.optimalModel,
-  );
   const familyBlocked =
-    (requiresQuantitative && hasQualitativeFactor) ||
-    (designConfig.designType === "box_behnken" && factors.length < 3) ||
-    (designConfig.designType === "fractional_factorial_2kp" &&
-      designConfig.fractionalMode === "generators" &&
-      designConfig.fractionalGenerators.trim().length === 0) ||
-    (designConfig.designType === "plackett_burman" && factors.length < 2) ||
-    (designConfig.designType === "dsd" && factors.length < 2) ||
-    (designConfig.designType === "optimal" &&
-      (factors.length < 2 || designConfig.optimalNRuns < optimalParams));
+    motivoBloqueio(designConfig, factors, hasQualitativeFactor) !== undefined;
   const canGenerate = factorsReady && replicates >= 1 && !familyBlocked;
 
   const generatedId = generateDesign.data?.experiment_id ?? null;
@@ -133,13 +177,36 @@ export function GuidedTour() {
     setResponses((prev) => prev.map((r, i) => (i === index ? response : r)));
   }
 
-  /** Sai de "fatores" para "planejamento" já aplicando a família recomendada. */
+  /**
+   * Sai de "fatores" para "planejamento" já aplicando o plano escolhido (ou o
+   * recomendado, na primeira visita). NÃO reseta `catalogoAberto`: uma vez
+   * que o aluno abriu o catálogo avançado, ele continua aberto ao voltar e
+   * reentrar neste passo — essa era a queixa original ("parece estar muito
+   * escondido"), e reintroduzir aqui um `setCatalogoAberto(false)` voltaria a
+   * escondê-lo a cada visita.
+   */
   function goToDesign() {
-    if (recommendation) {
-      setDesignConfig({ ...defaultDesignConfig(), ...recommendation.configPatch });
-      setAdvanced(false);
+    const preferido =
+      planosDecorados.find((p) => p.rotulo === rotuloSelecionado) ??
+      planosDecorados[0];
+    if (preferido) {
+      setDesignConfig({ ...defaultDesignConfig(), ...preferido.configPatch });
+      setReplicates(preferido.replicates ?? 1);
     }
     setStep("design");
+  }
+
+  /**
+   * Escolhe um cartão da vitrine: aplica DUAS coisas, não uma — o
+   * `configPatch` sobre `designConfig` E, quando `plano.replicates` estiver
+   * presente, esse valor sobre o estado `replicates` (que vive fora do
+   * `DesignConfig`, como estado irmão aqui). Aplicar só o patch faria o plano
+   * "mais completo" gerar sem as réplicas que o cartão anuncia.
+   */
+  function escolherPlano(plano: PlanoSugerido) {
+    setRotuloSelecionado(plano.rotulo);
+    setDesignConfig({ ...defaultDesignConfig(), ...plano.configPatch });
+    setReplicates(plano.replicates ?? 1);
   }
 
   function handleGenerate() {
@@ -305,71 +372,28 @@ export function GuidedTour() {
       {step === "design" ? (
         <div className="flex flex-col gap-6">
           <Callout label="Passo 3">
-            Com base no seu objetivo, recomendamos abaixo uma família de
-            planejamento: ela define quais combinações de níveis serão
-            ensaiadas e quantos ensaios você fará. A matriz sai com a ordem dos
-            ensaios sorteada (randomizada), o que protege as conclusões contra
-            tendências do equipamento e do ambiente ao longo do tempo. Aceite e
-            gere a matriz, ou abra as opções avançadas para escolher outra
-            família; o número de ensaios aparece ao vivo.
+            Comparamos abaixo três planos de planejamento, calculados a partir
+            do seu objetivo e dos níveis declarados em cada fator: o
+            recomendado, o mais econômico e o mais completo. A matriz sai com
+            a ordem dos ensaios sorteada (randomizada), o que protege as
+            conclusões contra tendências do equipamento e do ambiente ao
+            longo do tempo. Escolha um cartão, ou abra o catálogo avançado com
+            as outras famílias de planejamento; o número de ensaios aparece ao
+            vivo.
           </Callout>
 
-          {recommendation ? (
-            <Card
-              title="Planejamento recomendado"
-              right={
-                runCount !== null ? (
-                  <Badge tone="accent" pill>
-                    {runCount} ensaios
-                  </Badge>
-                ) : null
-              }
-            >
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span title={DESIGN_FAMILY_NOTE[recommendation.designType]}>
-                    <Badge tone="significant">{recommendation.title}</Badge>
-                  </span>
-                </div>
-                <p className="text-sm leading-relaxed text-foreground-soft">
-                  <span className="font-medium text-foreground">
-                    Por que essa escolha?{" "}
-                  </span>
-                  {recommendation.why}
-                </p>
-                <p className="text-xs text-faint">
-                  {DESIGN_FAMILY_NOTE[recommendation.designType]}
-                </p>
-                {recommendation.caveat ? (
-                  <p className="text-xs text-warning">
-                    ⚠ {recommendation.caveat}
-                  </p>
-                ) : null}
-                <div className="mt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAdvanced((v) => !v)}
-                  >
-                    {advanced
-                      ? "Ocultar opções avançadas"
-                      : "Ver outras opções (avançado)"}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ) : null}
-
-          {advanced ? (
-            <DesignPicker
-              config={designConfig}
-              onConfigChange={setDesignConfig}
-              replicates={replicates}
-              onReplicatesChange={setReplicates}
-              factorCount={factors.length}
-              hasQualitativeFactor={hasQualitativeFactor}
-            />
-          ) : null}
+          <VitrineDePlanos
+            planos={planosDecorados}
+            selecionado={planoSelecionado}
+            onEscolher={escolherPlano}
+            catalogoAberto={catalogoAberto}
+            onCatalogoAbertoChange={setCatalogoAberto}
+            designConfig={designConfig}
+            onDesignConfigChange={setDesignConfig}
+            replicates={replicates}
+            onReplicatesChange={setReplicates}
+            factors={factors}
+          />
 
           <div className="flex items-center justify-between">
             <Button variant="ghost" onClick={() => setStep("factors")}>
