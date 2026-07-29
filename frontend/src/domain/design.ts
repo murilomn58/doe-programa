@@ -224,6 +224,10 @@ export interface GeneratedDesign {
   resolution?: number | null;
   /** Relação de definição + aliases ("I = ABC", "A = BC", …); null fora do fracionado. */
   aliasing?: string[] | null;
+  /** Nome de cada bloco, na ordem; null quando não houve blocagem nomeada. */
+  block_labels?: string[] | null;
+  /** Nome do agrupamento (ex. "Tipo de solo"); null quando não houve blocagem nomeada. */
+  block_name?: string | null;
   /** Somente Taguchi/ótimo: nome do arranjo escolhido; null nas demais. */
   array_name?: string | null;
   /** Somente D/I-ótimo: D-eficiência do design gerado; null nas demais. */
@@ -253,6 +257,10 @@ export interface RunsRead {
   factors: FactorRead[];
   responses: ResponseRead[];
   runs: RunRead[];
+  /** Nome de cada bloco, na ordem; null quando não houve blocagem nomeada. */
+  block_labels?: string[] | null;
+  /** Nome do agrupamento (ex. "Tipo de solo"); null quando não houve blocagem nomeada. */
+  block_name?: string | null;
 }
 
 /** One response cell to persist (raw text — the backend parses/validates it). */

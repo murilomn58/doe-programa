@@ -253,6 +253,8 @@ export function Report({ experimentId, response, model }: ReportProps) {
             runs={runs}
             responseName={response}
             responseUnit={responseUnit}
+            blockLabels={runsQuery.data?.block_labels ?? null}
+            blockName={runsQuery.data?.block_name ?? null}
           />
         </ReportSection>
       ) : null}
@@ -397,12 +399,19 @@ function DesignMatrixTable({
   runs,
   responseName,
   responseUnit,
+  blockLabels,
+  blockName,
 }: {
   factors: FactorRead[];
   runs: RunRead[];
   responseName: string;
   responseUnit: string | null;
+  blockLabels?: string[] | null;
+  blockName?: string | null;
 }) {
+  // Só uma coluna de bloco existe pra que a blocagem apareça no PDF anexado à
+  // dissertação; sem `block_labels` mantém a tabela exatamente como antes.
+  const hasBlocks = Boolean(blockLabels && blockLabels.length > 0);
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
@@ -410,6 +419,7 @@ function DesignMatrixTable({
           <tr>
             <th className={thR}>Ensaio</th>
             <th className={thR}>Std</th>
+            {hasBlocks ? <th className={thR}>{blockName ?? "Bloco"}</th> : null}
             {factors.map((f) => (
               <th key={f.name} className={thR}>
                 {f.name}
@@ -426,6 +436,9 @@ function DesignMatrixTable({
             <tr key={run.run_order}>
               <td className={tdR}>{run.run_order}</td>
               <td className={tdR}>{run.std_order}</td>
+              {hasBlocks ? (
+                <td className={tdR}>{blockLabels?.[run.block - 1] ?? run.block}</td>
+              ) : null}
               {factors.map((f) => {
                 const cell = run.factors[f.name];
                 return (

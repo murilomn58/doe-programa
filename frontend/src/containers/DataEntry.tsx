@@ -50,6 +50,8 @@ export function DataEntry({ experimentId }: DataEntryProps) {
           : null
       }
       savedAt={saveResponses.isSuccess ? saveResponses.submittedAt : null}
+      blockLabels={data.block_labels}
+      blockName={data.block_name}
     />
   );
 }
