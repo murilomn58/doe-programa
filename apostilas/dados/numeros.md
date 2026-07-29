@@ -694,6 +694,30 @@ Mensagem didática: os mesmos 10 números levam a conclusões opostas conforme s
 o fabricante como bloco. Sem blocagem, a variabilidade entre fabricantes (de 377 a 505 m/s)
 engole a diferença de 11,4 m/s entre os conjuntos. Com blocagem, ela aparece.
 
+**Leitura como RCBD de 5 blocos (correção 2026-07-29, motor).** A tabela acima já é um RCBD:
+5 blocos (um por fabricante) × 1 fator de tratamento em 2 níveis (o conjunto arma-radar). O
+teste `t` pareado é algebricamente equivalente à ANOVA com bloco — mesma conclusão, mesmo
+número — porque com exatamente 2 tratamentos por bloco a soma de quadrados do tratamento na
+ANOVA reduz à soma de quadrados das diferenças pareadas, e o quadrado médio do resíduo (após
+remover bloco e tratamento) reduz à variância das diferenças dividida por 2. Por isso:
+
+- **Com blocagem** (`block` = 1..5, um por fabricante): a ANOVA traz uma linha "Bloco" com
+  **4 graus de liberdade** (5 blocos → 4 g.l. de bloco) e o efeito do fator sai com
+  **4 graus de liberdade** de resíduo — os mesmos do teste pareado (`n − 1 = 4`). Intervalo do
+  efeito: `11,4 ± 10,11` (`t* = 2,776445`, `S = 8,142481`), idêntico ao pareado.
+- **Com todos os `block` iguais a 1** (fabricante ignorado): a ANOVA não injeta nenhum termo de
+  bloco; o resíduo fica com **8 graus de liberdade** (duas amostras de 5, `n₁ + n₂ − 2 = 8`).
+  Intervalo do efeito: `11,4 ± 84,91` (`t* = 2,306004`, `S = 58,216407`), idêntico ao teste de
+  duas amostras.
+
+Este par de leituras (a mesma entrada de dados, blocada e não blocada) virou o **golden do
+motor** para blocagem com mais de 2 blocos: `backend/tests/test_blocks_rcbd.py`. Não existe
+fixture JSON pronta de RCBD no acervo (`backend/tests/audit/fixtures/`) — os únicos goldens de
+bloco lá são `originpro_ccd_blocks.json` (2 blocos) e os fatoriais `originpro_2x2_maineffects`/
+`peixoto_2x2`; o dado verificado nesta entrada (`armaradar`) é o que preenche a lacuna de golden
+para k > 2 blocos, construído a mão no teste (sem passar pela geração de planejamento, que exige
+dois fatores). Ver `docs/adp/auditoria-aulas-2026-07.md`, seção "Correção 2026-07-29".
+
 ---
 
 ## 12. `curvatura-catalisador`

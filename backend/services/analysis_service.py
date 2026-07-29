@@ -208,6 +208,12 @@ def analyze(
     n_cols = x_design.shape[1]
 
     # --- estimability guard (ADR-007): rank-deficient -> WARN, no numbers ----
+    # NOTE (fix 3+ blocos): this guard does NOT need special-casing for blocks.
+    # A block with k levels enters ``terms``/``x_design`` already decomposed
+    # into k-1 one-column indicator terms (see the injection in
+    # ``AnalysisService.analyze`` below), never as a single multi-column
+    # categorical factor. So "posto == número de colunas" is already the
+    # right comparison; there is no "block of columns" to rank-check together.
     if rank < n_cols:
         result.estimable = False
         aliased = [t.label for t in terms if t.kind == QUADRATIC]
@@ -494,6 +500,49 @@ def _label_for_column(col: str, terms: list[TermInfo], safe: dict[str, str]) -> 
     return col
 
 
+def _aggregate_block_anova_rows(
+    anova_rows: list[AnovaRow],
+    block_term_labels: set[str],
+    stats_panel: StatsPanel | None,
+) -> list[AnovaRow]:
+    """Collapse the k-1 synthetic block-indicator ANOVA rows into one "Bloco" row.
+
+    With k blocks the model carries k-1 one-column deviation-coded indicator
+    terms (see the injection above). ``anova_lm`` reports one SS/df/F/p per
+    indicator; summing their SS and df recovers the pooled between-block sum
+    of squares (the indicators are mutually orthogonal complements of the
+    same multi-df block factor), and F/p are then recomputed against the
+    residual MS of the FULL fit (blocks already accounted for in the model).
+    A no-op when there is 0 or 1 block row (still renames it to "Bloco" so the
+    label is stable for k=2 and for the advisor's "source contains Bloco"
+    lookup either way).
+    """
+    block_rows = [row for row in anova_rows if row.source in block_term_labels]
+    if not block_rows or stats_panel is None:
+        return anova_rows
+
+    ss = sum(row.ss for row in block_rows)
+    df = sum(row.df for row in block_rows)
+    ms = ss / df if df else float("nan")
+    ms_resid = (
+        stats_panel.sse / stats_panel.df_resid if stats_panel.df_resid else float("nan")
+    )
+    f = ms / ms_resid if np.isfinite(ms_resid) and ms_resid > 0 else float("nan")
+    p = float(stats.f.sf(f, df, stats_panel.df_resid)) if np.isfinite(f) else None
+    aggregated = AnovaRow(source="Bloco", ss=ss, df=df, ms=ms, f=f, p=p)
+
+    merged: list[AnovaRow] = []
+    inserted = False
+    for row in anova_rows:
+        if row.source in block_term_labels:
+            if not inserted:
+                merged.append(aggregated)
+                inserted = True
+            continue
+        merged.append(row)
+    return merged
+
+
 # --- persistence port + service ----------------------------------------------
 
 
@@ -572,32 +621,57 @@ class AnalysisService:
 
         terms = terms_for_model(model, factors)
 
-        # --- Blocos na analise (auditoria 2026-07): com exatamente 2 blocos,
-        # o bloco entra como termo qualitativo +-1 (como o OriginPro), ajustando
-        # coeficientes/ANOVA/erro. Plots e profiler seguem no espaco dos fatores
-        # (design balanceado: coeficientes dos fatores nao mudam).
+        # --- Blocos na análise (auditoria 2026-07 + fix 3+ blocos): generaliza
+        # o tratamento de 2 blocos para k blocos. O bloco entra decomposto em
+        # k-1 fatores sintéticos qualitativos, cada um uma coluna indicadora
+        # EXPLÍCITA (deviation/effect coding montada à mão aqui, nunca via
+        # ``C(Bloco)`` do patsy: ADR-005 proíbe contraste categórico automático
+        # porque ele pode inverter sinal em silêncio sem avisar ninguém).
+        #
+        # Convenção (deviation coding, referência = menor id de bloco):
+        #   - linha do bloco de referência -> -1 em TODAS as k-1 colunas;
+        #   - linha do bloco j (j = 2..k)  -> +1 na coluna daquele bloco,
+        #     0 nas demais colunas de bloco.
+        # Para k=2 isso colapsa para exatamente 1 coluna +-1 -- o MESMO
+        # tratamento que já existia e que o golden (OriginPro CCD 2 blocos,
+        # ver test_blocks_curvature.py) trava: coeficiente 0.78571, erro
+        # padrão 1.68744, SS 8.64286. Plots e profiler continuam no espaço dos
+        # fatores, sem o bloco (ver docs/adp/auditoria-aulas-2026-07.md).
         distinct_blocks = sorted(set(run_blocks))
         factors_fit = factors
         terms_fit = terms
         coded_fit = coded
         natural_fit = natural
-        if len(distinct_blocks) == 2:
-            b_lo, b_hi = distinct_blocks
-            block_factor = FactorInfo(
-                name="Bloco",
-                factor_type="qualitative",
-                low_label=f"Bloco {b_lo}",
-                high_label=f"Bloco {b_hi}",
-            )
-            factors_fit = [block_factor] + list(factors)
-            terms_fit = [_main_term("Bloco")] + list(terms)
+        block_term_labels: set[str] = set()
+        if len(distinct_blocks) >= 2:
+            reference = distinct_blocks[0]
+            non_reference = distinct_blocks[1:]
+            block_factors = [
+                FactorInfo(
+                    name=f"Bloco {b}",
+                    factor_type="qualitative",
+                    low_label=f"Bloco {reference}",
+                    high_label=f"Bloco {b}",
+                )
+                for b in non_reference
+            ]
+            block_term_labels = {bf.name for bf in block_factors}
+
+            def _block_columns(b: int) -> dict[str, float]:
+                if b == reference:
+                    return {bf.name: -1.0 for bf in block_factors}
+                return {
+                    bf.name: (1.0 if bf.name == f"Bloco {b}" else 0.0)
+                    for bf in block_factors
+                }
+
+            factors_fit = block_factors + list(factors)
+            terms_fit = [_main_term(bf.name) for bf in block_factors] + list(terms)
             coded_fit = [
-                {"Bloco": -1.0 if b == b_lo else 1.0, **row}
-                for row, b in zip(coded, run_blocks)
+                {**_block_columns(b), **row} for row, b in zip(coded, run_blocks)
             ]
             natural_fit = [
-                {"Bloco": -1.0 if b == b_lo else 1.0, **row}
-                for row, b in zip(natural, run_blocks)
+                {**_block_columns(b), **row} for row, b in zip(natural, run_blocks)
             ]
 
         result = analyze(
@@ -609,6 +683,16 @@ class AnalysisService:
             model_label=model.value,
             response_name=response_name,
         )
+
+        # --- Agrega as k-1 linhas de bloco da ANOVA numa única linha "Bloco"
+        # (soma SS/df, recalcula F/p contra o QM do resíduo). Sem isso um
+        # design com 7 blocos mostraria seis linhas "Bloco 2".."Bloco 7" na
+        # tabela -- ilegível. Também mantém válida a regra do advisor que
+        # procura a linha cuja fonte contém "Bloco" (advisor_service.py).
+        if block_term_labels and result.anova:
+            result.anova = _aggregate_block_anova_rows(
+                result.anova, block_term_labels, result.stats
+            )
 
         # --- Teste de curvatura via pontos centrais (aula Cap.4 p4): so quando o
         # modelo ainda nao carrega termos quadraticos e todos os fatores sao
