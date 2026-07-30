@@ -56,6 +56,8 @@ async def run_analysis(
             payload.model,
             factor_x=payload.factor_x,
             factor_y=payload.factor_y,
+            block_name=payload.block_name,
+            block_labels=payload.block_labels,
         )
     except ExperimentNotFoundError as exc:
         raise HTTPException(

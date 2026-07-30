@@ -228,15 +228,20 @@ export function RunsGrid({
                   <th className={th}>Run</th>
                   <th className={th}>Std</th>
                   <th className={th}>Pt</th>
+                  {/* normal-case nos nomes dados pelo pesquisador: o uppercase
+                      do cabeçalho viraria "log σ3" em "LOG Σ3". */}
                   <th
-                    className={`${th} max-w-[8rem] truncate`}
+                    className={`${th} max-w-[8rem] truncate normal-case`}
                     title={blockLabels ? (blockName ?? "Bloco") : undefined}
                   >
                     {blockLabels ? (blockName ?? "Bloco") : "Blk"}
                   </th>
                   <th className={th}>Rep</th>
                   {factors.map((factor) => (
-                    <th key={`f-${factor.name}`} className={`${th} text-accent-mid`}>
+                    <th
+                      key={`f-${factor.name}`}
+                      className={`${th} text-accent-mid normal-case`}
+                    >
                       {factor.name}
                       {factor.unit ? (
                         <span className="text-faint"> ({factor.unit})</span>
@@ -244,7 +249,10 @@ export function RunsGrid({
                     </th>
                   ))}
                   {responses.map((response) => (
-                    <th key={`r-${response.name}`} className={`${th} text-primary-strong`}>
+                    <th
+                      key={`r-${response.name}`}
+                      className={`${th} text-primary-strong normal-case`}
+                    >
                       {response.name}
                       {response.unit ? (
                         <span className="text-faint"> ({response.unit})</span>

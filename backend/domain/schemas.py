@@ -325,6 +325,11 @@ class AnalysisRequest(BaseModel):
     # Rotula a linha da ANOVA como "Bloco (Tipo de solo)"; sem ele a linha
     # sai como "Bloco" puro, que era o comportamento anterior.
     block_name: str | None = None
+    # Nome de cada bloco na ordem (o primeiro nomeia o bloco 1). Quando
+    # presente, os termos sintéticos de bloco saem como
+    # "Material (Solo-Brita 40/60)" em vez de "Bloco 2" nas tabelas de
+    # efeitos e coeficientes; sem ele, "Bloco <id>" segue como antes.
+    block_labels: list[str] | None = None
 
 
 class TermRead(BaseModel):
