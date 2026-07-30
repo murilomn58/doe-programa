@@ -580,6 +580,7 @@ class AnalysisService:
         factor_x: str | None = None,
         factor_y: str | None = None,
         block_name: str | None = None,
+        block_labels: list[str] | None = None,
     ) -> AnalysisResultData:
         experiment = await self._repo.get_experiment(experiment_id)
         if experiment is None:
@@ -657,22 +658,41 @@ class AnalysisService:
         if len(distinct_blocks) >= 2:
             reference = distinct_blocks[0]
             non_reference = distinct_blocks[1:]
+
+            # Com ``block_labels`` ("Solo-Brita 40/60", ...), cada termo
+            # sintético sai como "Material (Solo-Brita 40/60)" — o bloco
+            # aparece nas tabelas de efeitos/coeficientes como um nível do
+            # fator qualitativo que ele de fato é, e não como "Bloco 2".
+            # Sem labels, "Bloco <id>" segue como antes (é o que o filtro do
+            # advisor por substring "Bloco" casa; com labels o advisor usa o
+            # ``block_name`` do design_meta pra reconhecer os termos).
+            def _bloco_rotulo(b: int) -> str:
+                if block_labels and 1 <= b <= len(block_labels):
+                    return block_labels[b - 1]
+                return f"Bloco {b}"
+
+            def _termo_de_bloco(b: int) -> str:
+                if block_labels and 1 <= b <= len(block_labels):
+                    return f"{block_name or 'Bloco'} ({block_labels[b - 1]})"
+                return f"Bloco {b}"
+
             block_factors = [
                 FactorInfo(
-                    name=f"Bloco {b}",
+                    name=_termo_de_bloco(b),
                     factor_type="qualitative",
-                    low_label=f"Bloco {reference}",
-                    high_label=f"Bloco {b}",
+                    low_label=_bloco_rotulo(reference),
+                    high_label=_bloco_rotulo(b),
                 )
                 for b in non_reference
             ]
             block_term_labels = {bf.name for bf in block_factors}
+            nome_por_bloco = {b: _termo_de_bloco(b) for b in non_reference}
 
             def _block_columns(b: int) -> dict[str, float]:
                 if b == reference:
                     return {bf.name: -1.0 for bf in block_factors}
                 return {
-                    bf.name: (1.0 if bf.name == f"Bloco {b}" else 0.0)
+                    bf.name: (1.0 if bf.name == nome_por_bloco.get(b) else 0.0)
                     for bf in block_factors
                 }
 
