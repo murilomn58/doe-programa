@@ -320,9 +320,22 @@ class TestOtherGuards:
         design = _build(factors, seed=0)
         assert len(design.runs) == 4
 
-    def test_fewer_than_two_factors_raises(self):
+    def test_single_factor_is_accepted(self):
+        """1 fator quantitativo em 3 níveis é aceito: dentro de blocos é o RCBD
+        do caso real do pesquisador (% de fibra em 3 níveis, 4 blocos -- ver
+        test_um_fator.py). Sem bloco/réplica dá 3 ensaios, sem erro."""
+        design = _build([_quant("A", levels=[1.0, 2.0, 3.0])])
+        assert len(design.runs) == 3
+
+    def test_zero_factors_raises(self):
+        # DesignGenerateRequest exige min_length=1 em ``factors`` (schema), então
+        # o construtor puro é chamado direto para exercer o guard k<1 desta
+        # função (o schema nunca deixaria chegar zero fatores em produção).
+        from services.design_builders import build_general_factorial_design
+
+        req = _req([_quant("A", levels=[1.0, 2.0, 3.0])])
         with pytest.raises(DesignConfigError):
-            _build([_quant("A", levels=[1.0, 2.0, 3.0])])
+            build_general_factorial_design([], _resp(), req)
 
     def test_duplicate_factor_names_raise(self):
         with pytest.raises(DesignConfigError):

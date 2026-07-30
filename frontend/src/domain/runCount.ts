@@ -12,6 +12,7 @@
 
 import { nNiveis, type FactorInput, type TaguchiArray } from "@/domain/design";
 import { TAGUCHI_AUTO, type DesignConfig } from "@/domain/designConfig";
+import { MINIMO_DE_FATORES } from "@/domain/limitesFamilia";
 
 function comb(n: number, r: number): number {
   if (r < 0 || r > n) return 0;
@@ -113,6 +114,7 @@ export function designBaseRuns(
       // recebe os fatores inteiros.
       return null;
     case "fractional_factorial_2kp": {
+      if (k < MINIMO_DE_FATORES.fractional_factorial_2kp) return null;
       const base =
         config.fractionalMode === "resolution"
           ? fractionalBaseFactors(k, config.fractionalResolution)
@@ -120,9 +122,13 @@ export function designBaseRuns(
       return base === null ? null : 2 ** base + config.centerPoints;
     }
     case "central_composite":
-      return 2 ** k + 2 * k + config.ccdCenterFactorial + config.ccdCenterAxial;
+      return k >= MINIMO_DE_FATORES.central_composite
+        ? 2 ** k + 2 * k + config.ccdCenterFactorial + config.ccdCenterAxial
+        : null;
     case "box_behnken":
-      return k >= 3 ? 2 * k * (k - 1) + config.bbdCenter : null;
+      return k >= MINIMO_DE_FATORES.box_behnken
+        ? 2 * k * (k - 1) + config.bbdCenter
+        : null;
     case "taguchi": {
       const array =
         config.taguchiArray === TAGUCHI_AUTO
@@ -132,11 +138,13 @@ export function designBaseRuns(
       return array === null ? null : array.runs;
     }
     case "plackett_burman":
-      return k >= 2 ? plackettBurmanRuns(k) : null;
+      return k >= MINIMO_DE_FATORES.plackett_burman ? plackettBurmanRuns(k) : null;
     case "optimal":
-      return config.optimalNRuns >= 1 ? config.optimalNRuns : null;
+      return k >= MINIMO_DE_FATORES.optimal && config.optimalNRuns >= 1
+        ? config.optimalNRuns
+        : null;
     case "dsd":
-      return k >= 2 ? dsdRuns(k, config.dsdExtraRuns) : null;
+      return k >= MINIMO_DE_FATORES.dsd ? dsdRuns(k, config.dsdExtraRuns) : null;
   }
 }
 
@@ -167,7 +175,7 @@ export function contarEnsaios(
 ): number | null {
   const blocks = config.blocks ?? 1;
   if (config.designType === "full_factorial_general") {
-    if (fatores.length < 1) return null;
+    if (fatores.length < MINIMO_DE_FATORES.full_factorial_general) return null;
     const produtoDeNiveis = fatores.reduce((acc, f) => acc * nNiveis(f), 1);
     return produtoDeNiveis * blocks * replicates;
   }

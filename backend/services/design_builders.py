@@ -562,9 +562,14 @@ def build_general_factorial_design(
     qualitativo é fase 2, fora de escopo).
     """
     k = len(factors)
-    if k < 2:
+    # k=1 é aceito pelo mesmo motivo do 2^k (ver design_service.build_2k_design):
+    # um fator quantitativo em 3+ níveis dentro de blocos é um RCBD legítimo
+    # (o caso do pesquisador com % de fibra em 3 níveis, 4 blocos -- 12
+    # ensaios). Sem bloco/réplica o desenho satura, mas a recusa correta é o
+    # guard de estimabilidade da análise (ADR-007), não esta geração.
+    if k < 1:
         raise DesignConfigError(
-            "Um fatorial completo com níveis precisa de pelo menos 2 fatores."
+            "Um fatorial completo com níveis precisa de pelo menos 1 fator."
         )
     _validate_names(factors)
 

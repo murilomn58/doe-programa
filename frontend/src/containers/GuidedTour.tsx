@@ -31,6 +31,7 @@ import {
   type ResponseInput,
 } from "@/domain/design";
 import { buildDesignRequest, factorIsValid } from "@/domain/designPayload";
+import { motivoDeMinimo } from "@/domain/limitesFamilia";
 import {
   GOAL_OPTIONS,
   recommendPlans,
@@ -50,7 +51,7 @@ import { devePedirEmail } from "@/lib/conta";
  * com o motivo, em vez de deixar o usuário escolher um plano que travaria lá
  * na frente sem explicação.
  */
-function motivoBloqueio(
+export function motivoBloqueio(
   config: DesignConfig,
   factors: FactorInput[],
   hasQualitativeFactor: boolean,
@@ -59,13 +60,16 @@ function motivoBloqueio(
   const requiresQuantitative =
     config.designType === "central_composite" ||
     config.designType === "box_behnken";
-  const optimalParams = optimalParamCount(k, config.optimalModel);
   if (requiresQuantitative && hasQualitativeFactor) {
     return "Este arranjo não aceita fator qualitativo; remova ou converta o fator antes de escolher este plano.";
   }
-  if (config.designType === "box_behnken" && k < 3) {
-    return "Box-Behnken exige pelo menos 3 fatores quantitativos.";
-  }
+  // Mínimo de fatores por família: fonte única em domain/limitesFamilia.ts,
+  // espelhada em backend/tests/test_minimos_por_familia.py. Cobre as 9
+  // famílias (antes só 4 tinham guarda aqui, e era assim que CCD/fatorial
+  // geral/2^k/fracionado/Taguchi escapavam sem checagem de mínimo).
+  const motivoMinimo = motivoDeMinimo(config.designType, k);
+  if (motivoMinimo) return motivoMinimo;
+  // Guardas que não são de contagem: seguem vivendo aqui.
   if (
     config.designType === "fractional_factorial_2kp" &&
     config.fractionalMode === "generators" &&
@@ -73,17 +77,11 @@ function motivoBloqueio(
   ) {
     return "Defina os geradores da fração antes de escolher este plano.";
   }
-  if (config.designType === "plackett_burman" && k < 2) {
-    return "Plackett-Burman exige pelo menos 2 fatores.";
-  }
-  if (config.designType === "dsd" && k < 2) {
-    return "O DSD exige pelo menos 2 fatores.";
-  }
-  if (
-    config.designType === "optimal" &&
-    (k < 2 || config.optimalNRuns < optimalParams)
-  ) {
-    return "Ajuste o nº de ensaios do planejamento ótimo antes de escolher este plano.";
+  if (config.designType === "optimal") {
+    const optimalParams = optimalParamCount(k, config.optimalModel);
+    if (config.optimalNRuns < optimalParams) {
+      return "Ajuste o nº de ensaios do planejamento ótimo antes de escolher este plano.";
+    }
   }
   return undefined;
 }
@@ -176,8 +174,15 @@ export function GuidedTour() {
   // declarada em 3+ níveis, não só a contagem de fatores). Usa só as entradas
   // que são fator de verdade — o bloco não entra nesta conta.
   const planos = useMemo<PlanoSugerido[]>(
-    () => (goal ? recommendPlans({ goal, factors: fatoresParaContagem }) : []),
-    [goal, fatoresParaContagem],
+    () =>
+      goal
+        ? recommendPlans({
+            goal,
+            factors: fatoresParaContagem,
+            blocks: numBlocosDeclarados,
+          })
+        : [],
+    [goal, fatoresParaContagem, numBlocosDeclarados],
   );
   // Decora cada plano com `indisponivel` quando a família dele, para os
   // fatores atuais, cairia numa das guardas que bloqueiam "Gerar matriz" —

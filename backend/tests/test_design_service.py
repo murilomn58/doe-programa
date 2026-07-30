@@ -114,9 +114,17 @@ def test_qualitative_map_persisted_and_recoverable():
 # --- config guards -----------------------------------------------------------
 
 
-def test_single_factor_is_rejected():
+def test_single_factor_is_accepted():
+    """1 fator vira um RCBD dentro de blocos (o caso arma-radar do Caderno 1,
+    golden em test_blocks_rcbd.py); sem bloco/réplica dá 2 ensaios, sem erro.
+    Ver test_um_fator.py para a cobertura completa deste contrato."""
+    design = build_2k_design([_quant("A", 0, 1)], responses=[], replicates=1, seed=0)
+    assert len(design.runs) == 2
+
+
+def test_zero_factors_is_rejected():
     with pytest.raises(DesignConfigError):
-        build_2k_design([_quant("A", 0, 1)], responses=[], replicates=1, seed=0)
+        build_2k_design([], responses=[], replicates=1, seed=0)
 
 
 def test_duplicate_factor_names_rejected():

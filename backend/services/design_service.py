@@ -93,9 +93,14 @@ def build_2k_design(
     unique 1..N across replicates; every point is a factorial corner.
     """
     k = len(factors)
-    if k < 2:
+    # k=1 é aceito: com blocos (ou réplicas) vira um RCBD clássico -- o exemplo
+    # arma-radar da Seção 9 do Caderno 1 (golden em test_blocks_rcbd.py), um
+    # fator em dois níveis dentro de blocos. Sem bloco e sem réplica o design
+    # fica saturado (0 GL de resíduo), mas quem recusa isso é o guard de
+    # estimabilidade da análise (ADR-007), não a geração.
+    if k < 1:
         raise DesignConfigError(
-            "Um planejamento fatorial 2^k precisa de pelo menos 2 fatores."
+            "Um planejamento fatorial 2^k precisa de pelo menos 1 fator."
         )
     if k > MAX_FACTORS:
         raise DesignConfigError(
