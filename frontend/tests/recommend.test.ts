@@ -40,8 +40,8 @@ function fatoresQuantNNiveis(k: number, niveis: number): FactorInput[] {
 }
 
 /** Reconstrói o DesignConfig completo de um plano para conferir `nEnsaios`. */
-function configDoPlano(plano: PlanoSugerido): DesignConfig {
-  return { ...defaultDesignConfig(), ...plano.configPatch };
+function configDoPlano(plano: PlanoSugerido, blocks = 1): DesignConfig {
+  return { ...defaultDesignConfig(), ...plano.configPatch, blocks };
 }
 
 describe("recommendPlans — triagem (2 níveis)", () => {
@@ -260,6 +260,125 @@ describe("recommendPlans — invariantes gerais", () => {
       expect(recomendado.nEnsaios).toBeLessThanOrEqual(
         economico.nEnsaios * 1.35,
       );
+    }
+  });
+});
+
+describe("recommendPlans — caso real: 1 fator, 3 níveis, 4 blocos (o bug de produção)", () => {
+  // O pesquisador declarou um bloco de 4 categorias (Tucum, Piassava, Buriti,
+  // Juta) e 1 fator quantitativo (% de fibra) em 3 níveis. O card do bloco e
+  // o botão "Gerar matriz" já calculavam certo: 3 x 4 = 12 ensaios. A vitrine
+  // oferecia CCD de 7 ensaios, fatorial geral de 3 ensaios e CCD com 2
+  // réplicas de 14 ensaios — nenhum batendo com os 12 do botão, e o CCD nem
+  // gerava (motor recusa CCD com 1 fator).
+  const factors = [fatorQuantNNiveis("Fibra", 3)];
+
+  it("o único plano proposto é o fatorial geral (o CCD exige mínimo 2 fatores)", () => {
+    const planos = recommendPlans({ goal: "optimization", factors, blocks: 4 });
+    expect(planos).toHaveLength(1);
+    expect(planos[0].designType).toBe("full_factorial_general");
+    expect(planos[0].rotulo).toBe("recomendado");
+  });
+
+  it("nEnsaios é 12 (3 níveis x 4 blocos), o mesmo total do botão Gerar matriz", () => {
+    const [plano] = recommendPlans({ goal: "optimization", factors, blocks: 4 });
+    expect(plano.nEnsaios).toBe(12);
+    expect(plano.nEnsaios).toBe(
+      contarEnsaios(configDoPlano(plano, 4), factors, plano.replicates ?? 1),
+    );
+  });
+
+  it("a decomposição é 3 por execução x 4 blocos", () => {
+    const [plano] = recommendPlans({ goal: "optimization", factors, blocks: 4 });
+    expect(plano.decomposicao).toEqual({ porExecucao: 3, blocks: 4, replicates: 1 });
+  });
+
+  it("capacidades batem com o confirmado: curvatura por fator sim, interações não, erro puro não, ponto ótimo sim", () => {
+    const [plano] = recommendPlans({ goal: "optimization", factors, blocks: 4 });
+    expect(plano.capacidades.detectaCurvatura).toBe(true);
+    expect(plano.capacidades.curvaturaPorFator).toBe(true);
+    expect(plano.capacidades.interacoes).toBe(false);
+    expect(plano.capacidades.erroPuro).toBe(false);
+    expect(plano.capacidades.pontoOtimo).toBe(true);
+  });
+
+  it("o remédio de erro puro anuncia 24 ensaios (dobrar réplicas)", () => {
+    const [plano] = recommendPlans({ goal: "optimization", factors, blocks: 4 });
+    expect(plano.remedio).toBeDefined();
+    expect(plano.remedio!.texto).toBe(
+      "Sem erro puro. Duas réplicas dariam isso, em 24 ensaios.",
+    );
+    expect(plano.remedio!.plano.nEnsaios).toBe(24);
+    expect(plano.remedio!.plano.capacidades.erroPuro).toBe(true);
+    expect(plano.remedio!.plano.replicates).toBe(2);
+  });
+});
+
+describe("recommendPlans — k = 1 nunca propõe família com mínimo maior que 1", () => {
+  it("nenhum plano proposto (triagem ou superfície) tem mínimo de fatores > 1", () => {
+    const cenarios: RecommendInput[] = [
+      { goal: "screening", factors: fatoresQuant2Niveis(1) },
+      { goal: "optimization", factors: fatoresQuant2Niveis(1) },
+      { goal: "optimization", factors: fatoresQuantNNiveis(1, 3) },
+      { goal: "optimization", factors: fatoresQuantNNiveis(1, 3), blocks: 4 },
+      { goal: "optimization", factors: [fatorQualitativo("Solo")] },
+    ];
+    for (const cenario of cenarios) {
+      const planos = recommendPlans(cenario);
+      for (const plano of planos) {
+        expect(["full_factorial_2k", "full_factorial_general", "taguchi"]).toContain(
+          plano.designType,
+        );
+      }
+    }
+  });
+
+  it("nenhum cartão com 1 fator promete interações entre fatores", () => {
+    const planos = recommendPlans({
+      goal: "optimization",
+      factors: fatoresQuantNNiveis(1, 3),
+      blocks: 4,
+    });
+    for (const plano of planos) {
+      expect(plano.capacidades.interacoes).toBe(false);
+    }
+  });
+});
+
+describe("recommendPlans — invariante: nEnsaios bate SEMPRE com contarEnsaios (matriz de cenários)", () => {
+  it("1 e 2 fatores x 2 e 3 níveis x 1 e 4 blocos: cada cartão aplica o total que o próprio configPatch/replicates produzem", () => {
+    const goals: RecommendInput["goal"][] = ["screening", "optimization"];
+    for (const goal of goals) {
+      for (const nFatores of [1, 2]) {
+        for (const niveis of [2, 3]) {
+          for (const blocks of [1, 4]) {
+            const factors =
+              niveis === 2
+                ? fatoresQuant2Niveis(nFatores)
+                : fatoresQuantNNiveis(nFatores, niveis);
+            const planos = recommendPlans({ goal, factors, blocks });
+            for (const plano of planos) {
+              const esperado = contarEnsaios(
+                configDoPlano(plano, blocks),
+                factors,
+                plano.replicates ?? 1,
+              );
+              expect(plano.nEnsaios).toBe(esperado);
+              // O remédio (quando existe) é igualmente um PlanoSugerido: a
+              // mesma invariante vale para ele, senão o botão "Aplicar
+              // réplicas" prometeria um total que o motor não entregaria.
+              if (plano.remedio) {
+                const esperadoRemedio = contarEnsaios(
+                  configDoPlano(plano.remedio.plano, blocks),
+                  factors,
+                  plano.remedio.plano.replicates ?? 1,
+                );
+                expect(plano.remedio.plano.nEnsaios).toBe(esperadoRemedio);
+              }
+            }
+          }
+        }
+      }
     }
   });
 });

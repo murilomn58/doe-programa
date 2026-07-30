@@ -39,6 +39,15 @@ interface VitrineDePlanosProps {
   factors: FactorInput[];
 }
 
+/**
+ * Verdadeiro quando não há um único plano geravel com o que foi declarado —
+ * a vitrine então explica o que falta para destravar, em vez de mostrar uma
+ * fileira de cartões mortos (nenhum com botão "Escolher").
+ */
+function nenhumPlanoGeravel(planos: PlanoSugerido[]): boolean {
+  return planos.length === 0 || planos.every((p) => p.indisponivel !== undefined);
+}
+
 export function VitrineDePlanos({
   planos,
   selecionado,
@@ -53,16 +62,31 @@ export function VitrineDePlanos({
 }: VitrineDePlanosProps) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {planos.map((plano) => (
-          <PlanoCard
-            key={plano.rotulo}
-            plano={plano}
-            selecionado={selecionado?.rotulo === plano.rotulo}
-            onEscolher={() => onEscolher(plano)}
-          />
-        ))}
-      </div>
+      {nenhumPlanoGeravel(planos) ? (
+        <div className="rounded-xl border border-warning-border bg-warning-surface p-5 text-sm text-warning">
+          <p className="font-medium">
+            Nenhum plano é gerável com o que você declarou até aqui.
+          </p>
+          <p className="mt-1">
+            {planos[0]?.indisponivel ??
+              "Acrescente mais um fator, ou declare mais níveis, para liberar um plano de planejamento."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {planos.map((plano) => (
+            <PlanoCard
+              key={plano.rotulo}
+              plano={plano}
+              selecionado={selecionado?.rotulo === plano.rotulo}
+              onEscolher={() => onEscolher(plano)}
+              onEscolherRemedio={
+                plano.remedio ? () => onEscolher(plano.remedio!.plano) : undefined
+              }
+            />
+          ))}
+        </div>
+      )}
 
       {selecionado ? (
         <p className="text-sm leading-relaxed text-foreground-soft">

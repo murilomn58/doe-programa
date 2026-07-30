@@ -16,12 +16,14 @@ import { DESIGN_FAMILY_NOTE } from "@/components/DesignPicker";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { CCDVariant, DesignType } from "@/domain/design";
-import type { PlanoSugerido, RotuloPlano } from "@/domain/recommend";
+import { plural, type PlanoSugerido, type RotuloPlano } from "@/domain/recommend";
 
 interface PlanoCardProps {
   plano: PlanoSugerido;
   selecionado: boolean;
   onEscolher: () => void;
+  /** Aplica `plano.remedio.plano` — ausente quando o plano não tem remédio. */
+  onEscolherRemedio?: () => void;
 }
 
 const ROTULO_INFO: Record<RotuloPlano, { titulo: string; tone: BadgeTone }> = {
@@ -86,7 +88,31 @@ const ITENS_CAPACIDADE: ReadonlyArray<{
   },
 ];
 
-export function PlanoCard({ plano, selecionado, onEscolher }: PlanoCardProps) {
+/**
+ * Formata a linha de decomposição ("N por bloco x M blocos"), no mesmo
+ * padrão da antiga linha "N réplicas" que ela substitui: text-xs text-faint,
+ * logo abaixo do total em destaque. O rótulo da primeira parcela muda
+ * conforme o que está sendo decomposto, para nunca dizer "bloco" quando não
+ * há blocagem nenhuma envolvida (só réplicas).
+ */
+function textoDecomposicao(d: NonNullable<PlanoSugerido["decomposicao"]>): string {
+  const soBlocos = d.blocks > 1 && d.replicates <= 1;
+  const soReplicas = d.replicates > 1 && d.blocks <= 1;
+  const rotuloBase = soBlocos ? "por bloco" : soReplicas ? "por réplica" : "por execução";
+  const partes = [`${d.porExecucao} ${rotuloBase}`];
+  if (d.blocks > 1) partes.push(`${d.blocks} ${plural(d.blocks, "bloco", "blocos")}`);
+  if (d.replicates > 1) {
+    partes.push(`${d.replicates} ${plural(d.replicates, "réplica", "réplicas")}`);
+  }
+  return partes.join(" x ");
+}
+
+export function PlanoCard({
+  plano,
+  selecionado,
+  onEscolher,
+  onEscolherRemedio,
+}: PlanoCardProps) {
   const indisponivel = plano.indisponivel;
   const marcado = selecionado && !indisponivel;
   const rotuloInfo = ROTULO_INFO[plano.rotulo];
@@ -110,15 +136,17 @@ export function PlanoCard({ plano, selecionado, onEscolher }: PlanoCardProps) {
         >
           {tituloFamilia(plano)}
         </h3>
-        {plano.replicates ? (
-          <p className="text-xs text-faint">{plano.replicates} réplicas</p>
-        ) : null}
       </div>
 
-      <p className="text-2xl font-semibold text-foreground-strong">
-        {plano.nEnsaios}{" "}
-        <span className="text-sm font-normal text-foreground-soft">ensaios</span>
-      </p>
+      <div>
+        <p className="text-2xl font-semibold text-foreground-strong">
+          {plano.nEnsaios}{" "}
+          <span className="text-sm font-normal text-foreground-soft">ensaios</span>
+        </p>
+        {plano.decomposicao ? (
+          <p className="text-xs text-faint">{textoDecomposicao(plano.decomposicao)}</p>
+        ) : null}
+      </div>
 
       <ul className="flex flex-col gap-1.5 text-sm">
         {ITENS_CAPACIDADE.map(({ chave, positivo, negativo }) => {
@@ -136,6 +164,15 @@ export function PlanoCard({ plano, selecionado, onEscolher }: PlanoCardProps) {
           );
         })}
       </ul>
+
+      {!indisponivel && plano.remedio ? (
+        <div className="flex flex-col gap-1.5 rounded-md border border-warning-border bg-warning-surface px-3 py-2 text-xs text-warning">
+          <p>{plano.remedio.texto}</p>
+          <Button variant="ghost" size="sm" className="self-start" onClick={onEscolherRemedio}>
+            Aplicar réplicas
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mt-auto pt-2">
         {indisponivel ? (

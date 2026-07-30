@@ -7,7 +7,11 @@ import { describe, expect, it, vi } from "vitest";
 import { VitrineDePlanos } from "@/components/VitrineDePlanos";
 import type { FactorInput } from "@/domain/design";
 import { defaultDesignConfig, type DesignConfig } from "@/domain/designConfig";
-import type { PlanoSugerido, RotuloPlano } from "@/domain/recommend";
+import {
+  recommendPlans,
+  type PlanoSugerido,
+  type RotuloPlano,
+} from "@/domain/recommend";
 
 // O catálogo Taguchi é buscado via TanStack Query no componente real; aqui a
 // vitrine só precisa que o DesignPicker monte, não da rede/motor científico
@@ -202,5 +206,53 @@ describe("VitrineDePlanos — acessibilidade da lista de capacidades", () => {
     const simboloNegativo = liNegativo.querySelector("[aria-hidden]");
     expect(simboloNegativo).not.toBeNull();
     expect(simboloNegativo?.textContent).toBe("✗");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Os testes acima usam `planoFixture`, fabricado à mão: útil para testar a
+// casca da UI, mas incapaz de flagrar uma divergência de contagem (o próprio
+// bug de produção — 3 ensaios no cartão contra 12 no botão — nunca teria
+// aparecido aqui, porque o fixture nunca discorda de si mesmo). Os testes
+// abaixo usam o `recommendPlans` DE VERDADE para o caso real relatado (1
+// fator, 3 níveis, 4 blocos), então uma regressão na contagem quebra este
+// arquivo por construção, não só recommend.test.ts.
+// ---------------------------------------------------------------------------
+
+describe("VitrineDePlanos — dados reais (não fixtures): 1 fator, 3 níveis, 4 blocos", () => {
+  const fatorFibra: FactorInput[] = [
+    { name: "Fibra", factor_type: "quantitative", low: 0, high: 4, levels: [0, 2, 4] },
+  ];
+  const planosReais = recommendPlans({
+    goal: "optimization",
+    factors: fatorFibra,
+    blocks: 4,
+  });
+
+  it("mostra o total real (12 ensaios) e a decomposição 3 por bloco x 4 blocos", () => {
+    render(<Harness planos={planosReais} />);
+
+    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.getByText("3 por bloco x 4 blocos")).toBeInTheDocument();
+  });
+
+  it("nenhum cartão promete interações com 1 fator só", () => {
+    render(<Harness planos={planosReais} />);
+    expect(screen.queryByText("Estima interações entre fatores")).not.toBeInTheDocument();
+    expect(screen.getByText("Não estima interações entre fatores")).toBeInTheDocument();
+  });
+
+  it("o remédio de erro puro aparece e, ao ser aplicado, leva o design a 2 réplicas", async () => {
+    const user = userEvent.setup();
+    render(<Harness planos={planosReais} />);
+
+    expect(
+      screen.getByText("Sem erro puro. Duas réplicas dariam isso, em 24 ensaios."),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Aplicar réplicas" }));
+
+    expect(screen.getByTestId("design-type")).toHaveTextContent("full_factorial_general");
+    expect(screen.getByTestId("replicates")).toHaveTextContent("2");
   });
 });
