@@ -106,15 +106,19 @@ async def test_generate_2k_design(client: AsyncClient) -> None:
     assert {"run_order", "std_order", "point_type", "block", "replicate"} <= first.keys()
 
 
-async def test_generate_rejects_single_factor(client: AsyncClient) -> None:
+async def test_generate_accepts_single_factor_2k(client: AsyncClient) -> None:
+    """1 fator em 2 níveis é aceito (RCBD legítimo dentro de blocos/réplicas;
+    ver ``services/design_service.build_2k_design``). Recusar só faria sentido
+    geometricamente para as famílias de 2+/3+ fatores; aqui vira 2 ensaios."""
     resp = await client.post(
         "/designs/generate",
         json={
-            "name": "invalido",
+            "name": "um-fator",
             "factors": [{"name": "A", "factor_type": "quantitative", "low": 0, "high": 1}],
         },
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 201
+    assert resp.json()["n_runs"] == 2
 
 
 # --- data entry (issue 03) ---------------------------------------------------
