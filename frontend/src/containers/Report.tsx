@@ -419,13 +419,17 @@ function DesignMatrixTable({
           <tr>
             <th className={thR}>Ensaio</th>
             <th className={thR}>Std</th>
-            {hasBlocks ? <th className={thR}>{blockName ?? "Bloco"}</th> : null}
+            {/* normal-case: nome dado pelo pesquisador — o uppercase do estilo
+                de cabeçalho viraria "log σ3" em "LOG Σ3". */}
+            {hasBlocks ? (
+              <th className={`${thR} normal-case`}>{blockName ?? "Bloco"}</th>
+            ) : null}
             {factors.map((f) => (
-              <th key={f.name} className={thR}>
+              <th key={f.name} className={`${thR} normal-case`}>
                 {f.name}
               </th>
             ))}
-            <th className={thR}>
+            <th className={`${thR} normal-case`}>
               {responseName}
               {responseUnit ? ` (${responseUnit})` : ""}
             </th>

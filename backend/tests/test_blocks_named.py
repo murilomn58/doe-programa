@@ -84,7 +84,9 @@ def _runs_armaradar_blocados() -> list[Run]:
     return runs
 
 
-async def _analisar(*, block_name: str | None):
+async def _analisar(
+    *, block_name: str | None, block_labels: list[str] | None = None
+):
     repo = FakeRepo(
         Experiment(name="armaradar-rcbd-nomeado"),
         [_factor_armaradar()],
@@ -92,7 +94,11 @@ async def _analisar(*, block_name: str | None):
         _runs_armaradar_blocados(),
     )
     return await AnalysisService(repo).analyze(
-        1, "Velocidade", RSMModel.LINEAR, block_name=block_name
+        1,
+        "Velocidade",
+        RSMModel.LINEAR,
+        block_name=block_name,
+        block_labels=block_labels,
     )
 
 
@@ -156,3 +162,69 @@ async def test_advisor_continua_casando_com_bloco_nomeado():
     assert bloco_row.source not in [
         s["title"] for s in advice["suggestions"]
     ]  # sanity: bloco não vira sugestão de efeito
+
+
+FABRICANTES = ["Fabr. A", "Fabr. B", "Fabr. C", "Fabr. D", "Fabr. E"]
+
+
+async def test_termos_de_bloco_com_nomes_dos_blocos():
+    """Com block_labels, os termos sintéticos saem como
+    "Fabricante (Fabr. B)".."Fabricante (Fabr. E)" nas tabelas de efeitos e
+    coeficientes — nada de "Bloco 2". A agregação da ANOVA e os números não
+    mudam (mesmo golden armaradar)."""
+    res = await _analisar(block_name="Fabricante", block_labels=FABRICANTES)
+
+    esperados = {f"Fabricante ({f})" for f in FABRICANTES[1:]}
+    termos_coef = {c.term for c in res.coefficients}
+    assert esperados <= termos_coef
+    assert not any(t.startswith("Bloco ") and t[6:].isdigit() for t in termos_coef)
+
+    # ANOVA continua agregada numa linha só, com o nome do agrupamento.
+    bloco_rows = [row for row in res.anova if row.source == "Bloco (Fabricante)"]
+    assert len(bloco_rows) == 1
+    assert bloco_rows[0].df == 4
+
+    # mesmos números do caso sem nomes: rótulo não mexe na matemática.
+    sem_nome = await _analisar(block_name=None)
+    ref = next(row for row in sem_nome.anova if row.source == "Bloco")
+    assert abs(bloco_rows[0].ss - ref.ss) < 1e-9
+
+
+async def test_advisor_exclui_termos_de_bloco_nomeados():
+    """Com blocos nomeados os termos não contêm "Bloco"; o advisor usa o
+    block_name do design_meta pra continuar excluindo-os dos efeitos."""
+    res = await _analisar(block_name="Fabricante", block_labels=FABRICANTES)
+    result_dict = {
+        "model": "linear",
+        "estimable": True,
+        "saturated": False,
+        "r_squared": res.r_squared,
+        "stats": {"predicted_r_squared": None},
+        "effects": [{"term": e.term, "p": e.p} for e in res.effects],
+        "anova": [{"source": row.source, "p": row.p} for row in res.anova],
+        "curvature": None,
+        "lack_of_fit": None,
+    }
+    design_meta = {
+        "has_center": False,
+        "has_axial": False,
+        "max_replicate": 1,
+        "all_quantitative": False,
+        "n_runs_measured": 10,
+        "n_blocks": 5,
+        "block_name": "Fabricante",
+    }
+    advice = advisor_service.advise(result_dict, design_meta)
+
+    dominantes = next(
+        (c for c in advice["comments"] if c["topic"] == "Efeitos dominantes"), None
+    )
+    if dominantes is not None:
+        assert "Fabricante (" not in dominantes["text"]
+    enxuto = next(
+        (c for c in advice["comments"] if c["topic"] == "Modelo enxuto"), None
+    )
+    if enxuto is not None:
+        assert "Fabricante (" not in enxuto["text"]
+    # comentário de blocos continua vindo da linha "Bloco (Fabricante)".
+    assert any(c["topic"] == "Blocos" for c in advice["comments"])

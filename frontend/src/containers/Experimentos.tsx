@@ -166,7 +166,7 @@ export function Experimentos() {
           <span className="block font-semibold text-foreground-strong">
             {seeding
               ? "Preparando o exemplo…"
-              : "Ver um planejamento em blocos, pronto para a bancada"}
+              : "Ver um planejamento em blocos, pronto para a bancada (Tanabe)"}
           </span>
           <span className="block text-sm text-foreground-soft">
             Sete tipos de solo entram como bloco, e não como fator, porque não
@@ -190,7 +190,7 @@ export function Experimentos() {
           <span className="block font-semibold text-foreground-strong">
             {seeding
               ? "Preparando o exemplo…"
-              : "Analisar um ensaio real de módulo de resiliência"}
+              : "Analisar um ensaio real de módulo de resiliência (Cláudio)"}
           </span>
           <span className="block text-sm text-foreground-soft">
             Setenta e dois ensaios triaxiais de misturas solo-brita, medidos
