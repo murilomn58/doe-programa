@@ -8,6 +8,8 @@ Uma plataforma para quem faz pesquisa experimental e precisa planejar ensaios, r
 
 Você descreve os fatores, o programa recomenda o planejamento, gera a matriz de ensaios com a ordem sorteada e, quando os resultados chegam, entrega a análise completa: ANOVA, efeitos, coeficientes, superfície de resposta, diagnóstico dos resíduos e o ponto ótimo.
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23843126.svg)](https://doi.org/10.5281/zenodo.23843126)
+
 [Usar online](https://research.iacommurilo.com.br) · [Material didático](https://research.iacommurilo.com.br/conteudo) · [Como citar](#como-citar)
 
 ## Por que existe
@@ -115,7 +117,9 @@ Abra `http://localhost:3000`. Os testes rodam com `pytest` no backend e `npm tes
 
 Se a plataforma ajudou no seu trabalho, a citação ajuda o projeto a continuar.
 
-> NARCISO, M. M. **Design of Experiments (DoE_programa)**: plataforma gratuita de planejamento e análise de experimentos. Versão 1.0.0. 2026. Software.
+> NARCISO, M. M. **Design of Experiments (DoE_programa)**: plataforma gratuita de planejamento e análise de experimentos. Versão 1.0.0. Zenodo, 2026. Software. DOI: [10.5281/zenodo.23843126](https://doi.org/10.5281/zenodo.23843126).
+
+Para citar sempre a versão mais recente, use o DOI do conceito: [10.5281/zenodo.23843125](https://doi.org/10.5281/zenodo.23843125).
 
 O GitHub também gera a citação pelo botão *Cite this repository*, a partir do arquivo [`CITATION.cff`](CITATION.cff).
 
