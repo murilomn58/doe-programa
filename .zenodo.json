@@ -1,0 +1,12 @@
+{
+  "title": "Design of Experiments (DoE_programa): plataforma gratuita de planejamento e análise de experimentos",
+  "upload_type": "software",
+  "description": "Plataforma gratuita para planejar e analisar experimentos: fatorial completo e fracionado, Plackett-Burman, Definitive Screening Design, composto central, Box-Behnken, Taguchi e planejamentos D/I-ótimos. Entrega ANOVA com erro puro e falta de ajuste, efeitos, coeficientes, R² de predição, superfície de resposta, diagnóstico de resíduos, profiler com ponto ótimo e figuras prontas para publicação. O cálculo é feito em Python (statsmodels, SciPy, NumPy, pyDOE3) e roda no navegador via Pyodide.",
+  "creators": [
+    {"name": "Narciso, Murilo Miguel", "affiliation": "Instituto Militar de Engenharia (IME)"}
+  ],
+  "license": "MIT",
+  "language": "por",
+  "keywords": ["design of experiments", "planejamento de experimentos", "response surface methodology", "ANOVA", "factorial design", "Taguchi"],
+  "notes": "Conteúdo baseado nas disciplinas de planejamento de experimentos do Prof. Fernando Peixoto (IME) e do Prof. Bruno Oechsler (UFSC)."
+}
