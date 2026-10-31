@@ -23,7 +23,6 @@ import { LogoDoE } from "@/components/ui/LogoDoE";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { RodapeApp } from "@/components/ui/RodapeApp";
 import { seedDemoExperiment } from "@/engine/demo";
-import { seedExemploClaudio } from "@/engine/exemploClaudio";
 import { seedExemploTanabe } from "@/engine/exemploTanabe";
 import { EXPERIMENTS_KEY, useExperiments } from "@/hooks/useExperiments";
 
@@ -53,19 +52,6 @@ export function Experimentos() {
       const id = await seedExemploTanabe();
       void qc.invalidateQueries({ queryKey: EXPERIMENTS_KEY });
       router.push(`/experiments/${id}`);
-    } finally {
-      setSeeding(false);
-    }
-  }
-
-  /** Abre o exemplo do Cláudio direto na ANÁLISE: aqui há resposta medida,
-   *  72 ensaios, e o interesse é justamente ver o ajuste e os gráficos. */
-  async function abrirClaudio() {
-    setSeeding(true);
-    try {
-      const id = await seedExemploClaudio();
-      void qc.invalidateQueries({ queryKey: EXPERIMENTS_KEY });
-      router.push(`/experiments/${id}/analysis?response=log%20MR&model=linear`);
     } finally {
       setSeeding(false);
     }
@@ -176,30 +162,6 @@ export function Experimentos() {
         </span>
         <span className="shrink-0 text-xl text-accent" aria-hidden>
           ▦
-        </span>
-      </button>
-
-      {/* Dados MEDIDOS de uma tese do IME: 72 ensaios, quatro materiais. */}
-      <button
-        type="button"
-        disabled={seeding}
-        onClick={() => void abrirClaudio()}
-        className="mt-3 flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-surface-1 px-6 py-4 text-left transition hover:border-accent-strong/60 disabled:opacity-60"
-      >
-        <span>
-          <span className="block font-semibold text-foreground-strong">
-            {seeding
-              ? "Preparando o exemplo…"
-              : "Analisar um ensaio real de módulo de resiliência (Cláudio)"}
-          </span>
-          <span className="block text-sm text-foreground-soft">
-            Setenta e dois ensaios triaxiais de misturas solo-brita, medidos
-            numa tese do IME. Uma lei de potência linearizada em logaritmos,
-            com o material entrando como bloco.
-          </span>
-        </span>
-        <span className="shrink-0 text-xl text-accent" aria-hidden>
-          ◲
         </span>
       </button>
 

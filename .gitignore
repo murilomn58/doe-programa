@@ -67,3 +67,10 @@ aula-ime/*.pdf
 exemplos_site/**/*.docx
 exemplos_site/**/*.pptx
 exemplos_site/**/*.xlsx
+
+# Dados de terceiros e material de aula: ficam só na máquina local, nunca no repositório público
+exemplos_site/claudio/
+frontend/src/engine/exemploClaudio.ts
+contexto aulas/
+_backup*/
+*.zip
