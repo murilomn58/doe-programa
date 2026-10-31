@@ -1,0 +1,580 @@
+{
+  "solos": [
+    "Residual",
+    "Laterítico",
+    "Saprolítico",
+    "Aluvionar",
+    "Orgânico",
+    "Arenoso",
+    "Siltoso"
+  ],
+  "linhas": [
+    {
+      "ordem": 1,
+      "std": 9,
+      "bloco": 1,
+      "cimento": 10.0,
+      "rejeito": 40.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 2,
+      "std": 44,
+      "bloco": 5,
+      "cimento": 5.0,
+      "rejeito": 40.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 3,
+      "std": 63,
+      "bloco": 7,
+      "cimento": 10.0,
+      "rejeito": 40.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 4,
+      "std": 45,
+      "bloco": 5,
+      "cimento": 10.0,
+      "rejeito": 40.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 5,
+      "std": 26,
+      "bloco": 3,
+      "cimento": 5.0,
+      "rejeito": 40.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 6,
+      "std": 46,
+      "bloco": 6,
+      "cimento": 0.0,
+      "rejeito": 0.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 7,
+      "std": 3,
+      "bloco": 1,
+      "cimento": 10.0,
+      "rejeito": 0.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 8,
+      "std": 30,
+      "bloco": 4,
+      "cimento": 10.0,
+      "rejeito": 0.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 9,
+      "std": 53,
+      "bloco": 6,
+      "cimento": 5.0,
+      "rejeito": 40.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 10,
+      "std": 15,
+      "bloco": 2,
+      "cimento": 10.0,
+      "rejeito": 20.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 11,
+      "std": 55,
+      "bloco": 7,
+      "cimento": 0.0,
+      "rejeito": 0.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 12,
+      "std": 17,
+      "bloco": 2,
+      "cimento": 5.0,
+      "rejeito": 40.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 13,
+      "std": 27,
+      "bloco": 3,
+      "cimento": 10.0,
+      "rejeito": 40.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 14,
+      "std": 40,
+      "bloco": 5,
+      "cimento": 0.0,
+      "rejeito": 20.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 15,
+      "std": 18,
+      "bloco": 2,
+      "cimento": 10.0,
+      "rejeito": 40.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 16,
+      "std": 51,
+      "bloco": 6,
+      "cimento": 10.0,
+      "rejeito": 20.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 17,
+      "std": 33,
+      "bloco": 4,
+      "cimento": 10.0,
+      "rejeito": 20.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 18,
+      "std": 52,
+      "bloco": 6,
+      "cimento": 0.0,
+      "rejeito": 40.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 19,
+      "std": 8,
+      "bloco": 1,
+      "cimento": 5.0,
+      "rejeito": 40.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 20,
+      "std": 14,
+      "bloco": 2,
+      "cimento": 5.0,
+      "rejeito": 20.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 21,
+      "std": 56,
+      "bloco": 7,
+      "cimento": 5.0,
+      "rejeito": 0.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 22,
+      "std": 21,
+      "bloco": 3,
+      "cimento": 10.0,
+      "rejeito": 0.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 23,
+      "std": 34,
+      "bloco": 4,
+      "cimento": 0.0,
+      "rejeito": 40.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 24,
+      "std": 41,
+      "bloco": 5,
+      "cimento": 5.0,
+      "rejeito": 20.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 25,
+      "std": 6,
+      "bloco": 1,
+      "cimento": 10.0,
+      "rejeito": 20.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 26,
+      "std": 7,
+      "bloco": 1,
+      "cimento": 0.0,
+      "rejeito": 40.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 27,
+      "std": 13,
+      "bloco": 2,
+      "cimento": 0.0,
+      "rejeito": 20.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 28,
+      "std": 19,
+      "bloco": 3,
+      "cimento": 0.0,
+      "rejeito": 0.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 29,
+      "std": 35,
+      "bloco": 4,
+      "cimento": 5.0,
+      "rejeito": 40.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 30,
+      "std": 16,
+      "bloco": 2,
+      "cimento": 0.0,
+      "rejeito": 40.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 31,
+      "std": 39,
+      "bloco": 5,
+      "cimento": 10.0,
+      "rejeito": 0.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 32,
+      "std": 31,
+      "bloco": 4,
+      "cimento": 0.0,
+      "rejeito": 20.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 33,
+      "std": 48,
+      "bloco": 6,
+      "cimento": 10.0,
+      "rejeito": 0.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 34,
+      "std": 10,
+      "bloco": 2,
+      "cimento": 0.0,
+      "rejeito": 0.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 35,
+      "std": 47,
+      "bloco": 6,
+      "cimento": 5.0,
+      "rejeito": 0.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 36,
+      "std": 2,
+      "bloco": 1,
+      "cimento": 5.0,
+      "rejeito": 0.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 37,
+      "std": 12,
+      "bloco": 2,
+      "cimento": 10.0,
+      "rejeito": 0.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 38,
+      "std": 42,
+      "bloco": 5,
+      "cimento": 10.0,
+      "rejeito": 20.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 39,
+      "std": 36,
+      "bloco": 4,
+      "cimento": 10.0,
+      "rejeito": 40.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 40,
+      "std": 54,
+      "bloco": 6,
+      "cimento": 10.0,
+      "rejeito": 40.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 41,
+      "std": 28,
+      "bloco": 4,
+      "cimento": 0.0,
+      "rejeito": 0.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 42,
+      "std": 24,
+      "bloco": 3,
+      "cimento": 10.0,
+      "rejeito": 20.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 43,
+      "std": 29,
+      "bloco": 4,
+      "cimento": 5.0,
+      "rejeito": 0.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 44,
+      "std": 1,
+      "bloco": 1,
+      "cimento": 0.0,
+      "rejeito": 0.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 45,
+      "std": 23,
+      "bloco": 3,
+      "cimento": 5.0,
+      "rejeito": 20.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 46,
+      "std": 60,
+      "bloco": 7,
+      "cimento": 10.0,
+      "rejeito": 20.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 47,
+      "std": 32,
+      "bloco": 4,
+      "cimento": 5.0,
+      "rejeito": 20.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 48,
+      "std": 11,
+      "bloco": 2,
+      "cimento": 5.0,
+      "rejeito": 0.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 49,
+      "std": 49,
+      "bloco": 6,
+      "cimento": 0.0,
+      "rejeito": 20.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 50,
+      "std": 59,
+      "bloco": 7,
+      "cimento": 5.0,
+      "rejeito": 20.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 51,
+      "std": 20,
+      "bloco": 3,
+      "cimento": 5.0,
+      "rejeito": 0.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 52,
+      "std": 38,
+      "bloco": 5,
+      "cimento": 5.0,
+      "rejeito": 0.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 53,
+      "std": 61,
+      "bloco": 7,
+      "cimento": 0.0,
+      "rejeito": 40.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 54,
+      "std": 50,
+      "bloco": 6,
+      "cimento": 5.0,
+      "rejeito": 20.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 55,
+      "std": 57,
+      "bloco": 7,
+      "cimento": 10.0,
+      "rejeito": 0.0,
+      "cimentoCod": 1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 56,
+      "std": 25,
+      "bloco": 3,
+      "cimento": 0.0,
+      "rejeito": 40.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 57,
+      "std": 58,
+      "bloco": 7,
+      "cimento": 0.0,
+      "rejeito": 20.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 58,
+      "std": 43,
+      "bloco": 5,
+      "cimento": 0.0,
+      "rejeito": 40.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 59,
+      "std": 22,
+      "bloco": 3,
+      "cimento": 0.0,
+      "rejeito": 20.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 60,
+      "std": 37,
+      "bloco": 5,
+      "cimento": 0.0,
+      "rejeito": 0.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": -1.0
+    },
+    {
+      "ordem": 61,
+      "std": 62,
+      "bloco": 7,
+      "cimento": 5.0,
+      "rejeito": 40.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 1.0
+    },
+    {
+      "ordem": 62,
+      "std": 4,
+      "bloco": 1,
+      "cimento": 0.0,
+      "rejeito": 20.0,
+      "cimentoCod": -1.0,
+      "rejeitoCod": 0.0
+    },
+    {
+      "ordem": 63,
+      "std": 5,
+      "bloco": 1,
+      "cimento": 5.0,
+      "rejeito": 20.0,
+      "cimentoCod": 0.0,
+      "rejeitoCod": 0.0
+    }
+  ]
+}

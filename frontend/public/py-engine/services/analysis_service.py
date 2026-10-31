@@ -504,8 +504,9 @@ def _aggregate_block_anova_rows(
     anova_rows: list[AnovaRow],
     block_term_labels: set[str],
     stats_panel: StatsPanel | None,
+    block_name: str | None = None,
 ) -> list[AnovaRow]:
-    """Collapse the k-1 synthetic block-indicator ANOVA rows into one "Bloco" row.
+    """Collapse the k-1 synthetic block-indicator ANOVA rows into one row.
 
     With k blocks the model carries k-1 one-column deviation-coded indicator
     terms (see the injection above). ``anova_lm`` reports one SS/df/F/p per
@@ -516,6 +517,14 @@ def _aggregate_block_anova_rows(
     A no-op when there is 0 or 1 block row (still renames it to "Bloco" so the
     label is stable for k=2 and for the advisor's "source contains Bloco"
     lookup either way).
+
+    ``block_name`` (ex.: "Tipo de solo") é o nome que o pesquisador deu ao
+    agrupamento na geração do design. Quando presente, a linha sai como
+    "Bloco (Tipo de solo)" em vez de só "Bloco" -- a tabela fica
+    autoexplicativa meses depois. O "Bloco" continua sempre no começo da
+    string de propósito: é o que a regra do advisor (substring "Bloco" in
+    source) e o filtro de efeitos significativos continuam casando, com ou
+    sem nome.
     """
     block_rows = [row for row in anova_rows if row.source in block_term_labels]
     if not block_rows or stats_panel is None:
@@ -529,7 +538,8 @@ def _aggregate_block_anova_rows(
     )
     f = ms / ms_resid if np.isfinite(ms_resid) and ms_resid > 0 else float("nan")
     p = float(stats.f.sf(f, df, stats_panel.df_resid)) if np.isfinite(f) else None
-    aggregated = AnovaRow(source="Bloco", ss=ss, df=df, ms=ms, f=f, p=p)
+    source = f"Bloco ({block_name})" if block_name else "Bloco"
+    aggregated = AnovaRow(source=source, ss=ss, df=df, ms=ms, f=f, p=p)
 
     merged: list[AnovaRow] = []
     inserted = False
@@ -569,6 +579,8 @@ class AnalysisService:
         model: RSMModel,
         factor_x: str | None = None,
         factor_y: str | None = None,
+        block_name: str | None = None,
+        block_labels: list[str] | None = None,
     ) -> AnalysisResultData:
         experiment = await self._repo.get_experiment(experiment_id)
         if experiment is None:
@@ -646,22 +658,41 @@ class AnalysisService:
         if len(distinct_blocks) >= 2:
             reference = distinct_blocks[0]
             non_reference = distinct_blocks[1:]
+
+            # Com ``block_labels`` ("Solo-Brita 40/60", ...), cada termo
+            # sintético sai como "Material (Solo-Brita 40/60)" — o bloco
+            # aparece nas tabelas de efeitos/coeficientes como um nível do
+            # fator qualitativo que ele de fato é, e não como "Bloco 2".
+            # Sem labels, "Bloco <id>" segue como antes (é o que o filtro do
+            # advisor por substring "Bloco" casa; com labels o advisor usa o
+            # ``block_name`` do design_meta pra reconhecer os termos).
+            def _bloco_rotulo(b: int) -> str:
+                if block_labels and 1 <= b <= len(block_labels):
+                    return block_labels[b - 1]
+                return f"Bloco {b}"
+
+            def _termo_de_bloco(b: int) -> str:
+                if block_labels and 1 <= b <= len(block_labels):
+                    return f"{block_name or 'Bloco'} ({block_labels[b - 1]})"
+                return f"Bloco {b}"
+
             block_factors = [
                 FactorInfo(
-                    name=f"Bloco {b}",
+                    name=_termo_de_bloco(b),
                     factor_type="qualitative",
-                    low_label=f"Bloco {reference}",
-                    high_label=f"Bloco {b}",
+                    low_label=_bloco_rotulo(reference),
+                    high_label=_bloco_rotulo(b),
                 )
                 for b in non_reference
             ]
             block_term_labels = {bf.name for bf in block_factors}
+            nome_por_bloco = {b: _termo_de_bloco(b) for b in non_reference}
 
             def _block_columns(b: int) -> dict[str, float]:
                 if b == reference:
                     return {bf.name: -1.0 for bf in block_factors}
                 return {
-                    bf.name: (1.0 if bf.name == f"Bloco {b}" else 0.0)
+                    bf.name: (1.0 if bf.name == nome_por_bloco.get(b) else 0.0)
                     for bf in block_factors
                 }
 
@@ -691,7 +722,7 @@ class AnalysisService:
         # procura a linha cuja fonte contém "Bloco" (advisor_service.py).
         if block_term_labels and result.anova:
             result.anova = _aggregate_block_anova_rows(
-                result.anova, block_term_labels, result.stats
+                result.anova, block_term_labels, result.stats, block_name
             )
 
         # --- Teste de curvatura via pontos centrais (aula Cap.4 p4): só quando o

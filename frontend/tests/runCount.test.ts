@@ -150,6 +150,39 @@ describe("designBaseRuns (valores travados contra o comportamento anterior)", ()
   });
 });
 
+describe("designBaseRuns — mínimo de fatores (domain/limitesFamilia)", () => {
+  it("central_composite exige k >= 2 (antes calculava para k = 1 sem recusar)", () => {
+    expect(
+      designBaseRuns(config({ designType: "central_composite" }), 1),
+    ).toBeNull();
+    expect(
+      designBaseRuns(config({ designType: "central_composite" }), 2),
+    ).not.toBeNull();
+  });
+
+  it("optimal exige k >= 2 mesmo com optimalNRuns válido", () => {
+    expect(
+      designBaseRuns(
+        config({ designType: "optimal", optimalNRuns: 12 }),
+        1,
+      ),
+    ).toBeNull();
+  });
+
+  it("full_factorial_2k, full_factorial_general e taguchi aceitam k = 1 (RCBD legítimo)", () => {
+    expect(
+      designBaseRuns(config({ designType: "full_factorial_2k", centerPoints: 0 }), 1),
+    ).toBe(2);
+    expect(
+      contarEnsaios(
+        config({ designType: "full_factorial_general" }),
+        [{ name: "F1", factor_type: "quantitative", levels: [1, 2, 3] }],
+        1,
+      ),
+    ).toBe(3);
+  });
+});
+
 describe("contarEnsaios", () => {
   it("para as famílias já cobertas por designBaseRuns, multiplica pelas réplicas", () => {
     const cfg = config({ designType: "full_factorial_2k", centerPoints: 0 });

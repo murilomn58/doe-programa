@@ -1,7 +1,7 @@
 "use client";
 
-import { NiveisFator } from "@/components/NiveisFator";
-import type { FactorInput, FactorType } from "@/domain/design";
+import { NiveisFator, type ContagemBloco } from "@/components/NiveisFator";
+import type { FactorInput } from "@/domain/design";
 
 interface FactorFormProps {
   factors: FactorInput[];
@@ -9,11 +9,14 @@ interface FactorFormProps {
   onAdd: () => void;
   onRemove: (index: number) => void;
   /**
-   * Repassada a cada `NiveisFator`, que a usa no botão "Declarar blocos" da
-   * orientação de blocagem do ramo qualitativo. Opcional: sem ela o botão não
-   * aparece, que é o caso de quem monta este formulário fora do wizard.
+   * Contagem ao vivo (nº de blocos, ensaios por bloco, total) do bloco
+   * atualmente declarado entre `factors`, repassada ao `NiveisFator` do fator
+   * que estiver com `papel === "bloco"`. Quem monta os números é o wizard
+   * (GuidedTour), que tem acesso ao `designConfig` e às réplicas; opcional,
+   * pois quem monta este formulário fora do wizard não precisa exibir a
+   * contagem.
    */
-  onIrParaBlocos?: () => void;
+  contagemBlocos?: ContagemBloco;
 }
 
 const inputClass =
@@ -21,12 +24,46 @@ const inputClass =
 
 const labelFor = (index: number) => String.fromCharCode(65 + index); // A, B, C…
 
+/** As três opções do seletor "Papel no experimento". */
+type PapelOpcao = "quantitative" | "qualitative" | "bloco";
+
+function papelAtual(factor: FactorInput): PapelOpcao {
+  if (factor.papel === "bloco") return "bloco";
+  return factor.factor_type;
+}
+
+/**
+ * Aplica a troca de papel. Escolher "Bloco" preserva categorias já digitadas
+ * (se houver 2+) ou inicializa com duas entradas vazias. Voltar para fator
+ * (quantitativo ou qualitativo) limpa `papel` e `categorias` — a entrada
+ * volta a ser só um fator comum, sem resíduo do estado de bloco.
+ */
+function aplicarPapel(factor: FactorInput, opcao: PapelOpcao): FactorInput {
+  if (opcao === "bloco") {
+    const categoriasAtuais = factor.categorias;
+    return {
+      ...factor,
+      papel: "bloco",
+      categorias:
+        categoriasAtuais && categoriasAtuais.length >= 2
+          ? categoriasAtuais
+          : ["", ""],
+    };
+  }
+  return {
+    ...factor,
+    factor_type: opcao,
+    papel: undefined,
+    categorias: undefined,
+  };
+}
+
 export function FactorForm({
   factors,
   onChange,
   onAdd,
   onRemove,
-  onIrParaBlocos,
+  contagemBlocos,
 }: FactorFormProps) {
   return (
     <div className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
@@ -71,19 +108,22 @@ export function FactorForm({
               </label>
 
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-foreground-soft">Tipo</span>
+                <span className="text-foreground-soft">Papel no experimento</span>
                 <select
-                  value={factor.factor_type}
+                  value={papelAtual(factor)}
                   onChange={(e) =>
-                    onChange(index, {
-                      ...factor,
-                      factor_type: e.target.value as FactorType,
-                    })
+                    onChange(
+                      index,
+                      aplicarPapel(factor, e.target.value as PapelOpcao),
+                    )
                   }
                   className={inputClass}
                 >
-                  <option value="quantitative">Quantitativo</option>
-                  <option value="qualitative">Qualitativo</option>
+                  <option value="quantitative">Fator quantitativo</option>
+                  <option value="qualitative">
+                    Fator qualitativo (2 categorias)
+                  </option>
+                  <option value="bloco">Bloco (2 ou mais)</option>
                 </select>
               </label>
 
@@ -107,7 +147,7 @@ export function FactorForm({
             <NiveisFator
               factor={factor}
               onChange={(next) => onChange(index, next)}
-              onIrParaBlocos={onIrParaBlocos}
+              contagemBloco={factor.papel === "bloco" ? contagemBlocos : undefined}
             />
           </div>
         ))}

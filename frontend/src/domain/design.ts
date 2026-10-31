@@ -71,6 +71,17 @@ export interface DSDConfig {
 }
 
 /** A factor as described in the setup wizard (request side). */
+/**
+ * Papel de uma entrada declarada no passo de fatores.
+ *
+ * Uma entrada marcada como `bloco` NÃO é um fator: ela sai da lista enviada ao
+ * motor e vira a estrutura de blocagem (`blocks`, `block_labels`, `block_name`
+ * no pedido). Existe porque o pesquisador declara "tipo de solo" uma vez, e só
+ * depois decide se aquilo é objeto de estudo (fator, no máximo 2 categorias) ou
+ * fonte de variação conhecida que ele quer tirar do erro (bloco, sem limite).
+ */
+export type PapelDeclarado = "fator" | "bloco";
+
 export interface FactorInput {
   name: string;
   factor_type: FactorType;
@@ -81,6 +92,27 @@ export interface FactorInput {
   high_label?: string;
   /** Fatores Taguchi de 3+ níveis: lista ordenada de valores; null → par baixo/alto. */
   levels?: number[];
+  /** Ausente equivale a `"fator"`. Campo de interface: nunca chega ao motor. */
+  papel?: PapelDeclarado;
+  /** Nomes dos blocos, um por bloco, quando `papel === "bloco"`. Mínimo 2. */
+  categorias?: string[];
+}
+
+/** A entrada declarada como bloco, se houver. Só uma é considerada. */
+export function blocoDeclarado(entradas: FactorInput[]): FactorInput | undefined {
+  return entradas.find((f) => f.papel === "bloco");
+}
+
+/** As entradas que são fator de verdade, isto é, o que vai ao motor. */
+export function apenasFatores(entradas: FactorInput[]): FactorInput[] {
+  return entradas.filter((f) => f.papel !== "bloco");
+}
+
+/** Quantos blocos as entradas declaram. Sem bloco declarado, 1. */
+export function nBlocos(entradas: FactorInput[]): number {
+  const bloco = blocoDeclarado(entradas);
+  const nomes = bloco?.categorias?.filter((c) => c.trim()) ?? [];
+  return nomes.length >= 2 ? nomes.length : 1;
 }
 
 /** Quantos níveis o fator declara. Sem `levels`, são os dois extremos. */
@@ -112,6 +144,15 @@ export interface DesignGenerateRequest {
    * Default backend 1 (comportamento anterior: um único bloco).
    */
   blocks?: number;
+  /**
+   * Nome de cada bloco, na ordem (bloco 1 é o primeiro). Quando presente, tem
+   * exatamente `blocks` itens. É o que permite ler "Laterita" na matriz em vez
+   * de "3", e sem isso a correspondência entre número e condição real fica
+   * fora da plataforma, na memória do pesquisador.
+   */
+  block_labels?: string[];
+  /** Nome do agrupamento, ex. "Tipo de solo". Rotula a linha da ANOVA. */
+  block_name?: string;
   factors: FactorInput[];
   responses: ResponseInput[];
   seed?: number;
@@ -183,6 +224,10 @@ export interface GeneratedDesign {
   resolution?: number | null;
   /** Relação de definição + aliases ("I = ABC", "A = BC", …); null fora do fracionado. */
   aliasing?: string[] | null;
+  /** Nome de cada bloco, na ordem; null quando não houve blocagem nomeada. */
+  block_labels?: string[] | null;
+  /** Nome do agrupamento (ex. "Tipo de solo"); null quando não houve blocagem nomeada. */
+  block_name?: string | null;
   /** Somente Taguchi/ótimo: nome do arranjo escolhido; null nas demais. */
   array_name?: string | null;
   /** Somente D/I-ótimo: D-eficiência do design gerado; null nas demais. */
@@ -212,6 +257,10 @@ export interface RunsRead {
   factors: FactorRead[];
   responses: ResponseRead[];
   runs: RunRead[];
+  /** Nome de cada bloco, na ordem; null quando não houve blocagem nomeada. */
+  block_labels?: string[] | null;
+  /** Nome do agrupamento (ex. "Tipo de solo"); null quando não houve blocagem nomeada. */
+  block_name?: string | null;
 }
 
 /** One response cell to persist (raw text — the backend parses/validates it). */

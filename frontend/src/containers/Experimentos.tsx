@@ -23,6 +23,7 @@ import { LogoDoE } from "@/components/ui/LogoDoE";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { RodapeApp } from "@/components/ui/RodapeApp";
 import { seedDemoExperiment } from "@/engine/demo";
+import { seedExemploTanabe } from "@/engine/exemploTanabe";
 import { EXPERIMENTS_KEY, useExperiments } from "@/hooks/useExperiments";
 
 export function Experimentos() {
@@ -37,6 +38,20 @@ export function Experimentos() {
       const id = await seedDemoExperiment();
       void qc.invalidateQueries({ queryKey: EXPERIMENTS_KEY });
       router.push(`/experiments/${id}/analysis?response=Resist%C3%AAncia&model=linear`);
+    } finally {
+      setSeeding(false);
+    }
+  }
+
+  /** Abre o planejamento do Tanabe na MATRIZ, não na análise: sem resposta
+   *  medida não há o que analisar, e cair numa tela de análise vazia daria a
+   *  impressão de que o exemplo está quebrado. */
+  async function abrirTanabe() {
+    setSeeding(true);
+    try {
+      const id = await seedExemploTanabe();
+      void qc.invalidateQueries({ queryKey: EXPERIMENTS_KEY });
+      router.push(`/experiments/${id}`);
     } finally {
       setSeeding(false);
     }
@@ -121,6 +136,32 @@ export function Experimentos() {
         </span>
         <span className="shrink-0 text-xl text-accent" aria-hidden>
           ⚗
+        </span>
+      </button>
+
+      {/* Planejamento pronto, ainda SEM resultado: o experimento não foi
+          rodado. Abre na matriz de ensaios, e não na análise, porque não há
+          o que analisar. */}
+      <button
+        type="button"
+        disabled={seeding}
+        onClick={() => void abrirTanabe()}
+        className="mt-3 flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-surface-1 px-6 py-4 text-left transition hover:border-accent-strong/60 disabled:opacity-60"
+      >
+        <span>
+          <span className="block font-semibold text-foreground-strong">
+            {seeding
+              ? "Preparando o exemplo…"
+              : "Ver um planejamento em blocos, pronto para a bancada (Tanabe)"}
+          </span>
+          <span className="block text-sm text-foreground-soft">
+            Sete tipos de solo entram como bloco, e não como fator, porque não
+            são objeto do estudo. Cimento e rejeito em três níveis: 63 ensaios
+            com a ordem sorteada, esperando as medidas.
+          </span>
+        </span>
+        <span className="shrink-0 text-xl text-accent" aria-hidden>
+          ▦
         </span>
       </button>
 

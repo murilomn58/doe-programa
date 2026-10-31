@@ -159,11 +159,18 @@ def advise(result: dict, design_meta: dict) -> dict:
             comment("Predição", f"R² previsto = {r2_pred:.3f}: capacidade de prever pontos novos preservada.")
 
     # --- efeitos ----------------------------------------------------------------
-    # Filtro por substring ("Bloco" in term): continua correto com 3+ blocos
-    # (fix analysis_service), pois cada termo sintetico de bloco se chama
-    # "Bloco <id>" -- o "in" pega qualquer quantidade deles sem mudanca aqui.
+    # Termo de bloco: "Bloco <id>" quando o bloco nao tem nomes, ou
+    # "<block_name> (<label>)" quando o design tem blocos nomeados (ex.:
+    # "Material (Solo-Brita 40/60)"). O ``block_name`` chega no design_meta.
+    block_name = design_meta.get("block_name")
+
+    def _eh_termo_de_bloco(term: str) -> bool:
+        if "Bloco" in term:
+            return True
+        return bool(block_name) and term.startswith(f"{block_name} (")
+
     effects = result.get("effects") or []
-    non_block = [e for e in effects if "Bloco" not in (e.get("term") or "")]
+    non_block = [e for e in effects if not _eh_termo_de_bloco(e.get("term") or "")]
     sig_terms = [e["term"] for e in non_block if _sig(e.get("p"))]
     ns_terms = [e["term"] for e in non_block if e.get("p") is not None and not _sig(e.get("p"))]
     if sig_terms:

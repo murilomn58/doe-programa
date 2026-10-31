@@ -30,6 +30,16 @@ interface RunsGridProps {
   isSaving: boolean;
   saveError: string | null;
   savedAt: number | null;
+  /** Nome de cada bloco (índice 0 = bloco 1), quando houve blocagem nomeada. */
+  blockLabels?: string[] | null;
+  /** Nome do agrupamento (ex. "Tipo de solo"); vira o cabeçalho da coluna. */
+  blockName?: string | null;
+}
+
+/** Bloco 1-based -> nome. Fora do intervalo declarado, cai no número (defensivo). */
+function blockDisplay(block: number, labels: string[] | null | undefined): string {
+  const label = labels?.[block - 1];
+  return label ?? String(block);
 }
 
 const th =
@@ -64,6 +74,8 @@ export function RunsGrid({
   isSaving,
   saveError,
   savedAt,
+  blockLabels,
+  blockName,
 }: RunsGridProps) {
   const factorNames = useMemo(() => factors.map((f) => f.name), [factors]);
   const orderedRuns = useMemo(
@@ -216,10 +228,20 @@ export function RunsGrid({
                   <th className={th}>Run</th>
                   <th className={th}>Std</th>
                   <th className={th}>Pt</th>
-                  <th className={th}>Blk</th>
+                  {/* normal-case nos nomes dados pelo pesquisador: o uppercase
+                      do cabeçalho viraria "log σ3" em "LOG Σ3". */}
+                  <th
+                    className={`${th} max-w-[8rem] truncate normal-case`}
+                    title={blockLabels ? (blockName ?? "Bloco") : undefined}
+                  >
+                    {blockLabels ? (blockName ?? "Bloco") : "Blk"}
+                  </th>
                   <th className={th}>Rep</th>
                   {factors.map((factor) => (
-                    <th key={`f-${factor.name}`} className={`${th} text-accent-mid`}>
+                    <th
+                      key={`f-${factor.name}`}
+                      className={`${th} text-accent-mid normal-case`}
+                    >
                       {factor.name}
                       {factor.unit ? (
                         <span className="text-faint"> ({factor.unit})</span>
@@ -227,7 +249,10 @@ export function RunsGrid({
                     </th>
                   ))}
                   {responses.map((response) => (
-                    <th key={`r-${response.name}`} className={`${th} text-primary-strong`}>
+                    <th
+                      key={`r-${response.name}`}
+                      className={`${th} text-primary-strong normal-case`}
+                    >
                       {response.name}
                       {response.unit ? (
                         <span className="text-faint"> ({response.unit})</span>
@@ -242,7 +267,12 @@ export function RunsGrid({
                     <td className={`${td} text-accent-mid`}>{run.run_order}</td>
                     <td className={td}>{run.std_order}</td>
                     <td className={td}>{run.point_type}</td>
-                    <td className={td}>{run.block}</td>
+                    <td
+                      className={`${td} max-w-[8rem] truncate`}
+                      title={blockLabels ? blockDisplay(run.block, blockLabels) : undefined}
+                    >
+                      {blockDisplay(run.block, blockLabels)}
+                    </td>
                     <td className={td}>{run.replicate}</td>
                     {factorNames.map((name) => (
                       <td key={name} className={td}>

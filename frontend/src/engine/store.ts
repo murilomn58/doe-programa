@@ -29,6 +29,8 @@ interface StoredDesign {
   aliasing: string[] | null;
   array_name: string | null;
   optimal_efficiency: number | null;
+  block_labels: string[] | null;
+  block_name: string | null;
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -123,6 +125,8 @@ export async function persistGeneratedDesign(
     aliasing: design.aliasing ?? null,
     array_name: design.array_name ?? null,
     optimal_efficiency: design.optimal_efficiency ?? null,
+    block_labels: design.block_labels ?? null,
+    block_name: design.block_name ?? null,
   };
 
   const db = await openDb();
@@ -137,6 +141,8 @@ export async function persistGeneratedDesign(
     factors: withIds.factors,
     responses: withIds.responses,
     runs: withIds.runs,
+    block_labels: withIds.block_labels,
+    block_name: withIds.block_name,
   };
 }
 
@@ -161,6 +167,8 @@ export async function getRunsReadLocal(experimentId: number): Promise<RunsRead> 
     factors: design.factors,
     responses: design.responses,
     runs: design.runs,
+    block_labels: design.block_labels ?? null,
+    block_name: design.block_name ?? null,
   };
 }
 

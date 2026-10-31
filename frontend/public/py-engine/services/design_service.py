@@ -5,6 +5,7 @@ helpers) is framework- and database-free so it can be golden-tested directly
 against pyDOE3. Persistence goes through the ``DesignRepository`` port.
 """
 
+from dataclasses import replace
 from typing import Protocol
 
 import numpy as np
@@ -92,9 +93,14 @@ def build_2k_design(
     unique 1..N across replicates; every point is a factorial corner.
     """
     k = len(factors)
-    if k < 2:
+    # k=1 é aceito: com blocos (ou réplicas) vira um RCBD clássico -- o exemplo
+    # arma-radar da Seção 9 do Caderno 1 (golden em test_blocks_rcbd.py), um
+    # fator em dois níveis dentro de blocos. Sem bloco e sem réplica o design
+    # fica saturado (0 GL de resíduo), mas quem recusa isso é o guard de
+    # estimabilidade da análise (ADR-007), não a geração.
+    if k < 1:
         raise DesignConfigError(
-            "Um planejamento fatorial 2^k precisa de pelo menos 2 fatores."
+            "Um planejamento fatorial 2^k precisa de pelo menos 1 fator."
         )
     if k > MAX_FACTORS:
         raise DesignConfigError(
@@ -235,8 +241,11 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
     }
     construtor = construtor_de_bloco_unico.get(req.design_type)
     if construtor is not None:
-        return design_builders.expandir_blocos_e_replicas(
-            construtor(), req.blocks, req.replicates, req.seed
+        return _com_nomes_de_bloco(
+            design_builders.expandir_blocos_e_replicas(
+                construtor(), req.blocks, req.replicates, req.seed
+            ),
+            req,
         )
 
     if req.design_type is DesignType.FRACTIONAL_FACTORIAL_2KP:
@@ -259,9 +268,24 @@ def _build_design(req: DesignGenerateRequest) -> GeneratedDesign:
     # fora com replicates=1 para não as duplicar (ver docstring de
     # `expandir_blocos_e_replicas`: eixo de tamanho 1 preserva o campo já
     # atribuído, então `replicate` sai intocado e só `block` passa a variar).
-    return design_builders.expandir_blocos_e_replicas(
-        design, req.blocks, 1, req.seed
+    return _com_nomes_de_bloco(
+        design_builders.expandir_blocos_e_replicas(design, req.blocks, 1, req.seed),
+        req,
     )
+
+
+def _com_nomes_de_bloco(
+    design: GeneratedDesign, req: DesignGenerateRequest
+) -> GeneratedDesign:
+    """Anexa os nomes dos blocos ao design gerado.
+
+    O construtor não os conhece: ele monta a geometria, e o nome é rótulo do
+    pesquisador ("Laterita", "Residual"). Fica num lugar só, depois da expansão,
+    para nenhuma família esquecer de propagar.
+    """
+    if not req.block_labels:
+        return design
+    return replace(design, block_labels=list(req.block_labels), block_name=req.block_name)
 
 
 def _to_design_read(
@@ -314,6 +338,8 @@ def _to_design_read(
         runs=runs,
         resolution=design.resolution,
         aliasing=design.aliasing,
+        block_labels=design.block_labels,
+        block_name=design.block_name,
         array_name=design.array_name,
         optimal_efficiency=design.optimal_efficiency,
         notes=design.notes or [],

@@ -83,6 +83,11 @@ class GeneratedDesign:
     aliasing: list[str] | None = None
     # Taguchi (chosen OA) / optimal (D- or I-efficiency); None for other families.
     array_name: str | None = None
+    # Nome de cada bloco, na ordem, e o nome do agrupamento ("Tipo de solo").
+    # Viajam com o design para a matriz, a ANOVA e o relatório poderem
+    # mostrar a condição real em vez do número do bloco.
+    block_labels: list[str] | None = None
+    block_name: str | None = None
     optimal_efficiency: float | None = None
     # Avisos não-bloqueantes (ex.: fatorial completo com n níveis grande demais
     # para ser confortável, mas ainda dentro do limite rígido). None quando não

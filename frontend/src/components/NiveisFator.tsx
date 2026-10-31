@@ -31,12 +31,24 @@ interface NiveisFatorProps {
    */
   permitirEscolherQuantidade?: boolean;
   /**
-   * Ação do botão "Declarar blocos", exibido junto da orientação de blocagem
-   * do ramo qualitativo. Opcional: quando ausente, o botão não é renderizado.
-   * É o caso do fluxo de edição de um experimento já gerado, onde não há passo
-   * de planejamento para onde ir.
+   * Contagem ao vivo do bloco (só usada quando `factor.papel === "bloco"`):
+   * quantos blocos, ensaios de UMA repetição do arranjo, e total (arranjo ×
+   * blocos × réplicas). Vem de fora porque depende do `designConfig` e das
+   * réplicas, que este componente não recebe — ele só conhece ESTE fator.
+   * Ausente ou com campos `null`: mostra a contagem de blocos sem a conta de
+   * ensaios (indeterminada, ex.: sem fatores reais declarados ainda).
    */
-  onIrParaBlocos?: () => void;
+  contagemBloco?: ContagemBloco;
+}
+
+/** Contagem ao vivo do bloco, repassada pelo `FactorForm`/`GuidedTour`. */
+export interface ContagemBloco {
+  /** Nº de blocos com categoria nomeada (>= 2 para valer). */
+  nBlocos: number;
+  /** Ensaios de UMA repetição do arranjo (sem multiplicar por blocos). */
+  porBloco: number | null;
+  /** Total: porBloco × blocos × réplicas. */
+  total: number | null;
 }
 
 /** U+2212 (sinal de menos tipográfico) — mesmo caractere usado no restante da UI. */
@@ -93,7 +105,7 @@ export function NiveisFator({
   factor,
   onChange,
   permitirEscolherQuantidade = true,
-  onIrParaBlocos,
+  contagemBloco,
 }: NiveisFatorProps) {
   // Índices (dentro de `levels`) que o usuário editou manualmente. Sobrevive
   // a re-renders deste card (útil pro caso "editei o centro, depois mudei o
@@ -101,6 +113,107 @@ export function NiveisFator({
   const editadosRef = useRef<Set<number>>(new Set());
   const [personalizadoValor, setPersonalizadoValor] = useState(CUSTOM_PADRAO);
   const botoesRef = useRef<Array<HTMLButtonElement | null>>([]);
+
+  if (factor.papel === "bloco") {
+    const categorias = factor.categorias ?? ["", ""];
+    const nomesValidos = categorias.filter((c) => c.trim());
+    const valido = categorias.length >= 2 && nomesValidos.length === categorias.length;
+
+    function atualizarCategoria(indice: number, valor: string) {
+      onChange({
+        ...factor,
+        categorias: categorias.map((c, i) => (i === indice ? valor : c)),
+      });
+    }
+    function acrescentarCategoria() {
+      onChange({ ...factor, categorias: [...categorias, ""] });
+    }
+    function removerCategoria(indice: number) {
+      if (categorias.length <= 2) return;
+      onChange({
+        ...factor,
+        categorias: categorias.filter((_, i) => i !== indice),
+      });
+    }
+
+    return (
+      <div className="mt-3 flex flex-col gap-3">
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-sm text-foreground-soft">
+              Categorias, uma por bloco
+            </span>
+            <button
+              type="button"
+              onClick={acrescentarCategoria}
+              className="text-xs font-medium text-accent-strong hover:underline"
+            >
+              + acrescentar
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {categorias.map((valor, indice) => (
+              <div key={indice} className="flex items-center gap-2">
+                <span className="w-5 shrink-0 font-mono text-xs text-faint">
+                  {indice + 1}
+                </span>
+                <input
+                  type="text"
+                  value={valor}
+                  onChange={(e) => atualizarCategoria(indice, e.target.value)}
+                  placeholder={`Ex.: bloco ${indice + 1}`}
+                  aria-label={`Bloco ${indice + 1}`}
+                  className={`${inputClass} flex-1`}
+                />
+                {categorias.length > 2 ? (
+                  <button
+                    type="button"
+                    onClick={() => removerCategoria(indice)}
+                    aria-label={`Remover bloco ${indice + 1}`}
+                    className="text-muted transition hover:text-danger"
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {!valido ? (
+          <p className="text-xs text-danger">
+            Um bloco precisa de ao menos 2 categorias nomeadas, sem campos em
+            branco.
+          </p>
+        ) : (
+          <p className="text-xs text-faint">
+            {nomesValidos.length} blocos.{" "}
+            {contagemBloco?.porBloco != null && contagemBloco?.total != null
+              ? `Cada um recebe uma repetição completa do arranjo: ${contagemBloco.porBloco} x ${nomesValidos.length} = ${contagemBloco.total} ensaios.`
+              : "Cada um recebe uma repetição completa do arranjo."}
+          </p>
+        )}
+
+        <div className="rounded-md border-l-4 border-accent-strong/50 bg-accent-strong/5 py-3 pl-4 pr-3">
+          <p className="text-xs text-foreground-soft">
+            Esta entrada sai do modelo como fator e entra como bloco. Cada
+            bloco recebe uma repetição completa do arranjo de ensaios, e a
+            comparação entre os demais fatores passa a ser feita dentro de
+            cada bloco, não entre eles.{" "}
+            <a
+              href="/conteudo/pdf/por-que-planejar.pdf#page=10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Abrir Caderno 1, seção 9, sobre blocagem, em PDF, numa nova aba"
+              className="underline decoration-dotted underline-offset-2 hover:text-accent-strong"
+            >
+              Caderno 1, seção 9<span aria-hidden> ↗</span>
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (factor.factor_type !== "quantitative") {
     return (
@@ -151,17 +264,17 @@ export function NiveisFator({
               Caderno 1, seção 9<span aria-hidden> ↗</span>
             </a>
           </p>
-          {onIrParaBlocos ? (
-            <div className="mt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={onIrParaBlocos}
-                className="rounded-md border border-accent-strong px-3 py-1.5 text-xs font-medium text-accent-strong transition hover:bg-accent-strong/10"
-              >
-                Declarar blocos
-              </button>
-            </div>
-          ) : null}
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={() =>
+                onChange({ ...factor, papel: "bloco", categorias: ["", ""] })
+              }
+              className="rounded-md border border-accent-strong px-3 py-1.5 text-xs font-medium text-accent-strong transition hover:bg-accent-strong/10"
+            >
+              Transformar em bloco
+            </button>
+          </div>
         </div>
       </div>
     );

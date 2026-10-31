@@ -152,6 +152,12 @@ class DesignGenerateRequest(BaseModel):
     # de ensaios = base × blocks × replicates (ver `expandir_blocos_e_replicas`
     # em design_builders.py).
     blocks: int = Field(default=1, ge=1, le=20)
+    # Nome de cada bloco, na ordem (o primeiro nomeia o bloco 1). É o que
+    # permite ler "Laterita" na matriz em vez de "3". Sem isso, a
+    # correspondência entre número e condição real fica fora da plataforma.
+    block_labels: list[str] | None = None
+    # Nome do agrupamento, ex. "Tipo de solo". Rotula a linha da ANOVA.
+    block_name: str | None = None
     factors: list[FactorSpec] = Field(min_length=1)
     responses: list[ResponseSpec] = Field(default_factory=list)
     seed: int | None = None  # optional: deterministic run-order randomization
@@ -163,6 +169,28 @@ class DesignGenerateRequest(BaseModel):
     dsd: DSDConfig | None = None
     bbd_center: int = Field(default=3, ge=0, le=20)  # BBD center points
     center_points: int = Field(default=0, ge=0, le=20)  # 2^k / fractional
+
+    @model_validator(mode="after")
+    def _check_block_labels(self) -> "DesignGenerateRequest":
+        """Nome de bloco só faz sentido casado, um por bloco.
+
+        Recusa a lista com tamanho diferente de ``blocks`` em vez de completar
+        com número: exibir "Laterita, Arenoso, bloco 3" seria pior que exibir
+        "1, 2, 3", porque parece que o terceiro solo foi esquecido na coleta.
+        """
+        if self.block_labels is None:
+            return self
+        vazios = [i for i, r in enumerate(self.block_labels, 1) if not r.strip()]
+        if vazios:
+            raise ValueError(
+                f"Bloco(s) {vazios} sem nome. Dê nome a todos ou a nenhum."
+            )
+        if len(self.block_labels) != self.blocks:
+            raise ValueError(
+                f"São {self.blocks} bloco(s) e {len(self.block_labels)} nome(s). "
+                "A lista de nomes precisa ter exatamente um item por bloco."
+            )
+        return self
 
 
 class LevelRead(BaseModel):
@@ -219,6 +247,10 @@ class DesignRead(BaseModel):
     # fractional 2^(k-p) only; None for every other family
     resolution: int | None = None
     aliasing: list[str] | None = None
+    # Nome de cada bloco e do agrupamento; None quando não houve blocagem
+    # nomeada. A matriz, a ANOVA e o relatório leem daqui.
+    block_labels: list[str] | None = None
+    block_name: str | None = None
     # Taguchi/optimal only; None for every other family
     array_name: str | None = None
     optimal_efficiency: float | None = None
@@ -289,6 +321,15 @@ class AnalysisRequest(BaseModel):
     model: RSMModel = RSMModel.LINEAR
     factor_x: str | None = None
     factor_y: str | None = None
+    # Nome do agrupamento ("Tipo de solo"), quando houve blocagem nomeada.
+    # Rotula a linha da ANOVA como "Bloco (Tipo de solo)"; sem ele a linha
+    # sai como "Bloco" puro, que era o comportamento anterior.
+    block_name: str | None = None
+    # Nome de cada bloco na ordem (o primeiro nomeia o bloco 1). Quando
+    # presente, os termos sintéticos de bloco saem como
+    # "Material (Solo-Brita 40/60)" em vez de "Bloco 2" nas tabelas de
+    # efeitos e coeficientes; sem ele, "Bloco <id>" segue como antes.
+    block_labels: list[str] | None = None
 
 
 class TermRead(BaseModel):

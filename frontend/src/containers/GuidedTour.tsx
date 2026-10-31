@@ -23,8 +23,15 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { StepNav } from "@/components/ui/StepNav";
 import { VitrineDePlanos } from "@/components/VitrineDePlanos";
 import { DataEntry } from "@/containers/DataEntry";
-import type { FactorInput, ResponseInput } from "@/domain/design";
+import {
+  apenasFatores,
+  blocoDeclarado,
+  nBlocos,
+  type FactorInput,
+  type ResponseInput,
+} from "@/domain/design";
 import { buildDesignRequest, factorIsValid } from "@/domain/designPayload";
+import { motivoDeMinimo } from "@/domain/limitesFamilia";
 import {
   GOAL_OPTIONS,
   recommendPlans,
@@ -44,7 +51,7 @@ import { devePedirEmail } from "@/lib/conta";
  * com o motivo, em vez de deixar o usuário escolher um plano que travaria lá
  * na frente sem explicação.
  */
-function motivoBloqueio(
+export function motivoBloqueio(
   config: DesignConfig,
   factors: FactorInput[],
   hasQualitativeFactor: boolean,
@@ -53,13 +60,16 @@ function motivoBloqueio(
   const requiresQuantitative =
     config.designType === "central_composite" ||
     config.designType === "box_behnken";
-  const optimalParams = optimalParamCount(k, config.optimalModel);
   if (requiresQuantitative && hasQualitativeFactor) {
     return "Este arranjo não aceita fator qualitativo; remova ou converta o fator antes de escolher este plano.";
   }
-  if (config.designType === "box_behnken" && k < 3) {
-    return "Box-Behnken exige pelo menos 3 fatores quantitativos.";
-  }
+  // Mínimo de fatores por família: fonte única em domain/limitesFamilia.ts,
+  // espelhada em backend/tests/test_minimos_por_familia.py. Cobre as 9
+  // famílias (antes só 4 tinham guarda aqui, e era assim que CCD/fatorial
+  // geral/2^k/fracionado/Taguchi escapavam sem checagem de mínimo).
+  const motivoMinimo = motivoDeMinimo(config.designType, k);
+  if (motivoMinimo) return motivoMinimo;
+  // Guardas que não são de contagem: seguem vivendo aqui.
   if (
     config.designType === "fractional_factorial_2kp" &&
     config.fractionalMode === "generators" &&
@@ -67,19 +77,44 @@ function motivoBloqueio(
   ) {
     return "Defina os geradores da fração antes de escolher este plano.";
   }
-  if (config.designType === "plackett_burman" && k < 2) {
-    return "Plackett-Burman exige pelo menos 2 fatores.";
-  }
-  if (config.designType === "dsd" && k < 2) {
-    return "O DSD exige pelo menos 2 fatores.";
-  }
-  if (
-    config.designType === "optimal" &&
-    (k < 2 || config.optimalNRuns < optimalParams)
-  ) {
-    return "Ajuste o nº de ensaios do planejamento ótimo antes de escolher este plano.";
+  if (config.designType === "optimal") {
+    const optimalParams = optimalParamCount(k, config.optimalModel);
+    if (config.optimalNRuns < optimalParams) {
+      return "Ajuste o nº de ensaios do planejamento ótimo antes de escolher este plano.";
+    }
   }
   return undefined;
+}
+
+/**
+ * Uma entrada está pronta para gerar quando é um fator válido de verdade OU,
+ * se declarada como bloco, tem ao menos 2 categorias nomeadas e sem branco.
+ * O motor recusa um bloco malformado de qualquer jeito, mas o usuário não
+ * deve descobrir isso só ao clicar em "Gerar matriz".
+ */
+function entradaIsValid(f: FactorInput): boolean {
+  if (!f.name.trim()) return false;
+  if (f.papel === "bloco") {
+    const nomes = f.categorias ?? [];
+    return nomes.length >= 2 && nomes.every((c) => c.trim().length > 0);
+  }
+  return factorIsValid(f);
+}
+
+/**
+ * Texto do Callout do passo 3, honesto com o nº de planos que
+ * `recommendPlans` de fato devolveu — nunca fixo em "três", porque a
+ * triagem de dois níveis (e a superfície com fator qualitativo) devolvem
+ * só um.
+ */
+function textoPasso3(nPlanos: number): string {
+  if (nPlanos <= 1) {
+    return "Preparamos abaixo o plano de planejamento recomendado, calculado a partir do seu objetivo e dos níveis declarados em cada fator.";
+  }
+  if (nPlanos === 2) {
+    return "Comparamos abaixo dois planos de planejamento, calculados a partir do seu objetivo e dos níveis declarados em cada fator: o recomendado e o mais econômico.";
+  }
+  return "Comparamos abaixo três planos de planejamento, calculados a partir do seu objetivo e dos níveis declarados em cada fator: o recomendado, o mais econômico e o mais completo.";
 }
 
 const emptyQuantFactor = (): FactorInput => ({
@@ -119,17 +154,35 @@ export function GuidedTour() {
   const generateDesign = useGenerateDesign();
   const taguchiCatalog = useTaguchiCatalog();
 
-  const hasQualitativeFactor = factors.some(
+  // Uma entrada com `papel === "bloco"` NÃO é um fator: sai da lista que vai
+  // ao motor de recomendação e à contagem de ensaios, e vira blocagem
+  // separada. Sem esta separação, o tipo de solo (uma entrada só, marcada
+  // como bloco) seria contado como fator qualitativo e derrubaria CCD/BBD à
+  // toa, além de inflar a combinatória do fatorial geral.
+  const fatoresParaContagem = useMemo(() => apenasFatores(factors), [factors]);
+  const blocoAtivo = useMemo(() => blocoDeclarado(factors), [factors]);
+  const numBlocosDeclarados = useMemo(() => nBlocos(factors), [factors]);
+
+  const hasQualitativeFactor = fatoresParaContagem.some(
     (f) => f.factor_type === "qualitative",
   );
-  const factorsReady = factors.length >= 2 && factors.every(factorIsValid);
+  const factorsReady = factors.length >= 2 && factors.every(entradaIsValid);
+  const blocoInvalido = blocoAtivo !== undefined && !entradaIsValid(blocoAtivo);
 
   // Vitrine de planos (passo 3): recomendado, mais econômico e mais completo,
   // já com os níveis declarados por fator (recommendPlans "enxerga" curvatura
-  // declarada em 3+ níveis, não só a contagem de fatores).
+  // declarada em 3+ níveis, não só a contagem de fatores). Usa só as entradas
+  // que são fator de verdade — o bloco não entra nesta conta.
   const planos = useMemo<PlanoSugerido[]>(
-    () => (goal ? recommendPlans({ goal, factors }) : []),
-    [goal, factors],
+    () =>
+      goal
+        ? recommendPlans({
+            goal,
+            factors: fatoresParaContagem,
+            blocks: numBlocosDeclarados,
+          })
+        : [],
+    [goal, fatoresParaContagem, numBlocosDeclarados],
   );
   // Decora cada plano com `indisponivel` quando a família dele, para os
   // fatores atuais, cairia numa das guardas que bloqueiam "Gerar matriz" —
@@ -140,24 +193,53 @@ export function GuidedTour() {
       planos.map((p) => {
         if (p.indisponivel) return p;
         const config: DesignConfig = { ...defaultDesignConfig(), ...p.configPatch };
-        const motivo = motivoBloqueio(config, factors, hasQualitativeFactor);
+        const motivo = motivoBloqueio(config, fatoresParaContagem, hasQualitativeFactor);
         return motivo ? { ...p, indisponivel: motivo } : p;
       }),
-    [planos, factors, hasQualitativeFactor],
+    [planos, fatoresParaContagem, hasQualitativeFactor],
   );
   const planoSelecionado =
     planosDecorados.find((p) => p.rotulo === rotuloSelecionado) ??
     planosDecorados[0] ??
     null;
 
+  // O bloco declarado no passo de fatores tem precedência sobre o campo
+  // numérico do catálogo avançado (mesma regra de `buildDesignRequest`), para
+  // a contagem ao vivo não divergir do que será de fato enviado ao motor.
+  const configParaContagem = useMemo<DesignConfig>(
+    () =>
+      blocoAtivo ? { ...designConfig, blocks: numBlocosDeclarados } : designConfig,
+    [designConfig, blocoAtivo, numBlocosDeclarados],
+  );
   const runCount = useMemo(
     () =>
-      contarEnsaios(designConfig, factors, replicates, taguchiCatalog.data?.arrays),
-    [designConfig, factors, replicates, taguchiCatalog.data],
+      contarEnsaios(
+        configParaContagem,
+        fatoresParaContagem,
+        replicates,
+        taguchiCatalog.data?.arrays,
+      ),
+    [configParaContagem, fatoresParaContagem, replicates, taguchiCatalog.data],
   );
+  // Ensaios de UMA repetição do arranjo (sem multiplicar pelos blocos), para
+  // a nota didática do card do bloco mostrar "9 x 6 = 54" em vez de só "54".
+  const runCountPorBloco = useMemo(
+    () =>
+      contarEnsaios(
+        { ...configParaContagem, blocks: 1 },
+        fatoresParaContagem,
+        replicates,
+        taguchiCatalog.data?.arrays,
+      ),
+    [configParaContagem, fatoresParaContagem, replicates, taguchiCatalog.data],
+  );
+  const contagemBlocos = blocoAtivo
+    ? { nBlocos: numBlocosDeclarados, porBloco: runCountPorBloco, total: runCount }
+    : undefined;
 
   const familyBlocked =
-    motivoBloqueio(designConfig, factors, hasQualitativeFactor) !== undefined;
+    motivoBloqueio(designConfig, fatoresParaContagem, hasQualitativeFactor) !==
+    undefined;
   const canGenerate = factorsReady && replicates >= 1 && !familyBlocked;
 
   const generatedId = generateDesign.data?.experiment_id ?? null;
@@ -345,7 +427,7 @@ export function GuidedTour() {
             onRemove={(index) =>
               setFactors((prev) => prev.filter((_, i) => i !== index))
             }
-            onIrParaBlocos={goToDesign}
+            contagemBlocos={contagemBlocos}
           />
           <ResponsesForm
             responses={responses}
@@ -359,6 +441,11 @@ export function GuidedTour() {
             {factors.length < 2 ? (
               <p className="text-sm text-warning">
                 Adicione ao menos 2 fatores.
+              </p>
+            ) : blocoInvalido ? (
+              <p className="text-sm text-warning">
+                O bloco precisa de ao menos 2 categorias nomeadas, sem campos
+                em branco.
               </p>
             ) : (
               <Button variant="ghost" onClick={() => setStep("goal")}>
@@ -375,14 +462,14 @@ export function GuidedTour() {
       {step === "design" ? (
         <div className="flex flex-col gap-6">
           <Callout label="Passo 3">
-            Comparamos abaixo três planos de planejamento, calculados a partir
-            do seu objetivo e dos níveis declarados em cada fator: o
-            recomendado, o mais econômico e o mais completo. A matriz sai com
-            a ordem dos ensaios sorteada (randomizada), o que protege as
-            conclusões contra tendências do equipamento e do ambiente ao
-            longo do tempo. Escolha um cartão, ou abra o catálogo avançado com
-            as outras famílias de planejamento; o número de ensaios aparece ao
-            vivo.
+            {textoPasso3(planosDecorados.length)} A matriz sai com a ordem dos
+            ensaios sorteada (randomizada), o que protege as conclusões contra
+            tendências do equipamento e do ambiente ao longo do tempo.{" "}
+            {planosDecorados.length <= 1
+              ? "Confira o cartão abaixo"
+              : "Escolha um cartão"}
+            , ou abra o catálogo avançado com as outras famílias de
+            planejamento; o número de ensaios aparece ao vivo.
           </Callout>
 
           <VitrineDePlanos

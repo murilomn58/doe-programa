@@ -62,3 +62,15 @@ _export_audit/
 contexto aulas/*.pptx
 contexto aulas/aula antiga/
 aula-ime/*.pdf
+
+# ---- dados brutos de terceiros nos exemplos (pesados, nao sao entregavel) ----
+exemplos_site/**/*.docx
+exemplos_site/**/*.pptx
+exemplos_site/**/*.xlsx
+
+# Dados de terceiros e material de aula: ficam só na máquina local, nunca no repositório público
+exemplos_site/claudio/
+frontend/src/engine/exemploClaudio.ts
+contexto aulas/
+_backup*/
+*.zip
