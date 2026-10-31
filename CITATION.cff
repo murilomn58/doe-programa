@@ -7,6 +7,7 @@ authors:
     given-names: Murilo Miguel
     affiliation: Instituto Militar de Engenharia (IME)
 version: 1.0.0
+doi: 10.5281/zenodo.23843126
 date-released: 2026-10-31
 license: MIT
 repository-code: "https://github.com/murilomn58/doe-programa"
@@ -19,3 +20,7 @@ keywords:
   - factorial design
   - Taguchi
   - statsmodels
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23843125
+    description: DOI do conceito (todas as versões)
