@@ -16,8 +16,18 @@ interface ParetoPlotProps {
   pareto: ParetoData;
 }
 
-/** Color of the non-significant bars (slate-600, recedes behind the cyan). */
-const NON_SIG_COLOR = "#475569";
+/**
+ * Cor das barras não significativas — recuam atrás do teal das significativas.
+ *
+ * Mesmo tom morno de ``PLOT_COLORS.axis`` (``rgb(28,26,23)``), mas com alfa
+ * próprio (``.55``, não os ``.45`` do token): reusar o token puro deixava a
+ * barra em 2,88:1 sobre o painel branco, abaixo dos 3:1 de objeto gráfico
+ * exigidos pela WCAG 1.4.11. Subir só o alfa aqui, sem tocar em
+ * ``PLOT_COLORS.axis`` (compartilhado com eixos e grade, onde ``.45`` é
+ * correto), resolve a barra em 3,9:1 sem esfriar a paleta de volta para o
+ * ``#475569`` (slate-600) que havia antes.
+ */
+const NON_SIG_COLOR = "rgba(28,26,23,.55)";
 
 export function ParetoPlot({ pareto }: ParetoPlotProps) {
   // Horizontal bars render bottom-up; reverse so the largest effect is on top.

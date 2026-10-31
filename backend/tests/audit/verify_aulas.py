@@ -68,7 +68,7 @@ def caso_peixoto() -> None:
     effs = {e.term: e for e in res.effects}
 
     print(" MOTOR x AULA:")
-    # nomes dos termos como o motor rotula (main = nome do fator; interacao = 'A*B' ou similar)
+    # nomes dos termos como o motor rotula (main = nome do fator; interação = 'A*B' ou similar)
     t_term = next(k for k in coefs if "Temperatura" in k and "*" not in k and ":" not in k)
     c_term = next(k for k in coefs if "Catalisador" in k and "*" not in k and ":" not in k)
     i_term = next(k for k in coefs if ("*" in k or ":" in k))
@@ -78,7 +78,7 @@ def caso_peixoto() -> None:
         check("intercepto (=media global)", interc.coef_coded, exp["intercepto"], 1e-9)
     check("coef Temperatura", coefs[t_term].coef_coded, exp["coef_T"], 1e-9)
     check("coef Catalisador", coefs[c_term].coef_coded, exp["coef_C"], 1e-9)
-    check("coef interacao", coefs[i_term].coef_coded, exp["coef_TC"], 1e-9)
+    check("coef interação", coefs[i_term].coef_coded, exp["coef_TC"], 1e-9)
     check("efeito T (=2x coef)", effs[t_term].effect, exp["efeito_T"], 1e-9)
     check("efeito C", effs[c_term].effect, exp["efeito_C"], 1e-9)
     check("efeito TC", effs[i_term].effect, exp["efeito_TC"], 1e-9)
@@ -105,7 +105,7 @@ def caso_peixoto() -> None:
     check("manual SE coef == motor", float(se[1]), coefs[t_term].std_err / 2 if False else float(se[1]), 0)  # placeholder auto-ok
     # SE do efeito = 2x SE do coef
     check("2x SE(coef) manual == SE efeito motor", 2 * float(se[1]), effs[t_term].std_err, 1e-9)
-    # pooled variance manual == s2 do OLS saturado em celulas? aqui: modelo cheio (4 params) => residuo = erro puro
+    # pooled variance manual == s2 do OLS saturado em celulas? aqui: modelo cheio (4 params) => resíduo = erro puro
     s2_pooled_manual = sse / df
     check("S2 pooled manual (=MSE modelo cheio)", s2_pooled_manual, exp["s2_pooled"], 1e-9)
     # ANOVA por contraste: SS_termo = coef^2 * N
@@ -153,8 +153,8 @@ def caso_originpro_2x2() -> None:
     pred_r2 = 1 - r["press"] / r["ss_total"]
     print(f"  [NOTA] Predicted R2 real = {pred_r2:.5f} (negativo); OriginPro imprime 0 (clamp). Motor reporta o valor real.")
 
-    print(" MOTOR x RELATORIO (dataset equivalente por estatisticas suficientes):")
-    # celulas com interacao delta e residuo puro e: SSE(main) = 8*delta^2 + 8*e^2 = 49.67
+    print(" MOTOR x RELATÓRIO (dataset equivalente por estatísticas suficientes):")
+    # celulas com interação delta e resíduo puro e: SSE(main) = 8*delta^2 + 8*e^2 = 49.67
     delta = 2.0
     e2 = r["sse"] / 8 - delta * delta
     e = math.sqrt(e2)
@@ -240,9 +240,9 @@ def caso_originpro_ccd() -> None:
     check("df PE = (3-1)+(3-1)", 4, pe["df"], 0)
 
     print(" MOTOR (stats_service.pure_error_and_lof) x particao esperada:")
-    # Grupos de replicas do CCD-2-blocos: os 2 grupos de 3 centrais (um por bloco,
+    # Grupos de réplicas do CCD-2-blocos: os 2 grupos de 3 centrais (um por bloco,
     # distinguidos pela coluna de bloco). SS_PE alvo = 112/3 (= 37.33333), df 4.
-    # Construimos residuos {-d, 0, +d} por grupo com 2d^2 = (112/3)/2 e conferimos
+    # Construímos resíduos {-d, 0, +d} por grupo com 2d^2 = (112/3)/2 e conferimos
     # a particao do motor: PE exato e LoF = SSE_modelo - PE.
     from services import stats_service
 
@@ -273,7 +273,7 @@ def caso_originpro_ccd() -> None:
     check("motor SS_LoF = SSE - SS_PE", lof_t[0], sse_model - ss_pe_esperado, 1e-9)
     check("motor df_LoF = df_resid - df_PE", lof_t[1], (len(ys) - 4) - 4, 0)
     f_lof = (lof_t[0] / lof_t[1]) / (pe_t[0] / pe_t[1])
-    print(f"  [INFO] F_LoF do dataset sintetico = {f_lof:.5f} (mesma formula validada acima contra o OriginPro)")
+    print(f"  [INFO] F_LoF do dataset sintético = {f_lof:.5f} (mesma fórmula validada acima contra o OriginPro)")
 
 
 def main() -> int:
@@ -286,7 +286,7 @@ def main() -> int:
         for f in FAILS:
             print(" -", f)
         return 1
-    print("AUDITORIA NUMERICA: TODAS AS VERIFICACOES PASSARAM")
+    print("AUDITORIA NUMÉRICA: TODAS AS VERIFICAÇÕES PASSARAM")
     return 0
 
 

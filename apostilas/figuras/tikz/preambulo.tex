@@ -1,0 +1,59 @@
+% Preâmbulo comum das figuras TikZ das apostilas.
+% Carregado por todos os `standalone` deste diretório, para que os cinco
+% diagramas não divirjam em fonte, cor ou espessura de traço.
+%
+% fontenc T1 + inputenc utf8 são obrigatórios: sem eles "ç", "ã" e "é"
+% saem trocados ou desaparecem silenciosamente do PDF.
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+% A ordem importa: `amssymb` antes de `newtxmath`, exatamente como em
+% `doeapostila.cls`. Invertida, as duas definem `\Bbbk` e a compilação aborta.
+\usepackage{amsmath,amssymb}
+\usepackage{newtxtext,newtxmath}   % mesma família serifada da classe doeapostila
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,decorations.pathreplacing,positioning,
+  shapes.geometric,backgrounds}
+
+% Paleta: preto, cinzas e uma única cor de apoio.
+\definecolor{azulDoE}{HTML}{1B4E79}
+\definecolor{cinzaDoE}{gray}{0.55}
+\definecolor{cinzaClaro}{gray}{0.82}
+\definecolor{cinzaFundo}{gray}{0.93}
+
+\tikzset{
+  % vértice de plano fatorial, com a resposta escrita dentro
+  vertice/.style={circle, draw=black, fill=white, line width=0.5pt,
+                  inner sep=0pt, minimum size=8.5mm, font=\scriptsize},
+  vertdestaque/.style={circle, draw=azulDoE, fill=azulDoE!10, text=azulDoE,
+                  line width=0.9pt, inner sep=0pt, minimum size=8.5mm,
+                  font=\scriptsize},
+  % ponto de planejamento, sem texto dentro
+  ponto/.style={circle, draw=black, fill=black, inner sep=0pt,
+                minimum size=2.4mm},
+  pontovazio/.style={circle, draw=black, fill=white, line width=0.5pt,
+                inner sep=0pt, minimum size=2.6mm},
+  pontoazul/.style={circle, draw=azulDoE, fill=azulDoE, inner sep=0pt,
+                minimum size=2.8mm},
+  axial/.style={rectangle, draw=azulDoE, fill=azulDoE, inner sep=0pt,
+                minimum size=2.6mm},
+  apagado/.style={circle, draw=cinzaClaro, fill=white, line width=0.5pt,
+                inner sep=0pt, minimum size=2.6mm},
+  aresta/.style={draw=black, line width=0.5pt},
+  arestafundo/.style={draw=cinzaClaro, line width=0.5pt},
+  eixo/.style={draw=black, line width=0.5pt, -{Latex[length=1.8mm,width=1.4mm]}},
+  seta/.style={draw=black, line width=0.6pt, -{Latex[length=2.2mm,width=1.7mm]}},
+  setaazul/.style={draw=azulDoE, line width=0.8pt,
+                   -{Latex[length=2.2mm,width=1.7mm]}},
+  cota/.style={draw=cinzaDoE, line width=0.5pt,
+               {Latex[length=1.6mm]}-{Latex[length=1.6mm]}},
+  % Corpos escolhidos para casar com as figuras de matplotlib, que usam
+  % 8 pt nos ticks e 9 pt nos rótulos de eixo. Com a base de 11 pt do
+  % `standalone` (a mesma da classe doeapostila), \scriptsize = 8 pt e
+  % \footnotesize = 9 pt. Abaixo disso a figura deixa de ser legível na
+  % página impressa, e é para isso que a folha de prova serve.
+  rotulo/.style={font=\footnotesize},
+  rotulinho/.style={font=\scriptsize},
+  nota/.style={font=\footnotesize, align=left},
+  notaazul/.style={font=\footnotesize, align=left, text=azulDoE},
+}

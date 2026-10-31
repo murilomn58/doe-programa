@@ -227,7 +227,7 @@ export function RunsGrid({
                     </th>
                   ))}
                   {responses.map((response) => (
-                    <th key={`r-${response.name}`} className={`${th} text-primary-soft`}>
+                    <th key={`r-${response.name}`} className={`${th} text-primary-strong`}>
                       {response.name}
                       {response.unit ? (
                         <span className="text-faint"> ({response.unit})</span>

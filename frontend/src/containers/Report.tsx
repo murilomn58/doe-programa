@@ -8,6 +8,7 @@ import {
   type ReportPlotKind,
 } from "@/api/reportImages";
 import { ReportSection } from "@/components/ReportSection";
+import { PRIMARY_SURFACE } from "@/components/ui/Button";
 import type { AnalysisResult, RSMModel } from "@/domain/analysis";
 import type { FactorRead, RunRead } from "@/domain/design";
 import { useAnalysis } from "@/hooks/useAnalysis";
@@ -196,7 +197,7 @@ export function Report({ experimentId, response, model }: ReportProps) {
           <button
             type="button"
             onClick={() => window.print()}
-            className="shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary-strong print:hidden"
+            className={`shrink-0 rounded-md ${PRIMARY_SURFACE} px-4 py-2 text-sm font-semibold shadow transition print:hidden`}
           >
             Salvar como PDF
           </button>
@@ -313,7 +314,7 @@ export function Report({ experimentId, response, model }: ReportProps) {
       ) : null}
 
       <footer className="mt-10 border-t border-slate-300 pt-3 text-[10px] text-slate-400">
-        DoE Programa — relatório gerado automaticamente.
+        Design of Experiments: relatório gerado automaticamente.
       </footer>
 
       {/* Salvar PDF local: sem servidor headless, o print do navegador gera o PDF. */}
@@ -321,7 +322,7 @@ export function Report({ experimentId, response, model }: ReportProps) {
         <button
           type="button"
           onClick={() => window.print()}
-          className="fixed bottom-6 right-6 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-strong print:hidden"
+          className={`fixed bottom-6 right-6 rounded-full ${PRIMARY_SURFACE} px-5 py-3 text-sm font-semibold shadow-lg transition print:hidden`}
         >
           Salvar como PDF
         </button>

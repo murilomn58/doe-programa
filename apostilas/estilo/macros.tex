@@ -1,0 +1,27 @@
+% ---------------------------------------------------------------------------
+% macros.tex — notação matemática comum aos cinco cadernos.
+% Fixada antes de qualquer caderno começar, para os cinco não divergirem.
+% Uso: \input{../estilo/macros} no preâmbulo de cada main.tex.
+% ---------------------------------------------------------------------------
+
+% Somas de quadrados
+\newcommand{\SQT}{\mathrm{SQ}_{\mathrm{T}}}    % total
+\newcommand{\SQR}{\mathrm{SQ}_{\mathrm{R}}}    % da regressão
+\newcommand{\SQr}{\mathrm{SQ}_{\mathrm{r}}}    % residual
+\newcommand{\SQfaj}{\mathrm{SQ}_{\mathrm{faj}}}% falta de ajuste
+\newcommand{\SQep}{\mathrm{SQ}_{\mathrm{ep}}}  % erro puro
+
+% Médias quadráticas: \MQ{R}, \MQ{r}, \MQ{faj}, \MQ{ep}
+\newcommand{\MQ}[1]{\mathrm{MQ}_{\mathrm{#1}}}
+
+% Coeficientes de determinação
+\newcommand{\Rdois}{R^{2}}
+\newcommand{\Rajus}{R^{2}_{\mathrm{aj}}}
+
+% Efeitos: \efeito{1}, \efeito{12}
+\newcommand{\efeito}[1]{E_{#1}}
+
+% Álgebra matricial do ajuste por mínimos quadrados
+\newcommand{\vetbeta}{\boldsymbol{\beta}}
+\newcommand{\matX}{\mathbf{X}}
+\newcommand{\vety}{\mathbf{y}}

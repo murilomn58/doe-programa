@@ -1,0 +1,118 @@
+% Caderno 5 — projeção da meia fração num fatorial completo com réplicas.
+% Base: Peixoto, `Capítulo 4.pdf`, p. 28 a 31.
+% Plano 2^{3-1}_{III} com geratriz I = 123, quatro ensaios:
+%   1 (-,-,+)   2 (+,-,-)   3 (-,+,-)   4 (+,+,+)
+% Com um fator inerte, os quatro ensaios projetam-se num 2^2 completo;
+% com dois fatores inertes, projetam-se em dois níveis com duas réplicas
+% cada. É o argumento mais forte a favor da triagem.
+\documentclass[border=3pt,11pt]{standalone}
+\input{preambulo}
+\begin{document}
+\begin{tikzpicture}[x=1cm, y=1cm]
+
+  % Rótulo de ensaio afastado do marcador: encostado, o número some sob o disco.
+  \tikzset{marca/.style={rotulinho, text=azulDoE, inner sep=0pt}}
+
+  % ================= estágio 1: o cubo com os quatro ensaios =============
+  \begin{scope}
+    \def\lado{2.3}
+    \def\dx{0.95}
+    \def\dy{0.80}
+
+    % f1 -> direita, f3 -> cima, f2 -> fundo
+    \coordinate (c1) at (0,\lado);                 % ensaio 1: (-,-,+)
+    \coordinate (c2) at (\lado,0);                 % ensaio 2: (+,-,-)
+    \coordinate (c3) at (\dx,\dy);                 % ensaio 3: (-,+,-)
+    \coordinate (c4) at (\lado+\dx,\lado+\dy);     % ensaio 4: (+,+,+)
+    \coordinate (v1) at (0,0);
+    \coordinate (v2) at (\lado,\lado);
+    \coordinate (v3) at (\dx,\lado+\dy);
+    \coordinate (v4) at (\lado+\dx,\dy);
+
+    \draw[arestafundo] (c3) -- (v3) -- (c4) -- (v4) -- cycle;
+    \draw[arestafundo] (v1) -- (c3);
+    \draw[aresta] (v1) -- (c2) -- (v2) -- (c1) -- cycle;
+    \draw[aresta] (c2) -- (v4);
+    \draw[aresta] (c1) -- (v3);
+    \draw[aresta] (v2) -- (c4);
+
+    \node[apagado] at (v1) {}; \node[apagado] at (v2) {};
+    \node[apagado] at (v3) {}; \node[apagado] at (v4) {};
+
+    \node[pontoazul] at (c1) {};  \node[marca] at ($(c1)+(-0.26,0.22)$) {1};
+    \node[pontoazul] at (c2) {};  \node[marca] at ($(c2)+(0.26,-0.22)$) {2};
+    \node[pontoazul] at (c3) {};  \node[marca] at ($(c3)+(-0.26,-0.22)$) {3};
+    \node[pontoazul] at (c4) {};  \node[marca] at ($(c4)+(0.26,0.22)$) {4};
+
+    \coordinate (o) at (-1.15,-1.05);
+    \draw[eixo] (o) -- ++(0.80,0)    node[rotulinho, right] {1};
+    \draw[eixo] (o) -- ++(0,0.80)    node[rotulinho, above] {3};
+    \draw[eixo] (o) -- ++(0.55,0.46) node[rotulinho, above right, xshift=-1mm] {2};
+
+    \node[nota, anchor=north, align=center] at (1.6,-1.55)
+      {$2^{3-1}_{\mathrm{III}}$, $I = 123$\\ 4 ensaios num cubo de 8 vértices};
+  \end{scope}
+
+  % ================= seta 1 ==============================================
+  \begin{scope}[xshift=4.35cm]
+    \draw[seta] (0,1.55) -- (1.35,1.55);
+    \node[rotulinho, anchor=south, align=center] at (0.68,1.66)
+      {fator 1\\ inerte};
+  \end{scope}
+
+  % ================= estágio 2: o 2^2 completo ===========================
+  \begin{scope}[xshift=6.25cm, yshift=0.28cm]
+    \def\l{2.0}
+    \coordinate (q1) at (0,\l);      % ensaio 1: f2 -, f3 +
+    \coordinate (q2) at (0,0);       % ensaio 2: f2 -, f3 -
+    \coordinate (q3) at (\l,0);      % ensaio 3: f2 +, f3 -
+    \coordinate (q4) at (\l,\l);     % ensaio 4: f2 +, f3 +
+
+    \draw[aresta] (q2) -- (q3) -- (q4) -- (q1) -- cycle;
+    \node[pontoazul] at (q1) {};  \node[marca] at ($(q1)+(-0.26,0.22)$) {1};
+    \node[pontoazul] at (q2) {};  \node[marca] at ($(q2)+(-0.26,-0.22)$) {2};
+    \node[pontoazul] at (q3) {};  \node[marca] at ($(q3)+(0.26,-0.22)$) {3};
+    \node[pontoazul] at (q4) {};  \node[marca] at ($(q4)+(0.26,0.22)$) {4};
+
+    \coordinate (o2) at (-0.80,-0.78);
+    \draw[eixo] (o2) -- ++(0.70,0) node[rotulinho, right] {2};
+    \draw[eixo] (o2) -- ++(0,0.70) node[rotulinho, above] {3};
+
+    \node[nota, anchor=north, align=center] at (1.0,-1.83)
+      {$2^{2}$ completo\\ um ensaio por vértice};
+  \end{scope}
+
+  % ================= seta 2 ==============================================
+  \begin{scope}[xshift=9.15cm]
+    \draw[seta] (0,1.55) -- (1.35,1.55);
+    \node[rotulinho, anchor=south, align=center] at (0.68,1.66)
+      {fatores 1 e 3\\ inertes};
+  \end{scope}
+
+  % ================= estágio 3: dois níveis com duas réplicas ============
+  \begin{scope}[xshift=11.05cm, yshift=0.28cm]
+    \draw[eixo] (-0.30,0) -- (2.45,0) node[rotulinho, right] {2};
+    \draw[cinzaDoE, line width=0.4pt] (0.30,0.07) -- (0.30,-0.07);
+    \draw[cinzaDoE, line width=0.4pt] (1.80,0.07) -- (1.80,-0.07);
+    \node[rotulinho, below] at (0.30,-0.12) {$-1$};
+    \node[rotulinho, below] at (1.80,-0.12) {$+1$};
+
+    \draw[cinzaClaro, line width=0.5pt] (0.30,0.70) -- (0.30,1.50);
+    \draw[cinzaClaro, line width=0.5pt] (1.80,0.70) -- (1.80,1.50);
+
+    \node[pontoazul] at (0.30,0.70) {}; \node[marca] at (0.58,0.70) {1};
+    \node[pontoazul] at (0.30,1.50) {}; \node[marca] at (0.58,1.50) {2};
+    \node[pontoazul] at (1.80,0.70) {}; \node[marca] at (2.08,0.70) {3};
+    \node[pontoazul] at (1.80,1.50) {}; \node[marca] at (2.08,1.50) {4};
+
+    \node[nota, anchor=north, align=center] at (1.05,-1.55)
+      {dois níveis\\ com duas réplicas cada};
+  \end{scope}
+
+  \node[nota, anchor=north west, text width=13.9cm] at (-1.15,-2.95)
+    {Um fator que não afeta a resposta não some do planejamento: ele devolve
+     ensaios. A fração deixa de ser fração e volta a ser fatorial completo
+     nos fatores que restaram, com réplicas de brinde.};
+
+\end{tikzpicture}
+\end{document}

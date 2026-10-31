@@ -1,5 +1,6 @@
 "use client";
 
+import { NiveisFator } from "@/components/NiveisFator";
 import type { FactorInput, FactorType } from "@/domain/design";
 
 interface FactorFormProps {
@@ -7,6 +8,12 @@ interface FactorFormProps {
   onChange: (index: number, factor: FactorInput) => void;
   onAdd: () => void;
   onRemove: (index: number) => void;
+  /**
+   * Repassada a cada `NiveisFator`, que a usa no botão "Declarar blocos" da
+   * orientação de blocagem do ramo qualitativo. Opcional: sem ela o botão não
+   * aparece, que é o caso de quem monta este formulário fora do wizard.
+   */
+  onIrParaBlocos?: () => void;
 }
 
 const inputClass =
@@ -14,15 +21,12 @@ const inputClass =
 
 const labelFor = (index: number) => String.fromCharCode(65 + index); // A, B, C…
 
-function numberOrUndefined(value: string): number | undefined {
-  return value === "" ? undefined : Number(value);
-}
-
 export function FactorForm({
   factors,
   onChange,
   onAdd,
   onRemove,
+  onIrParaBlocos,
 }: FactorFormProps) {
   return (
     <div className="rounded-xl border border-border bg-surface-1 p-6 shadow-lg">
@@ -100,75 +104,11 @@ export function FactorForm({
               </label>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {factor.factor_type === "quantitative" ? (
-                <>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Nível baixo (−1)</span>
-                    <input
-                      type="number"
-                      value={factor.low ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          low: numberOrUndefined(e.target.value),
-                        })
-                      }
-                      placeholder="Ex.: 0"
-                      className={inputClass}
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Nível alto (+1)</span>
-                    <input
-                      type="number"
-                      value={factor.high ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          high: numberOrUndefined(e.target.value),
-                        })
-                      }
-                      placeholder="Ex.: 1.5"
-                      className={inputClass}
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Rótulo baixo (−1)</span>
-                    <input
-                      type="text"
-                      value={factor.low_label ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          low_label: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Ex.: Tucum"
-                      className={inputClass}
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-foreground-soft">Rótulo alto (+1)</span>
-                    <input
-                      type="text"
-                      value={factor.high_label ?? ""}
-                      onChange={(e) =>
-                        onChange(index, {
-                          ...factor,
-                          high_label: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Ex.: Piassava"
-                      className={inputClass}
-                    />
-                  </label>
-                </>
-              )}
-            </div>
+            <NiveisFator
+              factor={factor}
+              onChange={(next) => onChange(index, next)}
+              onIrParaBlocos={onIrParaBlocos}
+            />
           </div>
         ))}
       </div>

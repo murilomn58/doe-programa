@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 
+import { PRIMARY_SURFACE } from "@/components/ui/Button";
 import type { NewExperiment } from "@/domain/experiment";
 
 interface NewExperimentFormProps {
@@ -69,7 +70,7 @@ export function NewExperimentForm({
         <button
           type="submit"
           disabled={isPending || !name.trim()}
-          className="self-start rounded-md bg-primary px-4 py-2 text-sm font-medium text-on-primary transition hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
+          className={`self-start rounded-md ${PRIMARY_SURFACE} px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {isPending ? "Criando…" : "Criar experimento"}
         </button>

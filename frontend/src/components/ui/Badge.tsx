@@ -23,7 +23,7 @@ const TONES: Record<BadgeTone, string> = {
   significant: "border-significant-border bg-significant-strong/10 text-significant",
   warning: "border-warning-border bg-warning-strong/10 text-warning",
   danger: "border-danger-border bg-danger-strong/10 text-danger",
-  info: "border-info/40 bg-info/10 text-info-soft",
+  info: "border-info/40 bg-info/10 text-info",
 };
 
 export function Badge({

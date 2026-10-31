@@ -22,7 +22,10 @@ def _sig(p: float | None) -> bool:
 def advise(result: dict, design_meta: dict) -> dict:
     """``result``: AnalysisResultRead (dict). ``design_meta``:
     ``{"has_center": bool, "has_axial": bool, "max_replicate": int,
-       "all_quantitative": bool, "n_runs_measured": int}``.
+       "all_quantitative": bool, "n_runs_measured": int, "n_blocks": int}``.
+    ``n_blocks`` (fix 3+ blocos): numero de blocos distintos do design; usado
+    so para enriquecer o comentario sobre blocos abaixo (a analise em si ja
+    veio pronta em ``result``, esta funcao nao recalcula nada).
     Retorna ``{"comments": [...], "suggestions": [...]}``."""
     comments: list[dict] = []
     suggestions: list[dict] = []
@@ -156,6 +159,9 @@ def advise(result: dict, design_meta: dict) -> dict:
             comment("Predição", f"R² previsto = {r2_pred:.3f}: capacidade de prever pontos novos preservada.")
 
     # --- efeitos ----------------------------------------------------------------
+    # Filtro por substring ("Bloco" in term): continua correto com 3+ blocos
+    # (fix analysis_service), pois cada termo sintetico de bloco se chama
+    # "Bloco <id>" -- o "in" pega qualquer quantidade deles sem mudanca aqui.
     effects = result.get("effects") or []
     non_block = [e for e in effects if "Bloco" not in (e.get("term") or "")]
     sig_terms = [e["term"] for e in non_block if _sig(e.get("p"))]
@@ -176,17 +182,20 @@ def advise(result: dict, design_meta: dict) -> dict:
     anova = result.get("anova") or []
     bloco = next((row for row in anova if "Bloco" in (row.get("source") or "")), None)
     if bloco is not None:
+        n_blocks = design_meta.get("n_blocks")
+        blocos_txt = f" ({n_blocks} blocos)" if isinstance(n_blocks, int) and n_blocks > 2 else ""
         if _sig(bloco.get("p")):
             comment(
                 "Blocos",
-                f"O efeito de bloco é significativo (p = {bloco.get('p'):.4f}): as condições "
-                "mudaram entre os blocos e a análise já descontou isso. Bom sinal ter blocado.",
+                f"O efeito de bloco é significativo (p = {bloco.get('p'):.4f}){blocos_txt}: as "
+                "condições mudaram entre os blocos e a análise já descontou isso. Bom sinal ter "
+                "blocado.",
             )
         else:
             comment(
                 "Blocos",
-                f"Efeito de bloco não significativo (p = {bloco.get('p'):.3f}): os blocos "
-                "saíram parecidos; o ajuste por bloco fica de seguro.",
+                f"Efeito de bloco não significativo (p = {bloco.get('p'):.3f}){blocos_txt}: os "
+                "blocos saíram parecidos; o ajuste por bloco fica de seguro.",
             )
 
     # --- próximos passos otimização ---------------------------------------------

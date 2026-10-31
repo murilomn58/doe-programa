@@ -13,8 +13,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { NiveisFator } from "@/components/NiveisFator";
+import { PRIMARY_SURFACE } from "@/components/ui/Button";
 import { Callout } from "@/components/ui/Callout";
 import { PageHeader } from "@/components/ui/PageHeader";
+import type { FactorInput } from "@/domain/design";
 import {
   useAugmentDesign,
   useDeleteExperiment,
@@ -38,6 +41,35 @@ interface FactorDraft {
   high: string;
   lowLabel: string;
   highLabel: string;
+}
+
+/**
+ * Adapta o rascunho (strings, pra digitação com vírgula decimal) para o
+ * `FactorInput` que o `NiveisFator` — presentational puro e compartilhado com
+ * o wizard de criação — entende. Só os extremos entram aqui: a quantidade de
+ * níveis não é editável nesta tela (ver `permitirEscolherQuantidade={false}`
+ * abaixo e a nota no retorno desta tarefa sobre `updateFactorsPreservingResponses`).
+ */
+function draftParaFactorInput(d: FactorDraft): FactorInput {
+  return {
+    name: d.name,
+    factor_type: d.isQuantitative ? "quantitative" : "qualitative",
+    low: d.low !== "" ? Number(d.low.replace(",", ".")) : undefined,
+    high: d.high !== "" ? Number(d.high.replace(",", ".")) : undefined,
+    low_label: d.lowLabel || undefined,
+    high_label: d.highLabel || undefined,
+  };
+}
+
+/** Caminho inverso: devolve ao rascunho só o que o NiveisFator pode ter mudado. */
+function aplicarFactorInputNoDraft(base: FactorDraft, next: FactorInput): FactorDraft {
+  return {
+    ...base,
+    low: next.low !== undefined ? String(next.low) : "",
+    high: next.high !== undefined ? String(next.high) : "",
+    lowLabel: next.low_label ?? "",
+    highLabel: next.high_label ?? "",
+  };
 }
 
 export function EditExperiment({ experimentId }: EditExperimentProps) {
@@ -191,76 +223,39 @@ export function EditExperiment({ experimentId }: EditExperimentProps) {
         </p>
         <div className="mt-4 flex flex-col gap-4">
           {drafts.map((d, i) => (
-            <div key={d.original} className="grid gap-3 rounded-lg border border-border-subtle bg-surface-0 p-4 sm:grid-cols-4">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-muted">Nome</span>
-                <input
-                  value={d.name}
-                  onChange={(e) =>
-                    setDrafts((p) => p.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-                  }
-                  className="rounded-lg border border-border px-3 py-2"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-muted">Unidade</span>
-                <input
-                  value={d.unit}
-                  onChange={(e) =>
-                    setDrafts((p) => p.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))
-                  }
-                  className="rounded-lg border border-border px-3 py-2"
-                />
-              </label>
-              {d.isQuantitative ? (
-                <>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-muted">Nível baixo (−1)</span>
-                    <input
-                      inputMode="decimal"
-                      value={d.low}
-                      onChange={(e) =>
-                        setDrafts((p) => p.map((x, j) => (j === i ? { ...x, low: e.target.value } : x)))
-                      }
-                      className="rounded-lg border border-border px-3 py-2"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-muted">Nível alto (+1)</span>
-                    <input
-                      inputMode="decimal"
-                      value={d.high}
-                      onChange={(e) =>
-                        setDrafts((p) => p.map((x, j) => (j === i ? { ...x, high: e.target.value } : x)))
-                      }
-                      className="rounded-lg border border-border px-3 py-2"
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-muted">Rótulo baixo (−1)</span>
-                    <input
-                      value={d.lowLabel}
-                      onChange={(e) =>
-                        setDrafts((p) => p.map((x, j) => (j === i ? { ...x, lowLabel: e.target.value } : x)))
-                      }
-                      className="rounded-lg border border-border px-3 py-2"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm">
-                    <span className="text-muted">Rótulo alto (+1)</span>
-                    <input
-                      value={d.highLabel}
-                      onChange={(e) =>
-                        setDrafts((p) => p.map((x, j) => (j === i ? { ...x, highLabel: e.target.value } : x)))
-                      }
-                      className="rounded-lg border border-border px-3 py-2"
-                    />
-                  </label>
-                </>
-              )}
+            <div key={d.original} className="rounded-lg border border-border-subtle bg-surface-0 p-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-muted">Nome</span>
+                  <input
+                    value={d.name}
+                    onChange={(e) =>
+                      setDrafts((p) => p.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                    }
+                    className="rounded-lg border border-border px-3 py-2"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-muted">Unidade</span>
+                  <input
+                    value={d.unit}
+                    onChange={(e) =>
+                      setDrafts((p) => p.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))
+                    }
+                    className="rounded-lg border border-border px-3 py-2"
+                  />
+                </label>
+              </div>
+
+              <NiveisFator
+                factor={draftParaFactorInput(d)}
+                onChange={(next) =>
+                  setDrafts((p) =>
+                    p.map((x, j) => (j === i ? aplicarFactorInputNoDraft(x, next) : x)),
+                  )
+                }
+                permitirEscolherQuantidade={false}
+              />
             </div>
           ))}
         </div>
@@ -268,7 +263,7 @@ export function EditExperiment({ experimentId }: EditExperimentProps) {
           type="button"
           disabled={busy}
           onClick={saveAll}
-          className="mt-4 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:opacity-50"
+          className={`mt-4 rounded-lg ${PRIMARY_SURFACE} px-5 py-2.5 text-sm font-semibold transition disabled:opacity-50`}
         >
           {busy ? "Salvando…" : "Salvar alterações"}
         </button>
@@ -377,7 +372,9 @@ export function EditExperiment({ experimentId }: EditExperimentProps) {
             <button
               type="button"
               onClick={() =>
-                deleteExp.mutate(experimentId, { onSuccess: () => router.push("/") })
+                deleteExp.mutate(experimentId, {
+                  onSuccess: () => router.push("/experiments"),
+                })
               }
               className="rounded-lg bg-danger px-3 py-1.5 font-semibold text-white"
             >

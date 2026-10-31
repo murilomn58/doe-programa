@@ -2,7 +2,8 @@
 
 1. BLOCOS na análise: com 2 blocos, o termo "Bloco" entra no modelo (como o
    OriginPro). Dataset equivalente por estatísticas suficientes reproduz o
-   relatório 'Doe ANalysis pra superficie d resposta.pdf' número a número.
+   relatório 'Doe ANalysis pra superficie d resposta.pdf' (acentuacao-ok: nome de
+   arquivo em disco, em "contexto aulas/", grafia original preservada) número a número.
 2. CURVATURA via pontos centrais (fórmula da aula Cap.4 Parte 4), calculada
    pela AnalysisService quando o modelo não tem termos quadráticos.
 """

@@ -1,0 +1,66 @@
+% Caderno 4 — geometria da composição central rotacionável de dois fatores.
+% Conceitual. O que a figura precisa ensinar é que, com alfa = raiz de 2,
+% os oito pontos não centrais caem sobre uma mesma circunferência: é isso,
+% e só isso, que significa "rotacionável".
+% Contagem: N_E = 2^2 + 2*2 + 3 = 11 ensaios.
+\documentclass[border=3pt,11pt]{standalone}
+\input{preambulo}
+\begin{document}
+\begin{tikzpicture}[x=2.05cm, y=2.05cm]
+
+  \def\alfa{1.41421}
+
+  % --- circunferência de rotabilidade -------------------------------------
+  \draw[cinzaDoE, dashed, line width=0.5pt] (0,0) circle (\alfa);
+
+  % --- eixos ---------------------------------------------------------------
+  \draw[eixo] (-1.95,0) -- (1.95,0) node[rotulo, right, yshift=-0.5mm] {$z_1$};
+  \draw[eixo] (0,-1.95) -- (0,1.95) node[rotulo, above] {$z_2$};
+
+  % --- quadrado fatorial ---------------------------------------------------
+  \draw[cinzaClaro, line width=0.5pt]
+       (-1,-1) -- (1,-1) -- (1,1) -- (-1,1) -- cycle;
+
+  % --- raio até um ponto fatorial e até um ponto axial ---------------------
+  \draw[cinzaDoE, line width=0.5pt] (0,0) -- (1,1);
+  \node[rotulinho, text=cinzaDoE, anchor=south east, rotate=45]
+       at (0.50,0.62) {$\sqrt{2}$};
+  \draw[azulDoE, line width=0.7pt] (0,0) -- (\alfa,0);
+  \node[rotulinho, text=azulDoE, anchor=north] at (0.72,-0.06)
+       {$\alpha = \sqrt{2} \approx 1{,}414$};
+
+  % --- pontos --------------------------------------------------------------
+  \node[ponto] at (-1,-1) {};
+  \node[ponto] at ( 1,-1) {};
+  \node[ponto] at (-1, 1) {};
+  \node[ponto] at ( 1, 1) {};
+
+  \node[axial] at (-\alfa,0) {};
+  \node[axial] at ( \alfa,0) {};
+  \node[axial] at (0,-\alfa) {};
+  \node[axial] at (0, \alfa) {};
+
+  % três réplicas no centro, separadas o bastante para se contarem
+  \node[pontoazul] at (-0.075,0.048) {};
+  \node[pontoazul] at ( 0.075,0.048) {};
+  \node[pontoazul] at ( 0,-0.082) {};
+
+  % --- chamadas ------------------------------------------------------------
+  \node[rotulinho, anchor=south west] at (1.05,1.04)
+       {4 pontos fatoriais $(\pm 1, \pm 1)$};
+  \node[rotulinho, text=azulDoE, anchor=south] at (0,\alfa+0.06)
+       {4 pontos axiais, a $\pm\alpha$ sobre os eixos};
+  \node[rotulinho, text=azulDoE, anchor=north east] at (-0.30,-0.34)
+       {3 réplicas no centro};
+  \draw[setaazul] (-0.27,-0.30) -- (-0.10,-0.11);
+
+  \node[nota, anchor=north west] at (-1.95,-2.12)
+    {$N_E = 2^{N_X} + 2N_X + N_{R0} = 4 + 4 + 3 = 11$ ensaios};
+  \node[nota, anchor=north west] at (-1.95,-2.44)
+    {Os oito pontos não centrais estão à mesma distância $\sqrt{2}$ da origem.};
+  \node[notaazul, anchor=north west] at (-1.95,-2.76)
+    {A variância da previsão passa a depender só da distância ao centro,
+     não da direção.};
+
+\end{tikzpicture}
+\end{document}

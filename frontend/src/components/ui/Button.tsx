@@ -1,6 +1,22 @@
-/** Botão de ação. primary=indigo (forms), accent=cyan (gerar/rodar), outline/subtle/ghost=secundário. */
+/** Botão de ação. primary=terracota (forms), accent=teal (gerar/rodar), outline/subtle/ghost=secundário. */
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+
+/**
+ * Superfície da ação primária sólida — fonte única para todo botão terracota
+ * do app (o `Button` abaixo e os botões ad-hoc que não usam este componente).
+ *
+ * Repouso em `primary-strong` (#A9542F), não em `primary` (#C2673F): branco
+ * sobre `primary` mede 3,96:1 e reprova o mínimo AA de 4,5:1 para texto normal;
+ * sobre `primary-strong` sobe para 5,26:1.
+ *
+ * Como `primary-strong` já é o terracota mais escuro da paleta e `tokens.css` é
+ * decisão travada (vem do site irmão), o hover é derivado dos próprios tokens
+ * via `color-mix` — 80% terracota + 20% tinta = #8D482A, 6,77:1 — em vez de
+ * introduzir uma cor literal nova fora da identidade.
+ */
+export const PRIMARY_SURFACE =
+  "bg-primary-strong text-on-primary hover:bg-[color-mix(in_srgb,var(--color-primary-strong)_80%,var(--color-foreground-strong))]";
 
 export type ButtonVariant =
   | "primary"
@@ -20,8 +36,7 @@ const BASE =
   "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    "bg-primary text-on-primary hover:bg-primary-strong focus-visible:ring-primary",
+  primary: `${PRIMARY_SURFACE} focus-visible:ring-primary-strong`,
   accent:
     "bg-accent-strong text-on-accent hover:bg-accent-deep focus-visible:ring-accent-strong",
   outline:

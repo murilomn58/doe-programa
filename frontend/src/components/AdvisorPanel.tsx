@@ -6,6 +6,7 @@
 import { useState } from "react";
 
 import type { AdvisorReport, AdvisorSuggestion } from "@/api/advisor";
+import { PRIMARY_SURFACE } from "@/components/ui/Button";
 
 interface AdvisorPanelProps {
   report: AdvisorReport | null;
@@ -91,7 +92,7 @@ export function AdvisorPanel({ report, isLoading, busy, onAction }: AdvisorPanel
                     type="button"
                     disabled={busy}
                     onClick={() => onAction(s.action as string)}
-                    className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:opacity-50"
+                    className={`mt-3 rounded-lg ${PRIMARY_SURFACE} px-4 py-2 text-sm font-semibold transition disabled:opacity-50`}
                   >
                     {busy ? "Aplicando…" : label}
                   </button>

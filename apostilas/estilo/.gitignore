@@ -1,0 +1,14 @@
+# Artefatos de compilacao do teste-visual. Somente os fontes sao versionados:
+# doeapostila.cls, macros.tex, teste-visual.tex, referencias.bib.
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+teste-visual.pdf

@@ -6,12 +6,15 @@ interface ExperimentListProps {
   experiments: Experiment[];
   isLoading: boolean;
   errorMessage: string | null;
+  /** Quando definido, mostra só os `limite` primeiros (a home usa 3 recentes). */
+  limite?: number;
 }
 
 export function ExperimentList({
   experiments,
   isLoading,
   errorMessage,
+  limite,
 }: ExperimentListProps) {
   if (isLoading) {
     return <p className="text-sm text-muted">Carregando…</p>;
@@ -33,9 +36,12 @@ export function ExperimentList({
     );
   }
 
+  const visiveis =
+    limite !== undefined ? experiments.slice(0, limite) : experiments;
+
   return (
     <ul className="flex flex-col gap-3">
-      {experiments.map((experiment) => (
+      {visiveis.map((experiment) => (
         <li key={experiment.id}>
           <div className="rounded-lg border border-border bg-surface-1 p-4 transition hover:border-accent-strong/60">
             <Link href={`/experiments/${experiment.id}`} className="block">
@@ -50,7 +56,7 @@ export function ExperimentList({
                   {experiment.description}
                 </p>
               ) : null}
-              <p className="mt-2 font-mono text-xs text-accent-mid/70">
+              <p className="mt-2 font-mono text-xs text-muted">
                 {new Date(experiment.created_at).toLocaleString("pt-BR")}
               </p>
             </Link>

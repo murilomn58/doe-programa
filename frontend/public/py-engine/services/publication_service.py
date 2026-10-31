@@ -118,7 +118,7 @@ def _new_fig(figsize=(4.0, 3.0)):
 def _validate_format(fmt: str) -> None:
     if fmt not in ALL_FORMATS:
         raise PublicationExportError(
-            f"Formato '{fmt}' nao suportado. Use png, tiff, svg ou pdf."
+            f"Formato '{fmt}' não suportado. Use png, tiff, svg ou pdf."
         )
 
 
@@ -136,8 +136,8 @@ def render_surface(
     _validate_format(fmt)
     if fmt not in RASTER_FORMATS:
         raise PublicationExportError(
-            "Superficie 3D so exporta em PNG/TIFF (raster) — vetor 3D nao e "
-            "limpo (ADR-008). Para vetor use o grafico de contorno."
+            "Superfície 3D só exporta em PNG/TIFF (raster). O vetor 3D não "
+            "fica limpo (ADR-008). Para vetor, use o gráfico de contorno."
         )
 
     x = np.asarray(surface.x, dtype=float)
@@ -367,7 +367,7 @@ def render_residual_vs_fitted(
     )
     unit = f" ({response_unit})" if response_unit else ""
     ax.set_xlabel(f"Valores ajustados{unit}")
-    ax.set_ylabel(f"Residuos{unit}")
+    ax.set_ylabel(f"Resíduos{unit}")
     _style_2d(ax)
     return _finish(fig, fmt, dpi)
 
@@ -487,7 +487,7 @@ class PublicationService:
         """
         if plot not in PLOT_KINDS:
             raise PublicationExportError(
-                f"Grafico '{plot}' desconhecido. Opcoes: {sorted(PLOT_KINDS)}."
+                f"Gráfico '{plot}' desconhecido. Opções: {sorted(PLOT_KINDS)}."
             )
         _validate_format(fmt)
 
@@ -500,7 +500,7 @@ class PublicationService:
         )
         if not result.estimable or result.plots is None:
             reason = result.warnings[0] if result.warnings else (
-                "Modelo saturado ou nao estimavel — sem graficos para exportar."
+                "Modelo saturado ou não estimável: sem gráficos para exportar."
             )
             raise PublicationExportError(reason)
 
@@ -526,10 +526,10 @@ class PublicationService:
         dpi: int,
     ) -> bytes:
         if plot == "surface":
-            _require(bundle.surface, "superficie de resposta")
+            _require(bundle.surface, "superfície de resposta")
             return render_surface(bundle.surface, response_name, unit, fmt, dpi)
         if plot == "contour":
-            _require(bundle.contour, "grafico de contorno")
+            _require(bundle.contour, "gráfico de contorno")
             return render_contour(bundle.contour, response_name, unit, fmt, dpi)
         if plot == "pareto":
             _require(bundle.pareto, "Pareto de efeitos")
@@ -539,26 +539,26 @@ class PublicationService:
                 bundle.main_effects, response_name, unit, bundle.grand_mean, fmt, dpi
             )
         if plot == "interaction":
-            _require(bundle.interaction, "grafico de interacao")
+            _require(bundle.interaction, "gráfico de interação")
             return render_interaction(bundle.interaction, response_name, unit, fmt, dpi)
         if plot == "obs_vs_pred":
             _require(bundle.obs_vs_pred, "observado vs predito")
             return render_obs_vs_pred(bundle.obs_vs_pred, response_name, unit, fmt, dpi)
         if plot == "residual_vs_fitted":
-            _require(bundle.residual_vs_fitted, "residuos vs ajustados")
+            _require(bundle.residual_vs_fitted, "resíduos vs ajustados")
             return render_residual_vs_fitted(
                 bundle.residual_vs_fitted, response_name, unit, fmt, dpi
             )
         # plot == "qq"
-        _require(bundle.qq, "grafico Q-Q")
+        _require(bundle.qq, "gráfico Q-Q")
         return render_qq(bundle.qq, response_name, unit, fmt, dpi)
 
 
 def _require(part: object | None, label: str) -> None:
     if part is None:
         raise PublicationExportError(
-            f"O modelo ajustado nao produz {label} (ex.: sem dois fatores "
-            "quantitativos para a superficie)."
+            f"O modelo ajustado não produz {label} (ex.: sem dois fatores "
+            "quantitativos para a superfície)."
         )
 
 

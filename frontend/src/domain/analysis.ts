@@ -86,7 +86,7 @@ export interface AnalysisResult {
   anova: AnovaRow[];
   pure_error: AnovaRow | null;
   lack_of_fit: AnovaRow | null;
-  /** Teste de curvatura via pontos centrais (null quando nao se aplica). */
+  /** Teste de curvatura via pontos centrais (null quando não se aplica). */
   curvature: AnovaRow | null;
   total: AnovaRow | null;
   effects: EffectRow[];

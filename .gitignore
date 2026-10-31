@@ -22,6 +22,10 @@ doe.db
 node_modules/
 .next/
 out/
+# `out/` acima existe para a exportacao estatica do Next. Ele tambem casaria com
+# `apostilas/figuras/out/`, onde ficam os PDFs vetoriais das figuras das apostilas,
+# que sao entregaveis e precisam ser versionados.
+!apostilas/figuras/out/
 build/
 .turbo/
 npm-debug.log*
@@ -51,3 +55,10 @@ design-system/.design-sync/learnings/
 
 # ---- material de referencia do redesenho (zip extraido, pesado) ----
 design-system/_redesign-import/
+
+# ---- material pesado de origem externa (nao e entregavel) ----
+_export_audit/
+*.zip
+contexto aulas/*.pptx
+contexto aulas/aula antiga/
+aula-ime/*.pdf
